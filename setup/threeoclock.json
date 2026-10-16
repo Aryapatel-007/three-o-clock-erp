@@ -1,0 +1,115 @@
+{
+  "restaurant": {
+    "name": "Three O'Clock Cafe",
+    "legalName": "TO CONFIRM",
+    "gstin": "TO CONFIRM",
+    "fssaiLicenseNumber": "TO CONFIRM",
+    "address": {
+      "line1": "226/2, Koba, near Khodiyar Pan Parlour",
+      "line2": "PDPU Road, Raysan",
+      "city": "Gandhinagar",
+      "state": "Gujarat",
+      "pincode": "TO CONFIRM"
+    },
+    "contactPhone": "9898947333"
+  },
+  "settings": {
+    "businessDayStartsAtMinutes": 300,
+    "features": {
+      "inventory": false,
+      "attendance": false
+    },
+    "receipt": {
+      "headerLine2": "Vietnamese Coffee & Cafe",
+      "footerText": "Thank you! Open till 3 AM."
+    },
+    "delivery": {
+      "platformCollectsGst": true
+    },
+    "appearance": {
+      "accentPreset": "ESPRESSO",
+      "neutralTone": "WARM",
+      "brandHex": "#1A1A1A",
+      "onBrandHex": "#E2C08D",
+      "wordmark": "Three O'Clock",
+      "secondLanguage": "NONE"
+    }
+  },
+  "logos": {
+    "LIGHT_GROUND": "docs/clients/threeoclock/brand/threeoclock-logo-light-ground.png",
+    "DARK_GROUND": "docs/clients/threeoclock/brand/threeoclock-logo-dark-ground.png"
+  },
+  "stations": [
+    {
+      "name": "Coffee Bar",
+      "displayOrder": 0,
+      "printsTickets": false
+    },
+    {
+      "name": "Kitchen",
+      "displayOrder": 1,
+      "printsTickets": false
+    },
+    {
+      "name": "Bakery Counter",
+      "displayOrder": 2,
+      "printsTickets": false
+    }
+  ],
+  "categoryStations": {
+    "Hot Vietnamese Coffee": "Coffee Bar",
+    "Hot Espresso": "Coffee Bar",
+    "Hot Choco & Matcha": "Coffee Bar",
+    "Hot Tea": "Coffee Bar",
+    "Hot Milk Tea": "Coffee Bar",
+    "Iced Vietnamese Coffee": "Coffee Bar",
+    "Iced Espresso": "Coffee Bar",
+    "Fruit Tea": "Coffee Bar",
+    "Iced Fresh Tea": "Coffee Bar",
+    "Cheese Foam Tea": "Coffee Bar",
+    "Iced Milk Tea": "Coffee Bar",
+    "Chococha": "Coffee Bar",
+    "Freshly Baked": "Bakery Counter",
+    "Tea Cakes": "Bakery Counter",
+    "Delicate Desserts": "Bakery Counter",
+    "Puffs & Pies": "Bakery Counter"
+  },
+  "defaultStation": "Kitchen",
+  "tables": [
+    {
+      "section": "Indoor",
+      "names": ["Table 1", "Table 2", "Table 3", "Table 4", "Table 5", "Table 6", "Table 7", "Table 8", "Table 9", "Table 10"],
+      "seats": 4
+    },
+    {
+      "section": "Outdoor",
+      "names": ["Outdoor 1", "Outdoor 2", "Outdoor 3", "Outdoor 4", "Outdoor 5", "Outdoor 6", "Outdoor 7", "Outdoor 8"],
+      "seats": 4
+    }
+  ],
+  "paymentMethods": [
+    {
+      "code": "CASH",
+      "name": "Cash",
+      "kind": "IN_HAND",
+      "orderTypes": ["DINE_IN", "TAKEAWAY", "DELIVERY"],
+      "displayOrder": 0
+    },
+    {
+      "code": "CARD",
+      "name": "Card",
+      "kind": "IN_HAND",
+      "orderTypes": ["DINE_IN", "TAKEAWAY", "DELIVERY"],
+      "displayOrder": 1
+    },
+    {
+      "code": "UPI",
+      "name": "UPI",
+      "kind": "IN_HAND",
+      "orderTypes": ["DINE_IN", "TAKEAWAY", "DELIVERY"],
+      "displayOrder": 2
+    }
+  ],
+  "accounts": "TO CONFIRM",
+  "staff": "TO CONFIRM"
+}

@@ -1,8 +1,8 @@
 /**
  * Sets a restaurant up from one JSON file. P11. Phase 2 onboarding.
  *
- *   npm run setup:restaurant -- --config setup/zchaat.json --owner-phone 98xxxxxxxx
- *   npm run setup:restaurant -- --config setup/zchaat.json --owner-phone 98xxxxxxxx --apply
+ *   npm run setup:restaurant -- --config setup/threeoclock.json --owner-phone 98xxxxxxxx
+ *   npm run setup:restaurant -- --config setup/threeoclock.json --owner-phone 98xxxxxxxx --apply
  *
  * Staging for training and production on cutover day have to be set up the
  * same way, so this reads one file and does it through the real API, signed in
@@ -86,6 +86,7 @@ export function stripToConfirm(value, at = '', found = []) {
 }
 
 const looseObject = z.record(z.string(), z.unknown());
+const tableGroupSchema = z.object({ section: z.string().optional(), names: z.array(z.string()), seats: z.unknown().optional() }).strict();
 
 const configShape = z
   .object({
@@ -106,10 +107,8 @@ const configShape = z
     stations: z.array(looseObject).optional(),
     categoryStations: z.record(z.string(), z.string()).optional(),
     defaultStation: z.string().optional(),
-    tables: z
-      .object({ section: z.string().optional(), names: z.array(z.string()), seats: z.unknown().optional() })
-      .strict()
-      .optional(),
+    // One section of tables, or a list of them, one per section.
+    tables: z.union([tableGroupSchema, z.array(tableGroupSchema).min(1)]).optional(),
     paymentMethods: z.array(looseObject).optional(),
     accounts: z.array(looseObject).optional(),
     staff: z.array(looseObject).optional(),
@@ -117,6 +116,13 @@ const configShape = z
     logos: z.partialRecord(z.enum(LOGO_SLOT_NAMES, { error: `A logo slot is one of ${LOGO_SLOT_NAMES.join(', ')}.` }), z.string()).optional(),
   })
   .strict();
+
+/**
+ * The file's tables as a list of sections, each with where its errors point.
+ * A single section keeps the paths it always had, `tables.names[0]`.
+ */
+const tableGroups = (tables) =>
+  Array.isArray(tables) ? tables.map((group, index) => ({ group, at: `tables[${index}]` })) : [{ group: tables, at: 'tables' }];
 
 /** The PATCH /settings body this file asks for, in the API's shape. */
 function settingsBody(settings = {}) {
@@ -208,16 +214,18 @@ export function validateSetupConfig(raw) {
     }
 
     if (config.tables) {
-      const names = config.tables.names ?? [];
+      // A table's name is unique across every section.
       const seen = new Set();
-      names.forEach((name, index) => {
-        if (seen.has(name.toLowerCase())) issues.push({ path: `tables.names[${index}]`, message: `"${name}" appears twice.` });
-        seen.add(name.toLowerCase());
-        const result = createTableSchema.safeParse({
-          body: { name, section: config.tables.section, ...(config.tables.seats !== undefined ? { seats: config.tables.seats } : {}) },
+      for (const { group, at } of tableGroups(config.tables)) {
+        (group.names ?? []).forEach((name, index) => {
+          if (seen.has(name.toLowerCase())) issues.push({ path: `${at}.names[${index}]`, message: `"${name}" appears twice.` });
+          seen.add(name.toLowerCase());
+          const result = createTableSchema.safeParse({
+            body: { name, section: group.section, ...(group.seats !== undefined ? { seats: group.seats } : {}) },
+          });
+          if (!result.success) issues.push(...issuesFrom(`${at}.names[${index}]`, result.error));
         });
-        if (!result.success) issues.push(...issuesFrom(`tables.names[${index}]`, result.error));
-      });
+      }
     }
 
     (config.paymentMethods ?? []).forEach((method, index) => {
@@ -366,8 +374,9 @@ export async function planSetup(client, config, { toConfirm = [] } = {}) {
 
   // Tables.
   if (config.tables) {
-    const { section = null, seats } = config.tables;
-    config.tables.names.forEach((name, index) => {
+    // Display order runs on across the sections, in file order.
+    const rows = tableGroups(config.tables).flatMap(({ group }) => group.names.map((name) => ({ name, section: group.section ?? null, seats: group.seats })));
+    rows.forEach(({ name, section, seats }, index) => {
       const existing = tables.find((row) => lower(row.name) === lower(name));
       const wanted = { section, displayOrder: index, ...(seats !== undefined ? { seats } : {}) };
       if (!existing) {
@@ -541,7 +550,7 @@ function printLogins(logins) {
 
 async function main() {
   const args = parseArgs(process.argv.slice(2));
-  if (!args.config) throw new Error('Give the setup file with --config, for example --config setup/zchaat.json.');
+  if (!args.config) throw new Error('Give the setup file with --config, for example --config setup/threeoclock.json.');
   const file = path.resolve(process.env.INIT_CWD ?? process.cwd(), args.config);
   const raw = JSON.parse(readFileSync(file, 'utf8'));
   const { config, toConfirm } = validateSetupConfig(raw);

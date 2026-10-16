@@ -163,13 +163,13 @@ If it is not, the prompt must include its own rollback steps.
 5. The Caffeza setup and menu import from P11, each as a dry run first, read in full, then with `--apply`. See `setup/README.md`.
 
    ```
-   npm run setup:restaurant -- --config setup/zchaat.json --owner-phone <owner phone>
-   npm run setup:restaurant -- --config setup/zchaat.json --owner-phone <owner phone> --apply
-   npm run import:menu -- --file setup/zchaat-menu.csv --config setup/zchaat.json --owner-phone <owner phone>
-   npm run import:menu -- --file setup/zchaat-menu.csv --config setup/zchaat.json --owner-phone <owner phone> --apply
+   npm run setup:restaurant -- --config setup/threeoclock.json --owner-phone <owner phone>
+   npm run setup:restaurant -- --config setup/threeoclock.json --owner-phone <owner phone> --apply
+   npm run import:menu -- --file setup/threeoclock-menu.csv --addons setup/threeoclock-addons.csv --config setup/threeoclock.json --owner-phone <owner phone>
+   npm run import:menu -- --file setup/threeoclock-menu.csv --addons setup/threeoclock-addons.csv --config setup/threeoclock.json --owner-phone <owner phone> --apply
    ```
 
-   Each asks for the owner's password at the terminal. New staff passwords are printed once; hand them over privately. Fill in every `TO CONFIRM` value in `setup/zchaat.json` before the production run.
+   Each asks for the owner's password at the terminal. New staff passwords are printed once; hand them over privately. Fill in every `TO CONFIRM` value in `setup/threeoclock.json` before the production run.
 6. Settings: GSTIN, FSSAI number, receipt header lines, business day start.
 7. The owner checks every menu item and price on staging before the same import runs on production.
 8. On cutover day only: set the invoice prefix and starting number. See `docs/GO-LIVE.md`.

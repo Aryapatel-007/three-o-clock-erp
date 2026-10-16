@@ -1,9 +1,9 @@
 /**
  * Imports a menu from a CSV file. P11. Phase 2 onboarding.
  *
- *   npm run import:menu -- --file setup/zchaat-menu.csv --owner-phone 98xxxxxxxx
- *   npm run import:menu -- --file setup/zchaat-menu.csv --owner-phone 98xxxxxxxx --apply
- *   ... --addons setup/zchaat-addons.csv --config setup/zchaat.json
+ *   npm run import:menu -- --file setup/threeoclock-menu.csv --owner-phone 98xxxxxxxx
+ *   npm run import:menu -- --file setup/threeoclock-menu.csv --owner-phone 98xxxxxxxx --apply
+ *   ... --addons setup/threeoclock-addons.csv --config setup/threeoclock.json
  *
  * The same sign-in, dry run, --apply and summary as setupRestaurant.js, and
  * the same promise: through the API only, safe to run again, nothing deleted
@@ -355,7 +355,7 @@ export async function applyMenu(steps) {
 
 async function main() {
   const args = parseArgs(process.argv.slice(2));
-  if (!args.file) throw new Error('Give the menu file with --file, for example --file setup/zchaat-menu.csv.');
+  if (!args.file) throw new Error('Give the menu file with --file, for example --file setup/threeoclock-menu.csv.');
   const read = (file) => readFileSync(path.resolve(process.env.INIT_CWD ?? process.cwd(), file), 'utf8');
   const menu = readMenu(read(args.file), args.addons ? read(args.addons) : null);
   const config = args.config ? validateSetupConfig(JSON.parse(read(args.config))).config : null;

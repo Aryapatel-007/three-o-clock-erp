@@ -1,5 +1,5 @@
 # Z Chaat menu, from "Z Chaat Menu May 2026" and the two table cards (main course and Chinese additions), read 8 October 2026.
-# Prices in rupees, before GST. GST 5% on every item. Check every TO CONFIRM item in docs/clients/zchaat/PROFILE.md before cutover.
+# Prices in rupees, before GST. GST 5% on every item. Check every TO CONFIRM item in docs/archive/zchaat/PROFILE.md before cutover.
 category,item,size,price,gst_percent,available,description
 Desi Tadka Sharbat,Aam Panna Soda,,190.00,5,yes,"Raw mango with chilled soda, black salt, roasted cumin and fresh mint. 300ml"
 Desi Tadka Sharbat,Masala Jaljeera,,195.00,5,yes,"Spicy tangy jaljeera with mint, lemon and soda. 300ml"

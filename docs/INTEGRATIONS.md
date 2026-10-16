@@ -377,7 +377,7 @@ about 20 minutes and can reach the daily token limit; `-- --from <id>` resumes.
 ## 5. Z Chaat checklist
 
 Every answer here is `TO CONFIRM`. The profile is
-`docs/clients/zchaat/PROFILE.md`.
+`docs/archive/zchaat/PROFILE.md`.
 
 | Item | Answer |
 |---|---|

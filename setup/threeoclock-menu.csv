@@ -1,0 +1,114 @@
+# Three O'Clock Cafe, Gandhinagar. Read from the four menu cards on their Zomato and District listings, 16 October 2026.
+# Prices in rupees, before GST ("local taxes extra" on every card). GST 5% on every item, TO CONFIRM with their CA.
+# Every item is vegetarian (green mark on every line). Drinks sold hot and iced carry Hot or Iced in the name, since a name is unique.
+# Cup sizes from the cards: Small 354ml, Medium 473ml, Large 650ml. Check every TO CONFIRM item in docs/clients/threeoclock/PROFILE.md before cutover.
+category,item,size,price,gst_percent,available,description
+Hot Vietnamese Coffee,Hot Vietnamese Black Coffee,,190.00,5,yes,"Phin-filtered Vietnamese coffee, black. 50ml"
+Hot Vietnamese Coffee,Hot Vietnamese Coffee With Milk,,230.00,5,yes,"Phin-filtered Vietnamese coffee with condensed milk. 80ml. Contains milk"
+Hot Espresso,Hot Espresso,,160.00,5,yes,50ml
+Hot Espresso,Hot Americano,,180.00,5,yes,120ml
+Hot Espresso,Hot Cappuccino,,210.00,5,yes,180ml. Contains milk
+Hot Espresso,Hot Latte,,220.00,5,yes,230ml. Contains milk
+Hot Choco & Matcha,Hot Signature Chocolate,,220.00,5,yes,230ml. Contains milk
+Hot Choco & Matcha,Hot Matcha Latte,,300.00,5,yes,230ml. Contains milk
+Hot Tea,Masala Black Tea,,180.00,5,yes,400ml. Contains milk. Hot tea is served for dine-in only
+Hot Tea,Full Leaf Black Tea,,180.00,5,yes,400ml. Hot tea is served for dine-in only
+Hot Tea,Jasmine Green Tea,,200.00,5,yes,400ml. Hot tea is served for dine-in only
+Hot Tea,Signature Oolong Tea,,250.00,5,yes,400ml. Hot tea is served for dine-in only
+Hot Milk Tea,Hot Full Leaf Milk Tea,,200.00,5,yes,150ml
+Hot Milk Tea,Hot Jasmine Oolong Milk Tea,,300.00,5,yes,150ml
+Hot Milk Tea,Hot Oolong Milk Tea,,300.00,5,yes,150ml
+Iced Vietnamese Coffee,Iced Vietnamese Black Coffee,Small,200.00,5,yes,"Small 354ml, medium 473ml"
+Iced Vietnamese Coffee,Iced Vietnamese Black Coffee,Medium,300.00,5,yes,
+Iced Vietnamese Coffee,Iced Vietnamese Coffee With Milk,Small,230.00,5,yes,"Small 354ml, medium 473ml. Best-seller"
+Iced Vietnamese Coffee,Iced Vietnamese Coffee With Milk,Medium,330.00,5,yes,
+Iced Vietnamese Coffee,Vietnamese Salted Coffee,Small,250.00,5,yes,"Small 354ml, medium 473ml"
+Iced Vietnamese Coffee,Vietnamese Salted Coffee,Medium,350.00,5,yes,
+Iced Vietnamese Coffee,Vietnamese Coconut Coffee Frappe,,350.00,5,yes,Medium 473ml. Contains milk. Best-seller
+Iced Espresso,Classic Iced Coffee,Small,170.00,5,yes,"Small 354ml, medium 473ml"
+Iced Espresso,Classic Iced Coffee,Medium,230.00,5,yes,
+Iced Espresso,Iced Americano,Small,190.00,5,yes,"Small 354ml, medium 473ml"
+Iced Espresso,Iced Americano,Medium,250.00,5,yes,
+Iced Espresso,Iced Cappuccino,Small,220.00,5,yes,"Small 354ml, medium 473ml. Contains milk"
+Iced Espresso,Iced Cappuccino,Medium,320.00,5,yes,
+Iced Espresso,Iced Latte,Small,230.00,5,yes,"Small 354ml, medium 473ml. Contains milk"
+Iced Espresso,Iced Latte,Medium,330.00,5,yes,
+Iced Espresso,Salted Latte Frappe,,380.00,5,yes,Medium 473ml. Contains milk
+Iced Espresso,Caramel Latte,,300.00,5,yes,Small 354ml. Contains milk. Best-seller
+Iced Espresso,Boba Cheese Latte,,300.00,5,yes,Small 354ml. Contains milk. Best-seller
+Iced Espresso,Hazelnut Coffee Frappe,,380.00,5,yes,Medium 473ml. Contains milk and nuts
+Fruit Tea,Salted Plum Orange Tea,,350.00,5,yes,Medium 473ml. Best-seller
+Fruit Tea,Tangerine Tea,,350.00,5,yes,Medium 473ml
+Fruit Tea,Mango Passion Tea,,350.00,5,yes,Medium 473ml
+Fruit Tea,Raspberry Tea,,300.00,5,yes,Medium 473ml. Best-seller
+Fruit Tea,Lemongrass Peach Tea,,300.00,5,yes,Medium 473ml
+Iced Fresh Tea,Oolong Pandan Tea,,350.00,5,yes,Large 650ml. Best-seller
+Iced Fresh Tea,Oolong Tea With Chia Seeds,,350.00,5,yes,Large 650ml
+Iced Fresh Tea,Lemon Green Tea,,300.00,5,yes,Large 650ml
+Iced Fresh Tea,Tropical Cloud 9 Frappe,,400.00,5,yes,Medium 473ml. Contains milk
+Cheese Foam Tea,Oolong Tea & Cheese Foam,Small,300.00,5,yes,"Small 354ml, medium 473ml. Contains milk. Best-seller"
+Cheese Foam Tea,Oolong Tea & Cheese Foam,Medium,400.00,5,yes,
+Cheese Foam Tea,Black Currant & Cheese Foam,Small,300.00,5,yes,"Small 354ml, medium 473ml. Contains milk. Best-seller"
+Cheese Foam Tea,Black Currant & Cheese Foam,Medium,400.00,5,yes,
+Iced Milk Tea,Iced Jasmine Oolong Milk Tea,Small,300.00,5,yes,"Small 354ml, medium 473ml, large 650ml. Best-seller"
+Iced Milk Tea,Iced Jasmine Oolong Milk Tea,Medium,350.00,5,yes,
+Iced Milk Tea,Iced Jasmine Oolong Milk Tea,Large,400.00,5,yes,
+Iced Milk Tea,Iced Full Leaf Milk Tea,Small,200.00,5,yes,"Small 354ml, medium 473ml, large 650ml"
+Iced Milk Tea,Iced Full Leaf Milk Tea,Medium,250.00,5,yes,
+Iced Milk Tea,Iced Full Leaf Milk Tea,Large,300.00,5,yes,
+Iced Milk Tea,Iced Oolong Milk Tea,Small,300.00,5,yes,"Small 354ml, medium 473ml, large 650ml"
+Iced Milk Tea,Iced Oolong Milk Tea,Medium,350.00,5,yes,
+Iced Milk Tea,Iced Oolong Milk Tea,Large,400.00,5,yes,
+Iced Milk Tea,Taro Milk Tea,Small,250.00,5,yes,"Small 354ml, medium 473ml. Contains milk. Best-seller"
+Iced Milk Tea,Taro Milk Tea,Medium,350.00,5,yes,
+Chococha,Iced Matcha Latte,,350.00,5,yes,Small 354ml. Contains milk
+Chococha,Matcha Choco,,380.00,5,yes,Small 354ml. Contains milk
+Chococha,Matcha Frappe,,400.00,5,yes,Medium 473ml. Contains milk
+Chococha,Vanilla Oatmilk Matcha,,400.00,5,yes,Small 354ml. Contains oats. Best-seller
+Chococha,Iced Signature Chocolate,,280.00,5,yes,Small 354ml. Contains milk
+Handcrafted Sandwiches,Pesto Cream Cheese Sandwich (Croissant),,340.00,5,yes,
+Handcrafted Sandwiches,Mushroom Sandwich (Croissant),,350.00,5,yes,
+Handcrafted Sandwiches,Mushroom Sandwich (Banh-Mi),,380.00,5,yes,
+Handcrafted Sandwiches,Tofu Sandwich (Banh-Mi),,380.00,5,yes,
+Handcrafted Sandwiches,Paneer Tikka Sandwich (Brown Bread),,290.00,5,yes,
+Handcrafted Sandwiches,Mushroom Corn Sandwich (Brown Bread),,290.00,5,yes,
+Handcrafted Sandwiches,Coleslaw Sandwich (White Bread),,290.00,5,yes,
+Artisan Toasts,Guacamole Toast (Sourdough),,320.00,5,yes,
+Artisan Toasts,Hummus Toast (Sourdough),,320.00,5,yes,
+Artisan Toasts,Cream Cheese Halloumi Toast (Sourdough),,350.00,5,yes,
+Signature Pastas,Mixed Sauce Pasta,,350.00,5,yes,
+Signature Pastas,White Sauce Pasta,,360.00,5,yes,
+Signature Pastas,Red Sauce Pasta,,370.00,5,yes,
+Fresh & Fit Salads,Caesar Salad,,350.00,5,yes,
+Fresh & Fit Salads,Green Salad,,350.00,5,yes,
+Nachos,Nachos & Salsa,,280.00,5,yes,
+Nachos,Seasoned Nachos & Salsa,,280.00,5,yes,
+Nachos,Cheese Nachos & Salsa,,290.00,5,yes,
+Fries,Salted Fries,,120.00,5,yes,
+Fries,Peri-Peri Fries,,150.00,5,yes,
+Fries,Cheese Fries,,180.00,5,yes,
+Hot Pizzas,Tandoori Paneer Pizza,,340.00,5,yes,
+Hot Pizzas,BBQ Paneer Veggies Pizza,,350.00,5,yes,
+Hot Pizzas,Overload Veggies Pizza,,350.00,5,yes,
+Appetisers,Veggie Fingers,,220.00,5,yes,
+Appetisers,Chilli Cheese Nuggets,,220.00,5,yes,
+Appetisers,Spicy Onion Rings,,240.00,5,yes,
+Appetisers,Cheese Doughnut,,240.00,5,yes,
+Puffs & Pies,Paneer & Cheese Puff,,120.00,5,yes,
+Puffs & Pies,Mixed Veg Cheese Puff,,120.00,5,yes,
+Puffs & Pies,Mixed Veg Triangle Pie,,180.00,5,yes,
+Freshly Baked,Blueberry Muffin,,210.00,5,yes,
+Freshly Baked,Double Chocolate Muffin,,210.00,5,yes,
+Freshly Baked,Butter Croissant,,240.00,5,yes,
+Freshly Baked,Pesto Cheese & Cherry Tomato Croissant,,250.00,5,yes,
+Freshly Baked,Walnut Brownie,,280.00,5,yes,Contains nuts
+Freshly Baked,Mushroom Croissant,,280.00,5,yes,
+Tea Cakes,Marble Cake,,190.00,5,yes,
+Tea Cakes,Banana Walnut Cake,,200.00,5,yes,Contains nuts
+Delicate Desserts,Coffee Mocha Pastry,,340.00,5,yes,
+Delicate Desserts,Chocolate Biscoff,,390.00,5,yes,
+Delicate Desserts,Tres Leches,,350.00,5,yes,
+Delicate Desserts,Vietnamese Cheesecake,,380.00,5,yes,
+Delicate Desserts,Biscoff Cheesecake,,390.00,5,yes,
+Delicate Desserts,Chocolate Fudge Pastry,,350.00,5,yes,
+Delicate Desserts,Nutella Hazelnut Dark Chocolate,,390.00,5,yes,Contains nuts

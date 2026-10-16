@@ -414,7 +414,7 @@ export default function SettingsPage() {
               maxLength={300}
               value={form.assistant.greeting ?? ''}
               onChange={(event) => set('assistant', 'greeting')(event.target.value)}
-              hint="Optional, up to 300 characters. Like: Namaste from Z Chaat!"
+              hint="Optional, up to 300 characters. Like: Welcome to Three O'Clock!"
             />
             <Input
               label="When a person replies"

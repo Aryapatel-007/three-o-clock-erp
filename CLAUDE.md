@@ -2,7 +2,8 @@
 
 MERN stack. REST API. Multi-tenant SaaS for restaurants in Ahmedabad.
 Two developers: Arya and Rishi. One person owns one module fully.
-The live client is Z Chaat, an Indian street food restaurant in Gandhinagar. Its setup is in `docs/clients/zchaat/PROFILE.md`.
+The live client is Three O'Clock Cafe, a Vietnamese coffee cafe on PDPU Road, Gandhinagar. Its setup is in `docs/clients/threeoclock/PROFILE.md`.
+This repository was copied from the Z Chaat repository on 16 October 2026; Z Chaat's files are archived in `docs/archive/zchaat/` and `setup/archive/zchaat/`.
 The first client, Cafezza, is archived in `docs/archive/caffeza/`.
 
 ## Loaded every session
@@ -23,7 +24,7 @@ These are long. Read the section your task touches, not the whole file.
 | `docs/REPORT-SPEC.md` | Before any report work |
 | `docs/RECONCILIATION-RULES.md` | Before any report, billing, payment or Day Close work |
 | `docs/TEST-DATA.md` | Before writing any report or money test |
-| `docs/clients/zchaat/PROFILE.md` | Before building anything for the live client, Z Chaat |
+| `docs/clients/threeoclock/PROFILE.md` | Before building anything for the live client, Three O'Clock |
 | `docs/DESIGN-SYSTEM.md` | Before any screen work |
 | `docs/BUILD-PLAN.md` | Section 13 before calling a module done. Sections 11 and 12 for security and common mistakes. |
 | `docs/DEPLOYMENT.md` | Before touching startup, environment variables or deployment |

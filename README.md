@@ -21,7 +21,7 @@ you stop.
 | [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) | Cloud server and Atlas, backups, the cafe setup |
 | [`docs/GO-LIVE.md`](docs/GO-LIVE.md) | Gates, training, pilot days, cutover |
 | [`docs/prompts/`](docs/prompts/) | The build prompts, P00 to P21, run in order |
-| [`docs/clients/zchaat/PROFILE.md`](docs/clients/zchaat/PROFILE.md) | The live client's real setup: tax, invoice series, tables, staff, payment methods, and what is still to confirm |
+| [`docs/clients/threeoclock/PROFILE.md`](docs/clients/threeoclock/PROFILE.md) | The live client's real setup: tax, invoice series, tables, staff, payment methods, and what is still to confirm |
 | [`docs/INTEGRATIONS.md`](docs/INTEGRATIONS.md) | Connecting Swiggy, Zomato, a Pine Labs card machine and Tally: what to ask for, how to set each up, what is still waiting |
 
 ## Running it

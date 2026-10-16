@@ -8,7 +8,7 @@ this file first.
 `TO CONFIRM` means we have not seen the answer yet.
 Build with the stated default, and make the value a setting so the answer can
 change without code. Nothing in the code names Z Chaat: its details live only
-here, in `setup/zchaat.json`, `setup/zchaat-menu.csv`, and its own records in
+here, in `setup/archive/zchaat/zchaat.json`, `setup/archive/zchaat/zchaat-menu.csv`, and its own records in
 the database.
 
 Section 15 lists every open item in one place.
@@ -87,7 +87,7 @@ provisioning.
 
 ## 8. Kitchen stations
 
-A starting point to confirm, in `setup/zchaat.json`:
+A starting point to confirm, in `setup/archive/zchaat/zchaat.json`:
 
 | Station | Categories |
 |---|---|
@@ -98,7 +98,7 @@ A starting point to confirm, in `setup/zchaat.json`:
 
 ## 9. Menu
 
-100 dishes in 14 categories, with descriptions, in `setup/zchaat-menu.csv`.
+100 dishes in 14 categories, with descriptions, in `setup/archive/zchaat/zchaat-menu.csv`.
 Every price is before GST, at 5%. Dishes with sizes have one row per size, 105
 rows in all.
 
@@ -150,7 +150,7 @@ Measured from their menu file on 8 October 2026:
 
 `#A64220` cannot be the accent: the colour rules refuse it as too close to the
 Open state's colour, so a button could look like a table's state. The nearest
-preset they accept, Espresso `#55473F`, is the accent in `setup/zchaat.json`.
+preset they accept, Espresso `#55473F`, is the accent in `setup/archive/zchaat/zchaat.json`.
 The neutral tone is Warm. The second language is Gujarati.
 
 ## 15. Everything still to confirm

@@ -59,3 +59,6 @@ backups/
 
 # Vercel CLI link and build output at the repo root
 .vercel
+
+# Three O'Clock's menu cards and photos, downloaded from their listings. Kept on this computer, not published.
+docs/clients/threeoclock/source/
