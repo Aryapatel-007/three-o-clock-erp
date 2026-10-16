@@ -4,7 +4,7 @@ rem Double-click this file on the counter computer. Everyday Chrome is left alon
 rem the till runs in a separate Chrome profile, so silent printing only applies there.
 rem Before the first use: make the bill printer the computer's default printer.
 
-set TILL_ADDRESS=https://zchaat-pos.vercel.app
+set TILL_ADDRESS=https://three-o-clock-erp.vercel.app
 set CHROME=%ProgramFiles%\Google\Chrome\Application\chrome.exe
 if not exist "%CHROME%" set CHROME=%ProgramFiles(x86)%\Google\Chrome\Application\chrome.exe
 if not exist "%CHROME%" set CHROME=%LocalAppData%\Google\Chrome\Application\chrome.exe

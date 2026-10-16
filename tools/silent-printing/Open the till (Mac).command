@@ -7,7 +7,7 @@
 # Before the first use: make the bill printer (the Rugtek) the Mac's default,
 # in System Settings, Printers & Scanners, Default printer.
 
-TILL_ADDRESS="https://zchaat-pos.vercel.app"
+TILL_ADDRESS="https://three-o-clock-erp.vercel.app"
 PROFILE="$HOME/Library/Application Support/Restaurant ERP Till"
 
 open -na "Google Chrome" --args \

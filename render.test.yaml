@@ -2,16 +2,16 @@
 #
 # One service serves both the API and the screens (the Dockerfile builds the
 # client and the server serves it), at its own address, on its own database:
-# restaurant-erp-test on the same Atlas cluster. Staff practise here; nothing
+# three-o-clock-erp-test on the same Atlas cluster. Staff practise here; nothing
 # touches a real bill or a real invoice number.
 #
 # Create it in Render with New, Blueprint, this repository, and Blueprint path
 # render.test.yaml. Render generates the secrets; it asks for MONGO_URI, which
-# must end in /restaurant-erp-test, never /restaurant-erp. docs/DEPLOYMENT.md
+# must end in /three-o-clock-erp-test, never the live database. docs/DEPLOYMENT.md
 # section 16.
 services:
   - type: web
-    name: zchaat-pos-test
+    name: three-o-clock-erp-test
     runtime: docker
     plan: free
     region: singapore
@@ -25,7 +25,7 @@ services:
         value: production
       # The screens are served by this same service, so the app's own address.
       - key: CLIENT_ORIGIN
-        value: https://zchaat-pos-test.onrender.com
+        value: https://three-o-clock-erp-test.onrender.com
       # Only Render's proxy in front: no Vercel here.
       - key: TRUST_PROXY
         value: '1'
