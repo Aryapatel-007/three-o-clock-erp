@@ -62,3 +62,7 @@ backups/
 
 # Three O'Clock's menu cards and photos, downloaded from their listings. Kept on this computer, not published.
 docs/clients/threeoclock/source/
+
+# The local MongoDB for running the app on this computer.
+.localdb/
+start-local.cmd
