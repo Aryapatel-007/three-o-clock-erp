@@ -50,6 +50,8 @@ const PLACES = {
   home: { to: '/dashboard', label: 'Home', Icon: HomeIcon },
   floor: { to: '/floor', label: 'Floor', Icon: FloorIcon },
   takeaway: { to: '/orders/takeaway', label: 'Takeaway', Icon: BagIcon },
+  // Counter Sale: order and pay in one go.
+  counter: { to: '/orders/counter', label: 'Counter', Icon: BagIcon },
   delivery: { to: '/orders/delivery', label: 'Delivery', Icon: ScooterIcon },
   kitchen: { to: '/kitchen', label: 'Kitchen', Icon: KitchenIcon },
   bills: { to: '/bills', label: 'Bills', Icon: ReceiptIcon },
@@ -67,7 +69,7 @@ const PLACES = {
 const MAIN_BY_ROLE = {
   OWNER: ['floor', 'bills', 'kitchen', 'reports'],
   MANAGER: ['floor', 'bills', 'kitchen', 'dayClose'],
-  CASHIER: ['floor', 'bills', 'takeaway', 'cash'],
+  CASHIER: ['counter', 'floor', 'bills', 'cash'],
   WAITER: ['floor', 'takeaway', 'delivery', 'kitchen'],
   KITCHEN: ['kitchen', 'availability'],
   STOREKEEPER: ['stock', 'availability'],
@@ -91,6 +93,7 @@ function useMoreGroups() {
         // P55. The owner's dashboard, outside the ERP.
         { to: '/owner', label: 'Dashboard', show: role === 'OWNER' },
         { to: '/floor', label: 'Floor', show: floor },
+        { to: '/orders/counter', label: 'Counter sale', show: till && features.billing?.payFirstTakeaway !== false },
         { to: '/orders/takeaway', label: 'Takeaway', show: floor },
         { to: '/orders/delivery', label: 'Delivery', show: floor },
         { to: '/kitchen', label: 'Kitchen', show: true },
@@ -165,7 +168,7 @@ function OnlineBadge() {
 
 function PlaceLink({ place, layout }) {
   const { pathname } = useLocation();
-  const active = isCurrent(pathname, place.to) || (place.to === '/floor' && pathname.startsWith('/orders/') && !pathname.startsWith('/orders/takeaway') && !pathname.startsWith('/orders/delivery'));
+  const active = isCurrent(pathname, place.to) || (place.to === '/floor' && pathname.startsWith('/orders/') && !pathname.startsWith('/orders/takeaway') && !pathname.startsWith('/orders/counter') && !pathname.startsWith('/orders/delivery'));
   const Icon = place.Icon;
   return (
     <NavLink

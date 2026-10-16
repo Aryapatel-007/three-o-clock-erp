@@ -238,7 +238,13 @@ export async function createBillInSession(req, { orderId, version, discount = nu
   const order = await Order.findOne({ ...scoped(req), _id: orderId }).session(session);
   if (!order) throw new NotFoundError('Order not found.');
 
-  assertOrderIsBillable(order);
+  /**
+   * Read inside the transaction, so the bill is numbered from the invoice
+   * series as it is at this moment. Through settingsService, the one place
+   * any module reads configuration from.
+   */
+  const settings = await getSettings(req.restaurantId, { session });
+  assertOrderIsBillable(order, { payFirstTakeaway: Boolean(settings.billing?.payFirstTakeaway) });
 
   const lines = order.lines
     .filter((line) => line.status !== ORDER_LINE_STATUSES.CANCELLED)
@@ -249,12 +255,6 @@ export async function createBillInSession(req, { orderId, version, discount = nu
   const at = nowUtc();
   const carried = discount ? carriedDiscount(discount, lines) : null;
   const totals = computeBillTotals({ lines, discount: carried?.request ?? null });
-  /**
-   * Read inside the transaction, so the bill is numbered from the invoice
-   * series as it is at this moment. Through settingsService, the one place
-   * any module reads configuration from.
-   */
-  const settings = await getSettings(req.restaurantId, { session });
   const startMinutes = settings.business.businessDayStartsAtMinutes;
   // P10: a bill is never issued into a closed business day.
   await assertDayOpen(req, businessDateFor(at, startMinutes), { session });

@@ -68,6 +68,7 @@ const SETTING_PATHS = Object.freeze({
   'billing.captainsMayTakePayment': 'settings.billing.captainsMayTakePayment',
   'billing.reviseUnpaidBills': 'settings.billing.reviseUnpaidBills',
   'billing.printBeforePayment': 'settings.billing.printBeforePayment',
+  'billing.payFirstTakeaway': 'settings.billing.payFirstTakeaway',
   'approvals.lineCancel': 'settings.approvals.lineCancel',
   'approvals.paidIn': 'settings.approvals.paidIn',
   'approvals.managerTasks': 'settings.approvals.managerTasks',

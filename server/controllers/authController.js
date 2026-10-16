@@ -239,6 +239,7 @@ export async function me(req, res) {
       captainsMayTakePayment: billing.captainsMayTakePayment,
       reviseUnpaidBills: billing.reviseUnpaidBills,
       printBeforePayment: billing.printBeforePayment,
+      payFirstTakeaway: billing.payFirstTakeaway,
     },
     // P28. What needs a manager's PIN, so the till and the captain know when to ask. The server still decides.
     approvals: {

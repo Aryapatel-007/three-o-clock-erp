@@ -71,6 +71,8 @@ const fromMe = (me) => ({
     // P29. Revise an unpaid bill rather than void it, and print it before taking payment.
     reviseUnpaidBills: me.billing?.reviseUnpaidBills ?? true,
     printBeforePayment: me.billing?.printBeforePayment ?? true,
+    // Counter Sale: a sent takeaway is billed and paid before the kitchen is done.
+    payFirstTakeaway: me.billing?.payFirstTakeaway ?? true,
   },
   // P33. The live channel: on or off, and the address to open it on (null: this page's own).
   live: { enabled: Boolean(me.live?.enabled), origin: me.live?.origin ?? null },

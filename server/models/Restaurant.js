@@ -248,6 +248,8 @@ const billingSettingsSchema = new mongoose.Schema(
     reviseUnpaidBills: { type: Boolean, required: true, default: true },
     // P29 Part D. The bill screen asks for the print before the payment. Read by the client.
     printBeforePayment: { type: Boolean, required: true, default: true },
+    // Counter Sale. A takeaway is billed and paid once it is sent, before the kitchen has made it.
+    payFirstTakeaway: { type: Boolean, required: true, default: true },
   },
   { _id: false },
 );

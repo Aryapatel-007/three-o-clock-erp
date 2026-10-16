@@ -362,6 +362,12 @@ export default function SettingsPage() {
               checked={form.billing.printBeforePayment}
               onChange={set('billing', 'printBeforePayment')}
             />
+            <Checkbox
+              label="Counter sale: the guest pays before the kitchen makes it"
+              hint="A takeaway is billed and paid the moment it is sent, on the Counter sale screen, and the kitchen makes it after. Off: a takeaway waits until every item is ready before it can be billed."
+              checked={form.billing.payFirstTakeaway ?? true}
+              onChange={set('billing', 'payFirstTakeaway')}
+            />
           </Section>
         )}
 

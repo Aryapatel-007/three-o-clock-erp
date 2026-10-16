@@ -33,7 +33,7 @@ describe('captains bill', () => {
     const floor = await seedFloor();
     const me = (await request('GET', '/api/v1/auth/me', { token: floor.tokens.WAITER })).body.data;
     // P29 added the two billing switches beside them.
-    assert.deepEqual(me.billing, { captainsMayBill: true, captainsMayTakePayment: false, reviseUnpaidBills: true, printBeforePayment: true });
+    assert.deepEqual(me.billing, { captainsMayBill: true, captainsMayTakePayment: false, reviseUnpaidBills: true, printBeforePayment: true, payFirstTakeaway: true });
 
     const order = await readyToBillOrder(floor);
     const billed = await createBill(floor.tokens.WAITER, order);

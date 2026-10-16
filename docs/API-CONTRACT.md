@@ -2791,6 +2791,7 @@ code and "Scan to review us", drawn on the client.
 |---|---|---|
 | `captainsMayBill` | `true` | A `WAITER` may create the bill for a dine-in or takeaway order |
 | `captainsMayTakePayment` | `false` | A `WAITER` may also record payments, count notes and send a payment to the card machine on those bills |
+| `payFirstTakeaway` | `true` | Counter Sale. An OPEN `TAKEAWAY` order is billable once every live line on it has been sent (none `PENDING`), and its bill takes money at once, before the kitchen has made it. Off: a takeaway waits for READY_TO_BILL like any order. Dine-in and delivery never change. |
 
 1. `POST /bills` lets `WAITER` through the route; `billPermissionService.assertCanBill(actor, order, settings)` decides. A `WAITER` is refused 403 when `captainsMayBill` is off, and 403 for a `DELIVERY` order whatever the setting: platform orders are billed by the integration (M21).
 2. `POST /bills/:billId/payments` and `POST /bills/:billId/terminal-payments` (M21) let `WAITER` through; `assertCanTakePayment(actor, bill, settings)` refuses 403 unless both settings are on and the bill is not a delivery bill.
@@ -4066,6 +4067,7 @@ schema default, so a restaurant saved before P25 reads back complete.
 | `receipt.reviewLinkUrl` | String or null | null | An `https` address up to 300 characters. When set, every printed bill, thermal and full page, ends with a QR code for it and "Scan to review us". `http`, anything that is not a web address, and anything longer are 400. |
 | `billing.captainsMayBill` | Boolean | true | M3 section 16.2 |
 | `billing.captainsMayTakePayment` | Boolean | false | M3 section 16.2 |
+| `billing.payFirstTakeaway` | Boolean | true | M3 section 16.2: Counter Sale, a sent takeaway billed and paid before it is ready |
 | `cash.denominations` | List | India, M16 section 8.1 | Notes and coins to count. A PATCH replaces the list. |
 | `payments.requireTerminalForLinkedMethods` | Boolean | true | M10 section 5.2 |
 | `approvals.*` | Booleans | true | Added by P28, see the P28 section at the end of this file |

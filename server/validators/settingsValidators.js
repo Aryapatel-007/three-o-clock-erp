@@ -244,6 +244,8 @@ const billing = z
     // P29.
     reviseUnpaidBills: z.boolean({ error: 'Must be true or false.' }).optional(),
     printBeforePayment: z.boolean({ error: 'Must be true or false.' }).optional(),
+    // Counter Sale.
+    payFirstTakeaway: z.boolean({ error: 'Must be true or false.' }).optional(),
   })
   .strict();
 

@@ -60,7 +60,7 @@ const DEFAULTS = {
   delivery: { platformCollectsGst: true },
   discounts: { cashierMayApplyPlatformDiscounts: false },
   // P29 added reviseUnpaidBills, printBeforePayment, revisePrintedBill, the kitchen group and the cash book fields.
-  billing: { captainsMayBill: true, captainsMayTakePayment: false, reviseUnpaidBills: true, printBeforePayment: true },
+  billing: { captainsMayBill: true, captainsMayTakePayment: false, reviseUnpaidBills: true, printBeforePayment: true, payFirstTakeaway: true },
   // P28.
   approvals: { lineCancel: true, paidIn: true, managerTasks: true, revisePrintedBill: true },
   kitchen: { readyMeansServed: true, oneTicketPerOrder: true },

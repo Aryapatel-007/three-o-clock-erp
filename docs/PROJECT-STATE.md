@@ -6,7 +6,7 @@ Anyone starting any chat, any Claude Code session, or any Antigravity session re
 
 Anyone finishing any session updates this before closing.
 
-Last updated: 2026-10-16 by Arya (this repository copied from Z Chaat's for the new client, Three O'Clock Cafe: its setup files, menu and profile in `docs/clients/threeoclock/PROFILE.md`; Z Chaat's archived). Before that, 2026-10-15 by Rishi (P56 a note for every dish, the guest before the first KOT, whole voids). Before that, 2026-10-15 by Rishi (P55 the owner's dashboard, merged onto Arya's P37, P51 and P54). Before that, 2026-10-15 by Arya (P37 and P51 pushed; P54 constant backups, paused in Part I). Before that, 2026-10-14 by Rishi (P50 closing a table opened by mistake; P49 removing a dish before it is sent)
+Last updated: 2026-10-16 by Arya (Counter Sale: `/orders/counter`, a takeaway ordered, sent, billed and paid in one tap, with `settings.billing.payFirstTakeaway`, on by default, letting a sent takeaway be billed and paid before the kitchen is done; tests/counterSale.test.js). Before that, 2026-10-16 by Arya (this repository copied from Z Chaat's for the new client, Three O'Clock Cafe: its setup files, menu and profile in `docs/clients/threeoclock/PROFILE.md`; Z Chaat's archived). Before that, 2026-10-15 by Rishi (P56 a note for every dish, the guest before the first KOT, whole voids). Before that, 2026-10-15 by Rishi (P55 the owner's dashboard, merged onto Arya's P37, P51 and P54). Before that, 2026-10-15 by Arya (P37 and P51 pushed; P54 constant backups, paused in Part I). Before that, 2026-10-14 by Rishi (P50 closing a table opened by mistake; P49 removing a dish before it is sent)
 
 ---
 

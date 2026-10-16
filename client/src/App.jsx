@@ -15,6 +15,7 @@ import KitchenDisplayPage from './features/kitchen/KitchenDisplayPage.jsx';
 import FloorViewPage from './features/orders/FloorViewPage.jsx';
 import OrderScreenPage from './features/orders/OrderScreenPage.jsx';
 import TakeawayOrderPage from './features/orders/TakeawayOrderPage.jsx';
+import CounterSalePage from './features/orders/CounterSalePage.jsx';
 import RequireOnline from './features/online/RequireOnline.jsx';
 import { ROLES } from './features/users/roles.js';
 
@@ -282,6 +283,18 @@ export default function App() {
           <ProtectedRoute>
             <RequireRole roles={ORDER_TAKING_ROLES}>
               <TakeawayOrderPage />
+            </RequireRole>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Counter Sale: a takeaway ordered, billed and paid in one go. */}
+      <Route
+        path="/orders/counter"
+        element={
+          <ProtectedRoute>
+            <RequireRole roles={BILLING_ROLES}>
+              <CounterSalePage />
             </RequireRole>
           </ProtectedRoute>
         }

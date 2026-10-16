@@ -2677,6 +2677,7 @@ printRequestedAt: { $type: 'date' } }`, for the print queue.
 | `receipt.reviewLinkUrl` | String or null | null |
 | `billing.captainsMayBill` | Boolean | true |
 | `billing.captainsMayTakePayment` | Boolean | false |
+| `billing.payFirstTakeaway` | Boolean | true |
 | `cash.denominations` | `[{ valueInPaise, kind, isActive }]` | India, API-CONTRACT M16 section 8.1 |
 | `payments.requireTerminalForLinkedMethods` | Boolean | true |
 | `reports.onHoldTallyCode` | String or null | null |

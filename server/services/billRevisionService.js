@@ -29,12 +29,12 @@ import { computeBillTotals, resolveDiscountAmount } from '../utils/tax.js';
 import { nowUtc } from '../utils/time.js';
 import { recordAudit } from './auditService.js';
 import { approverIfNeeded } from './approvalService.js';
-import { assertCaptainMayChangeBill } from './billPermissionService.js';
+import { assertCaptainMayChangeBill, isSentTakeaway } from './billPermissionService.js';
 import { applyTotals, billCreationErrorFor, readBill, toBillLine } from './billService.js';
 import { assertDayOpen, isDayClosed, todayBusinessDate } from './dayLockService.js';
 import { cancelLineInSession } from './lineCancelService.js';
 import { applyVersionedUpdate, assertWasPreparedRule } from './orderService.js';
-import { getSettings, isFeatureOn } from './settingsService.js';
+import { getSetting, getSettings, isFeatureOn } from './settingsService.js';
 
 /** Thrown inside a preview's transaction so it rolls back. Never leaves this file. */
 class PreviewOnly extends Error {}
@@ -320,10 +320,14 @@ export async function addLinesToBilledOrder(req, { order, version, snapshotLines
  * money: the guest has not had them yet, and the total may still change.
  * Money already taken on the card machine is recorded regardless, which is
  * why recordPayment skips this for a terminal approval.
+ *
+ * Counter Sale: with `billing.payFirstTakeaway` on, a takeaway whose dishes are
+ * all sent takes its money now; the guest pays first and waits at the counter.
  */
 export async function assertBillTakesMoney(req, bill, session = null) {
-  const order = await Order.findOne({ ...scoped(req), _id: bill.orderId }).select('status billId').setOptions(opts(session)).lean();
+  const order = await Order.findOne({ ...scoped(req), _id: bill.orderId }).select('status billId orderType lines.status').setOptions(opts(session)).lean();
   if (order?.status === ORDER_STATUSES.OPEN && String(order.billId) === String(bill._id)) {
+    if (isSentTakeaway(order) && (await getSetting(req.restaurantId, 'billing.payFirstTakeaway', { req }))) return;
     throw new WaitingForKitchenError();
   }
 }

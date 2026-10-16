@@ -41,7 +41,9 @@ const UNASSIGNED = 'Unassigned';
 export default function FloorViewPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { features } = useAuth();
+  const { user, features } = useAuth();
+  // Counter Sale, for the till.
+  const counterSale = ['OWNER', 'MANAGER', 'CASHIER'].includes(user?.role) && features?.billing?.payFirstTakeaway !== false;
   const floor = features?.floor ?? { sectionOrder: [], requireGuestCount: false };
   const [toast, setToast] = useState(null);
   const [section, setSection] = useState(ALL);
@@ -154,6 +156,11 @@ export default function FloorViewPage() {
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
+            {counterSale && (
+              <Link to="/orders/counter" className="type-button flex min-h-12 items-center rounded-lg bg-accent px-4 text-on-accent hover:brightness-110">
+                Counter sale
+              </Link>
+            )}
             <Link to="/orders/takeaway" className="type-button flex min-h-12 items-center rounded-lg border border-ink bg-surface px-4 hover:bg-sunken">
               Takeaway
             </Link>
