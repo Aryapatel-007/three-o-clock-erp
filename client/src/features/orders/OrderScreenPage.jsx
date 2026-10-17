@@ -32,6 +32,7 @@ import { charactersFor, printText } from '../printing/printText.js';
 import { useDeviceSettings } from '../printing/useDeviceSettings.js';
 import { formatTimeIst } from '../../utils/formatDate.js';
 import BillOrderButton from '../billing/BillOrderButton.jsx';
+import SettlePanel, { PaidPanel, usePrintBill } from '../billing/SettlePanel.jsx';
 import Bilingual from '../i18n/Bilingual.jsx';
 import CancelPanel from './CancelPanel.jsx';
 import GuestDetailsSheet from './GuestDetailsSheet.jsx';
@@ -101,6 +102,9 @@ export default function OrderScreenPage() {
   const approvesOwn = APPROVES_OWN.includes(user?.role);
 
   const [toast, setToast] = useState(null);
+  // The payment just taken on this page, for the paid view: total, change and print.
+  const [paidDone, setPaidDone] = useState(null);
+  const billPrinter = usePrintBill();
   const [search, setSearch] = useState('');
   const [pickingItem, setPickingItem] = useState(null);
   const [cancelling, setCancelling] = useState(null);
@@ -242,6 +246,15 @@ export default function OrderScreenPage() {
   const captainLockedOut = user?.role === 'WAITER' && hasBill && (billQuery.data?.printCount ?? 0) > 0;
   const canAddMore = order.status === 'READY_TO_BILL' && (!hasBill || Boolean(billQuery.data?.revisable)) && !captainLockedOut;
   const showMenu = (isOpen || (canAddMore && addingMore)) && !captainLockedOut;
+  /**
+   * Once everything is served, the money is taken here, beside the dishes:
+   * no separate bill page in service. The till, or a captain the owner lets
+   * take payment. A platform delivery is billed the old way.
+   */
+  const takesPayment =
+    ['OWNER', 'MANAGER', 'CASHIER'].includes(user?.role) ||
+    (user?.role === 'WAITER' && Boolean(features?.billing?.captainsMayBill) && Boolean(features?.billing?.captainsMayTakePayment));
+  const settleHere = takesPayment && order.orderType !== 'DELIVERY' && order.status === 'READY_TO_BILL' && !addingMore;
   // P40. A dish going onto a printed bill needs a manager, unless one already approved this visit.
   const addsToPrintedBill =
     !approvesOwn && hasBill && !billQuery.data?.isVoided && (approvals.revisePrintedBill ?? true) && (billQuery.data?.printCount ?? 0) > 0;
@@ -458,7 +471,7 @@ export default function OrderScreenPage() {
               {hasBill ? 'Add to this bill' : 'Add more dishes'}
             </button>
           )}
-          {(!isOpen || hasBill) && <BillOrderButton order={order} />}
+          {(!isOpen || hasBill) && !settleHere && !paidDone && <BillOrderButton order={order} />}
         </div>
         {captainLockedOut && (
           <p className="type-caption mt-2 rounded-lg bg-sunken px-3 py-2 text-muted">This bill has been printed. Only the counter or a manager can change it now.</p>
@@ -564,9 +577,33 @@ export default function OrderScreenPage() {
           )}
         </div>
       ) : (
-        <section aria-label="This order" className="mx-auto w-full max-w-3xl rounded-[10px] bg-surface border border-line">
-          {details}
-        </section>
+        <div className="mx-auto flex w-full max-w-5xl flex-col gap-4 lg:flex-row lg:items-start lg:justify-center">
+          <section aria-label="This order" className="w-full max-w-3xl rounded-[10px] bg-surface border border-line lg:flex-1">
+            {details}
+          </section>
+          {paidDone ? (
+            <aside aria-label="Paid" className="w-full flex-none rounded-[10px] border border-line bg-surface lg:w-[380px]">
+              <PaidPanel
+                done={paidDone}
+                nextLabel={order.orderType === 'DINE_IN' ? 'Back to the floor' : 'Done'}
+                onGiven={(given) => setPaidDone((current) => ({ ...current, given }))}
+                onPrint={() =>
+                  billPrinter
+                    .print(paidDone.bill.id)
+                    .then(() => setPaidDone((current) => ({ ...current, printed: true })))
+                    .catch((error) => setToast({ tone: 'error', message: errorMessage(error) }))
+                }
+                onNext={() => navigate('/floor')}
+              />
+            </aside>
+          ) : (
+            settleHere && (!order.billId || billQuery.data) && (
+              <div className="w-full flex-none lg:w-[380px]">
+                <SettlePanel order={order} bill={order.billId ? (billQuery.data ?? null) : null} onPaid={(done) => setPaidDone({ ...done, given: null })} />
+              </div>
+            )
+          )}
+        </div>
       )}
 
       {isOpen && isReviewing && (
@@ -826,7 +863,7 @@ function OrderDetails({
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="min-h-0 flex-1 overflow-y-auto">
-        {locked && (
+        {locked && order.status !== 'BILLED' && (
           <p className="type-caption px-4 pt-3 text-muted">This table has a bill. Remove items from the bill.</p>
         )}
         <OrderLineList

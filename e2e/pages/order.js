@@ -146,11 +146,42 @@ export async function giveNoCharge(page, reason) {
   await expect(page.getByText('No Charge given. The table is free.')).toBeVisible();
 }
 
-/** Bills an order waiting for the cashier, and lands on its bill. */
+/**
+ * Bills an order waiting for the cashier, and lands on its bill.
+ *
+ * A captain still has Bill this order. The till now takes payment on the
+ * order's own page and never visits the bill in service, so for the tests of
+ * the bill page itself the bill is made through the API, unprinted, and opened
+ * the way Bills opens a past one.
+ */
 export async function billOrder(page) {
   await page.reload();
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
-  await page.getByRole('button', { name: 'Bill this order' }).click();
+  const captainButton = page.getByRole('button', { name: 'Bill this order' });
+  if ((await captainButton.count()) > 0) {
+    await captainButton.click();
+    await expect(page).toHaveURL(/\/bills\/[a-f0-9]{24}$/);
+    return page.url();
+  }
+  const orderId = new URL(page.url()).pathname.split('/').at(-1);
+  // From inside the page, as the app itself calls: the browser sends its own session cookie.
+  const billId = await page.evaluate(async (id) => {
+    const call = async (method, path, body) => {
+      const response = await fetch(`/api/v1${path}`, {
+        method,
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'fetch', ...(call.token ? { Authorization: `Bearer ${call.token}` } : {}) },
+        body: body === undefined ? undefined : JSON.stringify(body),
+      });
+      const json = await response.json();
+      if (!response.ok) throw new Error(`${method} ${path}: ${JSON.stringify(json)}`);
+      return json.data;
+    };
+    call.token = (await call('POST', '/auth/refresh')).accessToken;
+    const order = await call('GET', `/orders/${id}`);
+    return order.billId ?? (await call('POST', '/bills', { orderId: id, version: order.version })).id;
+  }, orderId);
+  await page.goto(`/bills/${billId}`);
   await expect(page).toHaveURL(/\/bills\/[a-f0-9]{24}$/);
   return page.url();
 }

@@ -179,7 +179,7 @@ export default function FloorViewPage() {
               {waiting.map((table) => (
                 <li key={table.id} className="flex-none">
                   <Link
-                    to={`/bills/${table.occupancy.billId}`}
+                    to={`/orders/${table.occupancy.orderId}`}
                     className="relative flex min-h-16 items-center gap-4 overflow-hidden rounded-[10px] border-[3px] border-bill bg-surface px-4 pb-3 pt-2 hover:bg-sunken"
                   >
                     <span className="type-tile-name">{table.name}</span>
@@ -403,10 +403,10 @@ function TableMenu({ table, onMove, small = false }) {
             <button
               type="button"
               role="menuitem"
-              onClick={() => navigate(`/bills/${table.occupancy.billId}`)}
+              onClick={() => navigate(`/orders/${table.occupancy.orderId}`)}
               className="type-body block min-h-12 w-full px-4 text-left hover:bg-sunken"
             >
-              View bill
+              Take payment
             </button>
           )}
         </div>

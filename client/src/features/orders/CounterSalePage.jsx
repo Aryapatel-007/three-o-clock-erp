@@ -8,13 +8,9 @@ import Toast from '../../components/ui/Toast.jsx';
 import { getMenuTree } from '../../api/menu.js';
 import { createBill, recordPayment } from '../../api/bills.js';
 import { createOrder, fireOrder } from '../../api/orders.js';
-import { listPaymentMethods } from '../../api/paymentMethods.js';
 import { useAuth } from '../../context/AuthContext.jsx';
-import { useTheme } from '../../context/ThemeProvider.jsx';
-import { methodsForBill } from '../billing/paymentMethodsForBill.js';
 import { errorMessage } from '../billing/errorCopy.js';
-import { printBill } from '../printing/printBill.js';
-import { useDeviceSettings } from '../printing/useDeviceSettings.js';
+import { PaidPanel, PayButtons, usePrintBill, useQuickMethods } from '../billing/SettlePanel.jsx';
 import LineOptionsPanel from './LineOptionsPanel.jsx';
 import MenuPicker from './MenuPicker.jsx';
 
@@ -33,16 +29,6 @@ import MenuPicker from './MenuPicker.jsx';
  * If a step fails part-way, the order or bill made so far is opened, so
  * nothing is lost and the cashier finishes it the usual way.
  */
-
-/** What a guest hands over for cash: the bill total rounded up to the next ₹100, ₹500, ₹1,000 and ₹2,000. */
-function cashGivenOptions(totalInPaise) {
-  const options = new Set();
-  for (const step of [10_000, 50_000, 100_000, 200_000]) {
-    const up = Math.ceil(totalInPaise / step) * step;
-    if (up > totalInPaise) options.add(up);
-  }
-  return [...options].sort((a, b) => a - b);
-}
 
 /** A dish that needs no choice is added in one tap; anything else opens the options panel. */
 const isPlain = (item) => item.variants.length === 0 && item.addOns.length === 0 && !item.isOpenItem;
@@ -72,8 +58,7 @@ export default function CounterSalePage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { features } = useAuth();
-  const { brand } = useTheme();
-  const [device] = useDeviceSettings();
+  const printer = usePrintBill();
   const [search, setSearch] = useState('');
   const [cart, setCart] = useState([]);
   const [callName, setCallName] = useState('');
@@ -87,15 +72,7 @@ export default function CounterSalePage() {
     queryFn: () => getMenuTree({ includeUnavailable: false }),
     staleTime: 60_000,
   });
-  const methodsQuery = useQuery({ queryKey: ['payment-methods'], queryFn: () => listPaymentMethods() });
-  // The counter's buttons: what a takeaway may use, less a card machine (it has its own wait) and Other (it asks how).
-  const methods = useMemo(
-    () =>
-      methodsForBill(methodsQuery.data ?? [], { orderType: 'TAKEAWAY', platform: null })
-        .filter((method) => !method.terminalProvider && method.code !== 'OTHER')
-        .sort((a, b) => a.displayOrder - b.displayOrder),
-    [methodsQuery.data],
-  );
+  const { methods, isLoaded: methodsLoaded } = useQuickMethods('TAKEAWAY');
 
   // A plain dish is one cart line, stepped up and down from its card.
   const simpleLines = useMemo(() => new Map(cart.filter((line) => isPlain(line.item)).map((line) => [line.item.id, line])), [cart]);
@@ -129,9 +106,9 @@ export default function CounterSalePage() {
       bill = await createBill({ orderId: order.id, version: fired.order.version });
       const paid = await recordPayment(bill.id, { method: method.code, amountInPaise: bill.grandTotalInPaise });
       let printed = false;
-      if (device.printBillOnCreate) {
+      if (printer.autoPrint) {
         try {
-          await printBill(paid.id, { printer: device.printer, logoDataUrl: brand.logos?.LIGHT_GROUND?.dataUrl ?? null });
+          await printer.print(paid.id);
           printed = true;
         } catch {
           setToast({ tone: 'error', message: 'Paid, but the receipt did not print. Print it again below.' });
@@ -153,7 +130,7 @@ export default function CounterSalePage() {
 
   const reprint = async () => {
     try {
-      await printBill(done.bill.id, { printer: device.printer, logoDataUrl: brand.logos?.LIGHT_GROUND?.dataUrl ?? null });
+      await printer.print(done.bill.id);
       setDone((current) => ({ ...current, printed: true }));
     } catch (error) {
       setToast({ tone: 'error', message: errorMessage(error) });
@@ -215,7 +192,13 @@ export default function CounterSalePage() {
           className="flex w-full flex-none flex-col rounded-[10px] border border-line bg-surface lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:w-[380px] xl:w-[420px]"
         >
           {done && cart.length === 0 ? (
-            <Done done={done} onGiven={(given) => setDone((current) => ({ ...current, given }))} onPrint={reprint} onNext={() => setDone(null)} />
+            <PaidPanel
+              done={done}
+              nextLabel="Next guest"
+              onGiven={(given) => setDone((current) => ({ ...current, given }))}
+              onPrint={reprint}
+              onNext={() => setDone(null)}
+            />
           ) : (
             <>
               <div className="flex items-baseline justify-between border-b border-line px-4 py-3">
@@ -273,20 +256,8 @@ export default function CounterSalePage() {
                   <span className="type-label text-muted">Item total, GST added on the bill</span>
                   <Money paise={itemTotal} size="tile" />
                 </div>
-                <div className="grid grid-cols-3 gap-2">
-                  {methods.map((method) => (
-                    <button
-                      key={method.code}
-                      type="button"
-                      disabled={cart.length === 0 || busy}
-                      onClick={() => pay(method)}
-                      className="type-button min-h-16 rounded-lg bg-accent px-2 text-on-accent hover:brightness-110 disabled:opacity-40"
-                    >
-                      {paying === method.code ? 'Paying…' : method.name}
-                    </button>
-                  ))}
-                </div>
-                {methodsQuery.isSuccess && methods.length === 0 && (
+                <PayButtons methods={methods} disabled={cart.length === 0 || busy} paying={paying} onPay={pay} />
+                {methodsLoaded && methods.length === 0 && (
                   <p className="type-caption text-alert">No payment method is set up for takeaway. Add one in Settings, Payment methods.</p>
                 )}
                 <p className="type-caption text-muted">Tapping how they pay sends the order, makes the bill and records the payment.</p>
@@ -310,62 +281,5 @@ export default function CounterSalePage() {
 
       <Toast tone={toast?.tone} message={toast?.message} onDismiss={() => setToast(null)} />
     </main>
-  );
-}
-
-/** After the payment: what to say to the guest, and the change on cash. */
-function Done({ done, onGiven, onPrint, onNext }) {
-  const total = done.bill.grandTotalInPaise;
-  const isCash = done.method.code === 'CASH';
-  const notes = cashGivenOptions(total);
-  return (
-    <div className="flex flex-col gap-4 p-4" role="status">
-      <div className="rounded-[10px] border border-line border-l-[3px] border-l-ok bg-ok-tint px-4 py-3">
-        <p className="type-label text-muted">Paid by {done.method.name}</p>
-        <Money paise={total} size="tile" />
-        <p className="type-caption text-muted">
-          Bill {done.bill.billNumber} · Order <span className="type-num-meta text-ink">#{done.order.orderNumber}</span>
-          {done.order.customerName && ` · ${done.order.customerName}`}
-        </p>
-      </div>
-
-      {isCash && (
-        <div className="flex flex-col gap-2">
-          <p className="type-label">Cash given</p>
-          <div className="flex flex-wrap gap-2">
-            {notes.map((note) => (
-              <button
-                key={note}
-                type="button"
-                onClick={() => onGiven(note)}
-                aria-pressed={done.given === note}
-                className={`type-button min-h-12 rounded-lg border px-4 ${done.given === note ? 'border-ink bg-sunken' : 'border-line bg-surface hover:bg-sunken'}`}
-              >
-                <Money paise={note} />
-              </button>
-            ))}
-          </div>
-          {done.given !== null && (
-            <p className="type-heading">
-              Give back <Money paise={done.given - total} size="tile" />
-            </p>
-          )}
-        </div>
-      )}
-
-      <div className="flex flex-col gap-2">
-        <button type="button" onClick={onNext} className="type-button min-h-14 rounded-lg bg-accent text-on-accent hover:brightness-110">
-          Next guest
-        </button>
-        <div className="grid grid-cols-2 gap-2">
-          <button type="button" onClick={onPrint} className="type-button min-h-12 rounded-lg border border-ink bg-surface hover:bg-sunken">
-            {done.printed ? 'Print again' : 'Print receipt'}
-          </button>
-          <Link to={`/bills/${done.bill.id}`} className="type-button flex min-h-12 items-center justify-center rounded-lg border border-ink bg-surface hover:bg-sunken">
-            Open bill
-          </Link>
-        </div>
-      </div>
-    </div>
   );
 }
