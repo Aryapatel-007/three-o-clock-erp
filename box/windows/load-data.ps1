@@ -60,6 +60,9 @@ $port = 80
 $portLine = Select-String -Path $EnvFile -Pattern '^PORT=(\d+)' | Select-Object -First 1
 if ($portLine) { $port = [int]$portLine.Matches[0].Groups[1].Value }
 $url = if ($port -eq 80) { 'http://localhost' } else { "http://localhost:$port" }
+# The server listens on IPv4 only. Windows tries localhost as IPv6 first and takes
+# about 2 seconds to be refused there, the whole timeout below, so the check asks 127.0.0.1.
+$probe = if ($port -eq 80) { 'http://127.0.0.1' } else { "http://127.0.0.1:$port" }
 
 Write-Host 'Load cafe data' -ForegroundColor Green
 Write-Host "Copy:     $($archive.Name)  ($([math]::Round($archive.Length / 1KB)) KB, made $($archive.LastWriteTime))"
@@ -109,7 +112,7 @@ Start-ScheduledTask -TaskName $TaskName
 $up = $false
 for ($i = 0; $i -lt 90 -and -not $up; $i++) {
   Start-Sleep -Seconds 1
-  try { $up = (Invoke-WebRequest -UseBasicParsing -TimeoutSec 2 "$url/api/v1/health").Content -match '"database":"connected"' } catch { $up = $false }
+  try { $up = (Invoke-WebRequest -UseBasicParsing -TimeoutSec 2 "$probe/api/v1/health").Content -match '"database":"connected"' } catch { $up = $false }
 }
 if (-not $up) { Fail "The server did not start. Read $Root\data\logs\server.log." }
 

@@ -6,9 +6,12 @@ $port = 80
 $line = Select-String -Path (Join-Path $Root '.env') -Pattern '^PORT=(\d+)' -ErrorAction SilentlyContinue | Select-Object -First 1
 if ($line) { $port = [int]$line.Matches[0].Groups[1].Value }
 $url = if ($port -eq 80) { 'http://localhost' } else { "http://localhost:$port" }
+# The server listens on IPv4 only. Windows tries localhost as IPv6 first and takes
+# about 2 seconds to be refused there, the whole timeout below, so the check asks 127.0.0.1.
+$probe = if ($port -eq 80) { 'http://127.0.0.1' } else { "http://127.0.0.1:$port" }
 
 function Test-Up {
-  try { return (Invoke-WebRequest -UseBasicParsing -TimeoutSec 2 "$url/api/v1/network/ping").StatusCode -eq 200 } catch { return $false }
+  try { return (Invoke-WebRequest -UseBasicParsing -TimeoutSec 2 "$probe/api/v1/network/ping").StatusCode -eq 200 } catch { return $false }
 }
 
 if (-not (Test-Up)) {

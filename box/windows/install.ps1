@@ -247,10 +247,13 @@ Stop-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
 Get-CimInstance Win32_Process -Filter "Name = 'node.exe'" | Where-Object { $_.CommandLine -like '*server\server.js*' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
 Start-ScheduledTask -TaskName $TaskName
 $url = if ($port -eq 80) { 'http://localhost' } else { "http://localhost:$port" }
+# The server listens on IPv4 only. Windows tries localhost as IPv6 first and takes
+# about 2 seconds to be refused there, the whole timeout below, so the check asks 127.0.0.1.
+$probe = if ($port -eq 80) { 'http://127.0.0.1' } else { "http://127.0.0.1:$port" }
 $up = $false
 for ($i = 0; $i -lt 60 -and -not $up; $i++) {
   Start-Sleep -Seconds 1
-  try { $up = (Invoke-WebRequest -UseBasicParsing -TimeoutSec 2 "$url/api/v1/network/ping").StatusCode -eq 200 } catch { $up = $false }
+  try { $up = (Invoke-WebRequest -UseBasicParsing -TimeoutSec 2 "$probe/api/v1/network/ping").StatusCode -eq 200 } catch { $up = $false }
 }
 if (-not $up) { Fail "The server did not start. Read $LogDir\server.log." }
 Write-Host "The server is running at $url"
