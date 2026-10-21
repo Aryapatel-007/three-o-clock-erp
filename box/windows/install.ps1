@@ -113,6 +113,9 @@ Start-Sleep -Seconds 5
 
 # ---------------------------------------------------------------------------
 Say '3. The app'
+# A running server holds node_modules\bcrypt open, and npm ci cannot delete an open file.
+Stop-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
+Get-CimInstance Win32_Process -Filter "Name = 'node.exe'" | Where-Object { $_.CommandLine -like '*server\server.js*' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
 Push-Location $Root
 try {
   npm ci --omit=dev --no-audit --no-fund | Out-Host
