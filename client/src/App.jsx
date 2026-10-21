@@ -56,6 +56,7 @@ const PayoutsPage = lazyScreen(settlementGroup, 'PayoutsPage');
 const TableArrangePage = lazyScreen(settingsGroup, 'TableArrangePage');
 const TableManagementPage = lazyScreen(settingsGroup, 'TableManagementPage');
 const DeviceSettingsPage = lazyScreen(settingsGroup, 'DeviceSettingsPage');
+const PrintStationPage = lazyScreen(settingsGroup, 'PrintStationPage');
 const AppearancePage = lazyScreen(settingsGroup, 'AppearancePage');
 const SettingsPage = lazyScreen(settingsGroup, 'SettingsPage');
 const StationsPage = lazyScreen(settingsGroup, 'StationsPage');
@@ -717,6 +718,20 @@ export default function App() {
           <ProtectedRoute>
             <RequireRole roles={['OWNER', 'MANAGER']}>
               <SyncPage />
+            </RequireRole>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* 2026-10-22. The cafe PC's print window: captains' bills print here by themselves. */}
+      <Route
+        path="/print-station"
+        element={
+          <ProtectedRoute bare>
+            <RequireRole roles={['OWNER', 'MANAGER', 'CASHIER']}>
+              <Suspense fallback={<ScreenLoading />}>
+                <PrintStationPage />
+              </Suspense>
             </RequireRole>
           </ProtectedRoute>
         }

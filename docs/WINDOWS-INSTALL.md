@@ -189,12 +189,18 @@ numbers, which stay valid in their own series.
 A browser keeps each device's settings and sign-in per address, so every
 device starts empty on the PC's address. Once, on each:
 
-1. **Counter computer:** open the till only with **Cafe POS - Till (prints
-   without asking)** on the desktop, never the website's launcher. Sign in,
-   open **This device**, choose the printer (Thermal 80 mm), the print width
-   and edge margin, and switch on **Print bills sent by captains**. Without
-   that switch, a captain's **Print at counter** waits, and after 30 seconds
-   the captain's phone says so.
+1. **Captains' bills print by themselves.** The **Cafe POS printer** window
+   opens on its own whenever someone signs in to Windows on the PC, and comes
+   back within a minute if it is closed. Sign in there once with a cashier or
+   manager login. It prints every bill a captain sends with **Print at counter**
+   on the PC's default printer, with no dialog and nobody at the counter. Make
+   the Rugtek the PC's default printer, and set Windows to sign in by itself at
+   start-up, or the window waits for someone to sign in to Windows. If a bill
+   is not printed in 30 seconds, the captain's phone says so.
+   **Counter till:** open it with **Cafe POS - Till (prints without asking)**,
+   never the website's launcher, and set the printer, print width and edge
+   margin in **This device**. The till does not need "Print bills sent by
+   captains" on: the printer window does that.
 2. **Kitchen tablets:** open the PC's address, sign in, and in **This device**
    choose the station, auto-print of KOTs and sound again.
 3. **Captains' phones:** open the PC's address and sign in. A phone cannot

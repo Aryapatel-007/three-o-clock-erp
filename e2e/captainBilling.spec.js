@@ -126,8 +126,36 @@ test('with no counter printing captain bills, the captain is told why after 30 s
 
   await captain.page.getByRole('button', { name: 'Print at counter' }).click();
   await expect(captain.page.getByText('Sent to the counter. It prints there.')).toBeVisible();
-  const hint = captain.page.getByText('Not printed yet. At the counter computer');
+  const hint = captain.page.getByText('Not printed yet.', { exact: false });
   await expect(hint).toBeHidden();
   await expect(hint).toBeVisible({ timeout: 40_000 });
   await expect(hint).toContainText('Print bills sent by captains');
+});
+
+test('the cafe PC print window prints a captain bill by itself, with no till open', async ({ browser }) => {
+  const golden = await resetGolden();
+  await at('12:00', DAY);
+
+  // The print window, as print-agent.ps1 opens it; its device switch was never touched.
+  const printer = await signIn(browser, { name: 'Counter', phone: golden.phones.Counter, password: golden.password, device: 'computer' });
+  await printer.page.goto('/print-station');
+  await expect(printer.page.getByRole('heading', { name: 'Cafe POS printer' })).toBeVisible();
+
+  const captain = await signIn(browser, { name: 'Khuman Singh', phone: golden.phones['Khuman Singh'], password: golden.password, device: 'phone' });
+  const station = await signIn(browser, { name: 'Manager', phone: golden.phones.Manager, password: golden.password, device: 'tablet' });
+
+  await openTable(captain.page, 'Table 3', 2);
+  await addItems(captain.page, ['Caffe Latte']);
+  await sendToKitchen(captain.page);
+  await markReady(station.page, 'Beverages', 'Table 3');
+  await serveAll(captain.page);
+  await billOrder(captain.page);
+
+  await captain.page.getByRole('button', { name: 'Print at counter' }).click();
+  await expect.poll(() => printer.prints.length, { timeout: 20_000 }).toBe(1);
+  expect(printer.prints[0].text).toContain('Table 3');
+  await expect(printer.page.getByText('Table 3')).toBeVisible();
+  expect(captain.prints).toHaveLength(0);
+  await printer.page.waitForTimeout(11_000);
+  expect(printer.prints).toHaveLength(1);
 });

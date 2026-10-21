@@ -32,6 +32,7 @@ $EnvFile = Join-Path $Root '.env'
 $TaskName = 'CafePOS Server'
 $SnapshotTask = 'CafePOS Snapshot'
 $UpdateTask = 'CafePOS Update'
+$PrinterTask = 'CafePOS Printer'
 
 function Say($text) { Write-Host ''; Write-Host "== $text" -ForegroundColor Cyan }
 function Fail($text) {
@@ -250,6 +251,16 @@ $updateTrigger = New-ScheduledTaskTrigger -Once -At (Get-Date).Date.AddMinutes(5
 $updateSettings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit (New-TimeSpan -Hours 2) -MultipleInstances IgnoreNew
 Register-ScheduledTask -TaskName $UpdateTask -Action $updateAction -Trigger $updateTrigger -Settings $updateSettings -Principal $system -Force | Out-Null
 
+# The print window (print-agent.ps1): captains' bills print here by themselves. In the
+# signed-in person's own session, since a browser and its printer live there, at sign-in
+# and every minute after, so a window closed by mistake comes back within a minute.
+$printerAction = New-ScheduledTaskAction -Execute "$env:SystemRoot\System32\wscript.exe" -Argument "`"$(Join-Path $PSScriptRoot 'print-agent.vbs')`"" -WorkingDirectory $Root
+$printerTrigger = New-ScheduledTaskTrigger -AtLogOn
+$printerTrigger.Repetition = (New-ScheduledTaskTrigger -Once -At (Get-Date) -RepetitionInterval (New-TimeSpan -Minutes 1) -RepetitionDuration (New-TimeSpan -Days 3650)).Repetition
+$printerSettings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit (New-TimeSpan -Minutes 2) -MultipleInstances IgnoreNew
+$users = New-ScheduledTaskPrincipal -GroupId 'S-1-5-32-545' -RunLevel Limited
+Register-ScheduledTask -TaskName $PrinterTask -Action $printerAction -Trigger $printerTrigger -Settings $printerSettings -Principal $users -Force | Out-Null
+
 Stop-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
 Get-CimInstance Win32_Process -Filter "Name = 'node.exe'" | Where-Object { $_.CommandLine -like '*server\server.js*' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
 Start-ScheduledTask -TaskName $TaskName
@@ -264,6 +275,10 @@ for ($i = 0; $i -lt 60 -and -not $up; $i++) {
 }
 if (-not $up) { Fail "The server did not start. Read $LogDir\server.log." }
 Write-Host "The server is running at $url"
+# The print window opens now, not only at the next sign-in to Windows.
+Start-ScheduledTask -TaskName $PrinterTask -ErrorAction SilentlyContinue
+# The print window opens now, not only at the next sign-in to Windows.
+Start-ScheduledTask -TaskName $PrinterTask -ErrorAction SilentlyContinue
 
 if ($ownerPhone) {
   $answer = Read-Host 'Load the sample Z Chaat menu and 12 starter tables? (Y/N)'
@@ -323,5 +338,6 @@ if (-not (Select-String -Path $EnvFile -Pattern '^RESEND_API_KEY=.+' -Quiet)) {
   Write-Host 'The day-end email is off until RESEND_API_KEY is set in .env (docs\WINDOWS-INSTALL.md section 5c).' -ForegroundColor Yellow
 }
 Write-Host 'At the counter: open the till with "Cafe POS - Till (prints without asking)" on the desktop.'
+Write-Host 'Captains'' bills print by themselves in the "Cafe POS printer" window. Sign in there once with a cashier or manager login.' -ForegroundColor Green
 Read-Host 'Press Enter to close'
 Start-Process $url

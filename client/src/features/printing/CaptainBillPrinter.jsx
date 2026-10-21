@@ -27,12 +27,13 @@ const PRINT_LOCK = 'captain-bill-printer';
  * the moment between printing and recording never prints it twice. A bill
  * asked for again later is a new request and prints again, as a Duplicate.
  */
-export default function CaptainBillPrinter() {
+export default function CaptainBillPrinter({ always = false, onPrinted } = {}) {
   const { user } = useAuth();
   const { brand } = useTheme();
   const [device, updateDevice] = useDeviceSettings();
   const queryClient = useQueryClient();
-  const enabled = Boolean(device.printCaptainBills) && TILL.includes(user?.role);
+  // `always`: the cafe PC's print window (PrintStationPage), which prints whatever this device's switch says.
+  const enabled = (always || Boolean(device.printCaptainBills)) && TILL.includes(user?.role);
 
   // P33. 5 seconds, or 60 while the live channel is healthy and announcing print requests.
   const interval = useLiveInterval(POLL_MS);
@@ -68,6 +69,7 @@ export default function CaptainBillPrinter() {
           continue;
         }
         updateDevice((current) => ({ printedBillRequests: rememberPrinted(current.printedBillRequests, [key]) }));
+        onPrinted?.(bill);
       }
     };
     (async () => {
@@ -84,7 +86,7 @@ export default function CaptainBillPrinter() {
         queryClient.invalidateQueries({ queryKey: ['print-queue'] });
       }
     })();
-  }, [enabled, queue.isSuccess, queue.data, device.printedBillRequests, device.printer, brand, updateDevice, queryClient]);
+  }, [enabled, queue.isSuccess, queue.data, device.printedBillRequests, device.printer, brand, updateDevice, queryClient, onPrinted]);
 
   return null;
 }

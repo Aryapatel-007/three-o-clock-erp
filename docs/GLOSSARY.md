@@ -865,3 +865,4 @@ Added 2026-10-22.
 |---|---|
 | **Cafe POS - Till (prints without asking)** | The desktop icon on the cafe PC that opens the till at the PC's own address, printing bills with no dialog |
 | **Not printed yet** | On a captain's bill, 30 seconds after Print at counter: no counter has printed it, so the counter's This device must have Print bills sent by captains on, with the till open |
+| **Cafe POS printer** | The window on the cafe PC that prints captains' bills by itself, opened by Windows at sign-in |
