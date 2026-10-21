@@ -9,6 +9,7 @@ import StateChip from '../../components/ui/StateChip.jsx';
 import Toast from '../../components/ui/Toast.jsx';
 import { emailDay, getCashBook, getDay, getDayMessage } from '../../api/dayClose.js';
 import { businessDateToday, formatBusinessDate, formatTimeIst } from '../../utils/formatDate.js';
+import { copyText } from '../../utils/copyText.js';
 import { errorMessage } from '../billing/errorCopy.js';
 import CashFlow from './cashbook/CashFlow.jsx';
 import SimpleClose from './SimpleClose.jsx';
@@ -226,7 +227,7 @@ function DayEndMessage({ businessDate }) {
   });
   const copy = async () => {
     try {
-      await navigator.clipboard.writeText(query.data.text);
+      await copyText(query.data.text);
       setToast({ tone: 'success', message: 'Copied. Paste it into WhatsApp.' });
     } catch {
       setToast({ tone: 'error', message: 'Could not copy on this device. Select the text and copy it.' });

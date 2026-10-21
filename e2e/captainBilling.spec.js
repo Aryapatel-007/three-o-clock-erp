@@ -108,3 +108,26 @@ test('P59: with two counter devices printing captain bills, a bill prints once',
   await counters[0].page.waitForTimeout(11_000);
   expect(printed()).toBe(1);
 });
+
+test('with no counter printing captain bills, the captain is told why after 30 seconds', async ({ browser }) => {
+  const golden = await resetGolden();
+  await at('12:00', DAY);
+
+  // A counter on a new address (the cafe PC) has "Print bills sent by captains" off.
+  const captain = await signIn(browser, { name: 'Khuman Singh', phone: golden.phones['Khuman Singh'], password: golden.password, device: 'phone' });
+  const station = await signIn(browser, { name: 'Manager', phone: golden.phones.Manager, password: golden.password, device: 'tablet' });
+
+  await openTable(captain.page, 'Table 3', 2);
+  await addItems(captain.page, ['Caffe Latte']);
+  await sendToKitchen(captain.page);
+  await markReady(station.page, 'Beverages', 'Table 3');
+  await serveAll(captain.page);
+  await billOrder(captain.page);
+
+  await captain.page.getByRole('button', { name: 'Print at counter' }).click();
+  await expect(captain.page.getByText('Sent to the counter. It prints there.')).toBeVisible();
+  const hint = captain.page.getByText('Not printed yet. At the counter computer');
+  await expect(hint).toBeHidden();
+  await expect(hint).toBeVisible({ timeout: 40_000 });
+  await expect(hint).toContainText('Print bills sent by captains');
+});

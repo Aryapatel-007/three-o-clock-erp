@@ -184,6 +184,30 @@ to do when the PC has a problem: `docs/DEPLOYMENT.md` section 19.
 To switch it off: `SYNC_MODE=ONE_WAY` on both. Website bills keep their W
 numbers, which stay valid in their own series.
 
+### After moving the cafe from the website to the PC
+
+A browser keeps each device's settings and sign-in per address, so every
+device starts empty on the PC's address. Once, on each:
+
+1. **Counter computer:** open the till only with **Cafe POS - Till (prints
+   without asking)** on the desktop, never the website's launcher. Sign in,
+   open **This device**, choose the printer (Thermal 80 mm), the print width
+   and edge margin, and switch on **Print bills sent by captains**. Without
+   that switch, a captain's **Print at counter** waits, and after 30 seconds
+   the captain's phone says so.
+2. **Kitchen tablets:** open the PC's address, sign in, and in **This device**
+   choose the station, auto-print of KOTs and sound again.
+3. **Captains' phones:** open the PC's address and sign in. A phone cannot
+   print to the bill printer itself; **Print at counter** is how a captain prints.
+4. **Day-end email:** copy `RESEND_API_KEY` from Render's Environment into
+   `C:\CafePOS\.env` by hand, then restart the server. Without it Day Close
+   works and sends no email. It needs the internet at closing.
+5. **Guests' online link:** keep giving the website's link (`.../r/<address>`).
+   The PC's Settings show its own address, which opens only inside the cafe.
+
+Copy buttons on a tablet use an older way of copying, since the PC is plain
+`http`; if a tablet still refuses, select the text and copy it by hand.
+
 ### Later: the PC becomes the real till
 
 Sending the PC's data to the same Atlas is only safe once the PC is the **only**

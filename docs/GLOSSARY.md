@@ -854,3 +854,14 @@ Added by P63.
 | **Kept from** | Which side's version a sync conflict kept: the cafe PC or the website |
 | **Mark as seen** | A person has read a sync conflict and dealt with it |
 | **Close the day on the cafe PC** | While two-way sync is on, only the PC closes the day |
+
+---
+
+## 47. The cafe PC
+
+Added 2026-10-22.
+
+| Term | Meaning |
+|---|---|
+| **Cafe POS - Till (prints without asking)** | The desktop icon on the cafe PC that opens the till at the PC's own address, printing bills with no dialog |
+| **Not printed yet** | On a captain's bill, 30 seconds after Print at counter: no counter has printed it, so the counter's This device must have Print bills sent by captains on, with the till open |

@@ -187,6 +187,10 @@ Ensure-EnvLine 'UPDATE_REPO' 'riship-17/Cafezza-Offline'
 Ensure-EnvLine 'UPDATE_TOKEN' ''
 # UPDATE_TOKEN is left empty: automatic updates stay off until someone puts the
 # token in .env by hand (docs/WINDOWS-INSTALL.md section 6).
+# The day-end email (P44). Empty: Day Close works and sends nothing. The key is Render's own
+# RESEND_API_KEY, put in by a person; it is a secret and never in this script.
+Ensure-EnvLine 'RESEND_API_KEY' ''
+Ensure-EnvLine 'DAY_END_EMAIL_FROM' 'Restaurant ERP <onboarding@resend.dev>'
 # The version this folder holds, so the server and the updater both know it.
 $versionFile = Join-Path $Root 'VERSION.txt'
 if (Test-Path $versionFile) { Set-EnvLine 'RELEASE_VERSION' ((Get-Content -Path $versionFile -Raw).Trim()) }
@@ -291,6 +295,16 @@ foreach ($icon in @(@{ Name = 'Cafe POS'; Page = '' }, @{ Name = 'Cafe POS - Con
   $shortcut.Description = 'Opens the cafe system, starting the server if it is not running.'
   $shortcut.Save()
 }
+# The counter's till: this PC's own address, printing with no dialog. The website's
+# launcher (tools\silent-printing) would put the counter on the website, where
+# captains' bills sent to this PC never arrive.
+$till = $shell.CreateShortcut((Join-Path $desktop 'Cafe POS - Till (prints without asking).lnk'))
+$till.TargetPath = Join-Path $PSScriptRoot 'till.cmd'
+$till.WorkingDirectory = $Root
+$till.WindowStyle = 7
+$till.IconLocation = "$env:SystemRoot\System32\SHELL32.dll,16"
+$till.Description = 'The till on this PC, printing bills with no print dialog.'
+$till.Save()
 
 $addresses = Get-NetIPAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue | Where-Object { $_.IPAddress -match '^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)' } | Select-Object -ExpandProperty IPAddress
 $portPart = if ($port -eq 80) { '' } else { ":$port" }
@@ -305,5 +319,9 @@ if (Select-String -Path $EnvFile -Pattern '^UPDATE_TOKEN=.+' -Quiet) {
 } else {
   Write-Host 'Automatic updates are off until UPDATE_TOKEN is set in .env (docs\WINDOWS-INSTALL.md section 6).' -ForegroundColor Yellow
 }
+if (-not (Select-String -Path $EnvFile -Pattern '^RESEND_API_KEY=.+' -Quiet)) {
+  Write-Host 'The day-end email is off until RESEND_API_KEY is set in .env (docs\WINDOWS-INSTALL.md section 5c).' -ForegroundColor Yellow
+}
+Write-Host 'At the counter: open the till with "Cafe POS - Till (prints without asking)" on the desktop.'
 Read-Host 'Press Enter to close'
 Start-Process $url

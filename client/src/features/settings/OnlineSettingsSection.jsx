@@ -13,6 +13,7 @@ import Button from '../../components/ui/Button.jsx';
 import Input from '../../components/ui/Input.jsx';
 import Select from '../../components/ui/Select.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
+import { copyText } from '../../utils/copyText.js';
 import { parseRupeesToPaise } from '../../utils/formatMoney.js';
 import { Checkbox, Section } from './settingsParts.jsx';
 import PaymentGatewayPanel from './PaymentGatewayPanel.jsx';
@@ -75,7 +76,7 @@ function PageAddress() {
 
   const copy = async () => {
     try {
-      await window.navigator.clipboard.writeText(link);
+      await copyText(link);
       setCopied(true);
     } catch {
       setCopied(false);
@@ -110,6 +111,11 @@ function PageAddress() {
       <p className="type-caption text-muted">
         Put this link on your Instagram, your Google listing and your table cards. Orders that come through it pay no commission.
       </p>
+      {features.sync?.server && features.sync.server !== 'CLOUD' && (
+        <p className="type-caption text-alert">
+          This link is the cafe PC&apos;s, and opens only inside the cafe. Give guests the website&apos;s link, ending in /r/{current || 'your-address'}.
+        </p>
+      )}
     </div>
   );
 }

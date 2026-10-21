@@ -41,6 +41,12 @@ use the file.
 
 ## Captains' bills at the counter
 
+On the cafe PC, open the till with the PC's own desktop icon, **Cafe POS -
+Till (prints without asking)**. `Open the till (Windows).cmd` run on the cafe PC
+opens the PC too; anywhere else it opens the website, where captains' bills
+sent to the PC never arrive.
+
+
 A captain's phone cannot reach the Rugtek. A captain taps **Print at counter**,
 and the counter computer prints it, when **Print bills sent by captains** is on
 in This device there. With the till opened by the file above, that print comes

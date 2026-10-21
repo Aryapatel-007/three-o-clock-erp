@@ -27,6 +27,7 @@ import BillStatusBadge from './BillStatusBadge.jsx';
 import ChargeToAccountPanel from './ChargeToAccountPanel.jsx';
 import CorrectPaymentPanel from './CorrectPaymentPanel.jsx';
 import DiscountPanel from './DiscountPanel.jsx';
+import CounterNotPrinting from './CounterNotPrinting.jsx';
 import { discountReasonLabel } from './discountReasons.js';
 import { errorMessage } from './errorCopy.js';
 import InlinePayment from './InlinePayment.jsx';
@@ -385,6 +386,7 @@ export default function BillScreenPage() {
             >
               Receipt preview
             </Link>
+            {isCaptain && sentToCounter && !asksForPrint && <CounterNotPrinting requestedAt={bill.printRequestedAt} />}
             {captainLockedOut && !bill.isVoided && (
               <p className="type-caption flex min-h-12 items-center px-3 text-muted">This bill has been printed. Only the counter or a manager can change it now.</p>
             )}
@@ -595,6 +597,9 @@ export default function BillScreenPage() {
                 </Button>
                 {isCaptain && sentToCounter && (
                   <p className="type-caption mt-2 text-muted">Sent to the counter. Payment opens once it has printed.</p>
+                )}
+                {isCaptain && sentToCounter && (
+                  <CounterNotPrinting requestedAt={bill.printRequestedAt} />
                 )}
                 <button
                   type="button"
