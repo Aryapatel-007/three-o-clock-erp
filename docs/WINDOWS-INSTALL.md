@@ -196,6 +196,14 @@ device: set the bill's paper as on the website counter, then print one bill
 through the dialog with the Rugtek's paper size, margins and scale, and close
 the window. The print window also has **Printer settings for this window**.
 
+**Cafe POS - Fix printing** (`box\windows\print-settings.cmd`) lists every
+Chrome and Edge profile on the PC with the printer, paper, margins and scale it
+prints with, and saves the list as `print-settings-report.txt` on the Desktop.
+Then: **F** clears any paper too long for Chrome (like 80(72.1) x 99999 mm,
+which makes "Print preview failed" and breaks every print) and resets the bill
+printer to its factory settings; a number copies that profile's settings, the
+one that prints the bill right, into both Cafe POS windows.
+
 A browser keeps each device's settings and sign-in per address, so every
 device starts empty on the PC's address. Once, on each:
 

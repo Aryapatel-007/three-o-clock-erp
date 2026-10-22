@@ -330,6 +330,12 @@ foreach ($setup in @(@{ Name = 'Cafe POS - Printer setup (captains'' bills)'; Wi
   $shortcut.Description = 'Opens this printing window once with the print dialog, to set its paper size, margins and scale.'
   $shortcut.Save()
 }
+$fixPrinting = $shell.CreateShortcut((Join-Path $desktop 'Cafe POS - Fix printing.lnk'))
+$fixPrinting.TargetPath = Join-Path $PSScriptRoot 'print-settings.cmd'
+$fixPrinting.WorkingDirectory = $Root
+$fixPrinting.IconLocation = "$env:SystemRoot\System32\SHELL32.dll,16"
+$fixPrinting.Description = 'Shows how every browser on this PC prints, copies the working settings, clears a broken paper size, resets the printer.'
+$fixPrinting.Save()
 
 $addresses = Get-NetIPAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue | Where-Object { $_.IPAddress -match '^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)' } | Select-Object -ExpandProperty IPAddress
 $portPart = if ($port -eq 80) { '' } else { ":$port" }

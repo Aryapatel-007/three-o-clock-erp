@@ -638,6 +638,7 @@ Arya: on the cafe PC the bill was shorter than its content and shifted right, as
 3. `box/windows/printer-setup.cmd` and `.ps1`, and two desktop icons from the installer: each opens one window's profile once with the print dialog on, at This device, so its Chrome print settings can be set to the website counter's. WINDOWS-INSTALL 5c.
 
 Tests: `designGuard`, `printing`, `clientNameGuard`, 27 passing. Lint passes. Not run on Windows or the Rugtek.
+4. Later the same day, on the PC: choosing the driver's 80(72.1) x 99999 mm paper in Chrome's dialog broke printing everywhere, the website included ("Print preview failed": Chrome cannot draw a page over 200 inches). `box/windows/print-settings.ps1` (desktop icon "Cafe POS - Fix printing"): reports every profile's saved print settings and the printer's default, clears a too-long paper, resets the printer to factory (remove and add on the same driver and port, as Administrator), or copies one profile's settings into both Cafe POS profiles. Checked on this developer machine's real profiles, read only, and on fake profiles (clear, copy into a file with and without a printing section, valid JSON after). The printer reset was not run here: no POS printer on this machine.
 
 ### 2026-10-21 Rishi with Claude Code, P63 two-way sync: IN PROGRESS (Cafezza-Offline)
 
