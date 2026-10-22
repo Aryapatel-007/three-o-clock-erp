@@ -323,9 +323,11 @@ foreach ($old in @('Cafe POS - Till (prints without asking)', 'Cafe POS - Printe
     Remove-Item -Path (Join-Path $folder "$old.lnk") -Force -ErrorAction SilentlyContinue
   }
 }
-# The print window of 2026-10-22 morning had its own profile; the till prints captains' bills now.
+# The print window of 2026-10-22 morning had its own profile. And the till and its hidden
+# printer window keep the old screens in memory until closed: closed here, so the hidden
+# printer comes back within a minute on the new version (the "CafePOS Printer" task).
 Get-CimInstance Win32_Process -Filter "Name = 'chrome.exe' OR Name = 'msedge.exe'" |
-  Where-Object { $_.CommandLine -like '*Cafe POS Printer*' } |
+  Where-Object { $_.CommandLine -like '*Cafe POS Printer*' -or $_.CommandLine -like '*Cafe POS Till*' } |
   ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
 
 $addresses = Get-NetIPAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue | Where-Object { $_.IPAddress -match '^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)' } | Select-Object -ExpandProperty IPAddress
