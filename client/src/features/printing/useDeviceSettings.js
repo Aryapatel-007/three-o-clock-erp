@@ -123,9 +123,11 @@ function readStored() {
  */
 export const CAFE_PC_PAPER = Object.freeze({ paperLength: 'ROLL', printWidth: 'STANDARD', edgeMargin: 'MORE' });
 
-// 2: only the till prints captains' bills. At 1 every browser on the PC did, and a plain Chrome
-// window that took a bill first showed the print dialog instead of printing (Arya, 2026-10-22).
-const CAFE_PC_PRINT_SETUP = 2;
+// 3: only the hidden printer window (PrintStationPage, which prints whatever this switch says)
+// prints captains' bills, always on CAFE_PC_PAPER. At 1 every browser on the PC did, and a plain
+// Chrome window showed the print dialog; at 2 the till did too, on its own paper, and left blank
+// paper above the bill (Arya, 2026-10-22).
+const CAFE_PC_PRINT_SETUP = 3;
 
 export function applyCafePcPrintSetup() {
   const stored = readStored() ?? lastWritten ?? {};
@@ -137,23 +139,10 @@ export function applyCafePcPrintSetup() {
     printWidth: 'STANDARD',
     edgeMargin: 'MORE',
     billTextSize: 'NORMAL',
-    printCaptainBills: Boolean(stored.cafeTill),
+    printCaptainBills: false,
     cafePcPrintSetup: CAFE_PC_PRINT_SETUP,
   });
 }
-
-/**
- * The till window that box/windows/start-till.ps1 opens, with ?till=1, prints
- * with no dialog (--kiosk-printing), so it is the one that prints captains'
- * bills. Read once as the app loads, before any screen changes the address.
- */
-function markCafeTill() {
-  const stored = readStored() ?? lastWritten ?? {};
-  if (stored.cafeTill && stored.printCaptainBills) return;
-  write({ ...stored, cafeTill: true, printCaptainBills: true });
-}
-
-if (typeof window !== 'undefined' && window.location && new URLSearchParams(window.location.search).get('till') === '1') markCafeTill();
 
 function read() {
   return withDefaults(readStored() ?? lastWritten ?? {});
