@@ -46,7 +46,10 @@ export default function BillComposer({ order, onStale, withoutKot = false, onBac
     // P60. Without a KOT, the preview serves the dishes not sent and rolls it all back, as the bill would.
     queryFn: () => createBill({ orderId: order.id, version: order.version, discount, preview: true, ...(withoutKot ? { withoutKot } : {}) }),
     placeholderData: keepPreviousData,
-    retry: false,
+    // 2026-10-22. A preview that failed (the website's free server waking up) is asked again,
+    // and never holds Save back: Save makes the bill on the server, which checks everything again.
+    retry: 3,
+    retryDelay: (attempt) => 2000 * (attempt + 1),
   });
   const preview = previewQuery.data;
   const previewError = previewQuery.isError ? errorMessage(previewQuery.error) : null;
@@ -139,7 +142,7 @@ export default function BillComposer({ order, onStale, withoutKot = false, onBac
       <div className="grid grid-cols-2 gap-2">
         <button
           type="button"
-          disabled={busy || previewQuery.isError}
+          disabled={busy}
           onClick={() => save.mutate({ andPrint: false })}
           className="type-button min-h-14 rounded-lg border border-ink bg-surface px-4 hover:bg-sunken disabled:opacity-50"
         >
@@ -147,7 +150,7 @@ export default function BillComposer({ order, onStale, withoutKot = false, onBac
         </button>
         <button
           type="button"
-          disabled={busy || previewQuery.isError}
+          disabled={busy}
           onClick={() => save.mutate({ andPrint: true })}
           className="type-button flex min-h-14 items-center justify-center gap-2 rounded-lg bg-accent px-4 text-on-accent hover:brightness-110 disabled:opacity-50"
         >

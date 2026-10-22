@@ -9,7 +9,7 @@
  * Nothing here computes money. If you find yourself adding a `+` to a paise
  * figure in this file, it belongs in utils/tax.js.
  */
-import { GUEST_LEFT, voidBillGuestLeft } from '../services/billGuestLeftService.js';
+import { GUEST_LEFT, voidBillAndCloseOrder } from '../services/billGuestLeftService.js';
 import { assertMayBillWithoutKot } from '../services/billWithoutKotService.js';
 import { ROLES } from '../config/roles.js';
 import { Bill } from '../models/Bill.js';
@@ -215,11 +215,11 @@ export async function postCorrectPayment(req, res) {
 export async function postVoid(req, res) {
   // P28. An owner or manager voids; a cashier may with their PIN, when the owner allows it.
   const { approvals } = await getSettings(req.restaurantId, { req });
-  const { approval, ...body } = req.body;
+  const { approval, closeOrder, ...body } = req.body;
   const approvedBy = await approverForManagerTask(req, approval, approvals, 'Only an owner or a manager can void a bill.');
-  // P59. Guest left: the order goes too, so the table is free.
-  if (body.reasonCode === GUEST_LEFT) {
-    return sendSuccess(res, await voidBillGuestLeft(req, req.params.billId, { note: body.note ?? null, approvedBy }));
+  // P59, then 2026-10-22: the order goes too, so the table is free. Left out, only Guest left closes it.
+  if (closeOrder ?? body.reasonCode === GUEST_LEFT) {
+    return sendSuccess(res, await voidBillAndCloseOrder(req, req.params.billId, { reasonCode: body.reasonCode, note: body.note ?? null, approvedBy }));
   }
   return sendSuccess(res, await voidBill(req, req.params.billId, { ...body, approvedBy }));
 }

@@ -2589,6 +2589,20 @@ Sets `isVoided`, `voidedAt`, `voidedBy`, `voidReasonCode`, `voidReason`. Returns
 `READY_TO_BILL`, clears `orders.billId`, and **re-occupies the table**, so the
 order can be billed again correctly.
 
+**`closeOrder`** (2026-10-22, optional boolean). `true`: the bill is voided and
+its order cancelled in one transaction, and the table is free, as P59's Guest
+left does: the order's live lines are cancelled, its kitchen lines marked
+prepared (the food was served, so no stock comes back), its kitchen ticket
+lines cancelled, and `ORDER_CANCELLED` is audited with the bill number. The
+order's `cancelReasonCode` is the bill's code when the order list has it
+(`GUEST_LEFT`, `PLATFORM_CANCELLED`, `OTHER`), else `OTHER` with the bill
+reason's label as its note. Refused with 422 when the bill has money on it or is
+On Hold: that money is dealt with first. `false`: the order waits for a new
+bill, as above. Left out: `true` for `GUEST_LEFT`, `false` for every other
+code, as before. The screen always sends it: "Close the table" is its default,
+except for Billed to the wrong table, Items need changing and Discount needs
+changing, which are corrections billed again.
+
 Voiding an `ON_ACCOUNT` bill is allowed and writes a `CHARGE_REVERSED` account
 entry in the same transaction (M16). Voiding a bill of a closed business date
 is refused with 409 `DAY_CLOSED` (M16).

@@ -203,7 +203,8 @@ export const correctPaymentSchema = z.object({
 export const voidBillSchema = z.object({
   params: billIdParam,
   body: z
-    .object({ ...reasonFields(BILL_VOID_REASON_CODES, VOID_NOTE_MAX_LENGTH), approval: approval.optional() })
+    // 2026-10-22. closeOrder: cancel the order too, so the table is free (14.6).
+    .object({ ...reasonFields(BILL_VOID_REASON_CODES, VOID_NOTE_MAX_LENGTH), approval: approval.optional(), closeOrder: z.boolean().optional() })
     .strict('Is not a field you can set here.')
     .superRefine(requireNoteForOther),
 });

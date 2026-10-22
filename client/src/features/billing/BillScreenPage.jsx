@@ -187,10 +187,11 @@ export default function BillScreenPage() {
     onSuccess: (updated, reason) => {
       invalidate(updated);
       setPanel(null);
-      // P59. Guest left: the order is closed and the table free, so back to the floor.
-      if (reason?.reasonCode === 'GUEST_LEFT') {
+      // P59, then 2026-10-22: the order is closed and the table free, so back to the floor.
+      if (reason?.closeOrder) {
         queryClient.invalidateQueries({ queryKey: ['tables'] });
-        navigate('/floor', { replace: true });
+        queryClient.invalidateQueries({ queryKey: ['order', updated.orderId] });
+        navigate(updated.orderType === 'DINE_IN' ? '/floor' : '/bills', { replace: true });
         return;
       }
       setToast({ tone: 'success', message: 'Bill voided.' });

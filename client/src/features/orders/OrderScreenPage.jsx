@@ -960,7 +960,8 @@ function OrderDetails({
           </button>
         )}
 
-        {isOpen && canCancelOrder && !onCloseOrder && (
+        {/* 2026-10-22. Also an order waiting with no bill, like one whose bill was voided: the server allows it. */}
+        {(isOpen || (order.status === 'READY_TO_BILL' && !order.billId)) && canCancelOrder && !onCloseOrder && (
           <button
             type="button"
             disabled={isBusy}
