@@ -75,6 +75,17 @@ export default function SimpleClose({ day, businessDate }) {
   const closesOnClose = day.closesOnClose ?? [];
   const { sales, money } = day.figures;
   const canClose = blockers.length === 0 && counted !== null && counted >= 0 && keptInPaise !== null && !tooMuch && !(noteRequired && !note.trim());
+  // Why Close is not pressable, said under it.
+  const whyNot =
+    blockers.length > 0
+      ? 'Sort out the items in Before you close, then close.'
+      : counted === null
+        ? 'Type the cash in the drawer first. Type 0 if there is none.'
+        : tooMuch
+          ? null
+          : noteRequired && !note.trim()
+            ? 'Write the note above, saying why the cash is different, then close.'
+            : null;
 
   return (
     <div className="flex flex-col gap-4">
@@ -217,9 +228,9 @@ export default function SimpleClose({ day, businessDate }) {
         )}
       </section>
 
-      {close.isError && !close.error?.details?.noteRequired && !close.error?.noteRequired && (
-        <p className="type-body text-alert">{errorMessage(close.error)}</p>
-      )}
+      {/* 2026-10-22. Every refusal in words, the note included: a silent grey button read as the day refusing to close. */}
+      {close.isError && <p className="type-body text-alert">{errorMessage(close.error)}</p>}
+      {!close.isPending && whyNot && <p className="type-body text-alert">{whyNot}</p>}
 
       <button
         type="button"
@@ -229,7 +240,6 @@ export default function SimpleClose({ day, businessDate }) {
       >
         {close.isPending ? 'Closing…' : `Close ${formatBusinessDate(businessDate)}`}
       </button>
-      {blockers.length > 0 && <p className="type-caption text-muted">Sort out the items above, then close.</p>}
     </div>
   );
 }
