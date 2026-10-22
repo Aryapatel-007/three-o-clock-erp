@@ -19,7 +19,7 @@ if ($line) { $port = [int]$line.Matches[0].Groups[1].Value }
 $portPart = if ($port -eq 80) { '' } else { ":$port" }
 # The page is opened at localhost, where staff sign in; the check asks 127.0.0.1, since
 # Windows tries localhost as IPv6 first and the server listens on IPv4 only.
-$page = "http://localhost$portPart/"
+$page = "http://localhost$portPart/?till=1"
 $probe = "http://127.0.0.1$portPart/api/v1/network/ping"
 
 # Already open: nothing to do.
