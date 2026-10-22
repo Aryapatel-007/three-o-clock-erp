@@ -108,19 +108,19 @@ function readStored() {
  * as long as the bill was put at the end of that long page, so a whole page of
  * blank paper came out before every bill, and at 78 mm the right side was cut.
  * Every browser and window keeps its own This device, so setting each by hand
- * missed the one that printed. On the cafe PC, served over plain http on the
- * WiFi (the website is always https), every device moves once to what prints
- * best on the website's counter (Arya, 2026-10-22): the printer's roll, 72 mm,
- * 4 mm each side, Normal text. The till also prints captains' bills: on the PC it
- * is the one window that prints (box/windows/start-till.ps1). A later choice on
- * This device is kept.
+ * missed the one that printed. Signed in to the cafe PC's own server (/auth/me
+ * `sync.server` BOX, AuthContext), every device moves once to what prints best
+ * on the website's counter (Arya, 2026-10-22): the printer's roll, 72 mm, 4 mm
+ * each side, Normal text. The till also prints captains' bills: on the PC it is
+ * the one window that prints (box/windows/start-till.ps1). A later choice on
+ * This device is kept. The website never runs this.
  */
 const CAFE_PC_PRINT_SETUP = 1;
 
-function withCafePcPrintSetup(stored) {
-  if (window.location.protocol !== 'http:') return stored;
-  if ((stored.cafePcPrintSetup ?? 0) >= CAFE_PC_PRINT_SETUP) return stored;
-  const moved = {
+export function applyCafePcPrintSetup() {
+  const stored = readStored() ?? lastWritten ?? {};
+  if ((stored.cafePcPrintSetup ?? 0) >= CAFE_PC_PRINT_SETUP) return;
+  write({
     ...stored,
     printer: 'THERMAL_80',
     paperLength: 'ROLL',
@@ -129,19 +129,11 @@ function withCafePcPrintSetup(stored) {
     billTextSize: 'NORMAL',
     printCaptainBills: true,
     cafePcPrintSetup: CAFE_PC_PRINT_SETUP,
-  };
-  lastWritten = moved;
-  try {
-    // No change event: this runs while a screen renders.
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(moved));
-  } catch {
-    // A private window can refuse storage. The move then happens on every load.
-  }
-  return moved;
+  });
 }
 
 function read() {
-  return withDefaults(withCafePcPrintSetup(readStored() ?? lastWritten ?? {}));
+  return withDefaults(readStored() ?? lastWritten ?? {});
 }
 
 /** This device's settings, outside React: the print frame reads the paper length here. */

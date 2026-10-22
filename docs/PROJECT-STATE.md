@@ -630,6 +630,17 @@ Things not yet decided. Move them to the decision log once settled.
 
 Newest entry at the top. Keep the last ten or so, delete older ones.
 
+### 2026-10-22 Arya with Claude Code, a void closes the table; Cancel order on a voided order; Save never held back
+
+Arya, at Z Chaat: voided test bills left their tables taken, the order screen had no way to close them, and Save "did not respond". Reproduced in the browser: a void with any reason but Guest left sends the order back to READY_TO_BILL (14.6, by design); the order screen showed Cancel the whole order only while OPEN, though the server allows it waiting with no bill; and the Bill box disabled Save whenever its preview failed, with no retry, which on Render's free server happens while it wakes.
+1. `closeOrder` on POST /bills/:billId/void (API-CONTRACT 14.6): voids and cancels the order in one transaction, as P59's Guest left (`billGuestLeftService.js`, now `voidBillAndCloseOrder` for any reason; a bill reason the order list lacks becomes Other with its label). Refused with money on the bill. Left out, the old behaviour.
+2. Void bill asks "After voiding": Close the table (default) or Bill this table again (default for Billed to the wrong table, Items need changing, Discount needs changing). Closing goes back to the floor.
+3. Cancel the whole order shows on an order waiting with no bill.
+4. Save and Save & Print never wait on the preview; the preview retries three times.
+5. The cafe PC printer settings moved from "served over http" to `/auth/me` `sync.server` BOX (`AuthContext`), because the browser tests run over http too and had their captain-printing switch flipped.
+
+Tests: `cancelReasons.test.js` four new (close for any reason, a reason mapped to Other, close left out or false, money refused), 103 passing with the cancel, billing, floor, golden day and printing files. Browser: new `e2e/voidCloseTable.spec.js` (2), and billInOnePlace, cancelAfterBilling, addAfterBilling, billRevision, captainBilling and the golden day: 13 of 13.
+
 ### 2026-10-22 Arya with Claude Code, one icon opens the till; the website counter's print settings on the PC
 
 Arya: the restaurant must not choose between Chrome, a till launcher and a print window; clicking Cafe POS opens the app. And the bill must print as on the website's counter, where Arya found the best result: the printer's roll, 72 mm, 4 mm each side.
