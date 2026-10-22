@@ -24,7 +24,8 @@ function Test-TillOpen {
 
 # Opens the till at $Url. With the till already open, Chrome brings it a new tab
 # in the same window, which keeps printing with no dialog.
-function Open-Till([string]$Url) {
+# -App: a window of its own with no address bar, as the hidden printer window (print-agent.ps1).
+function Open-Till([string]$Url, [switch]$App) {
   $browser = Get-TillBrowser
   if (-not $browser) { return $false }
   Start-Process -FilePath $browser -ArgumentList @(
@@ -32,11 +33,11 @@ function Open-Till([string]$Url) {
     '--kiosk-printing',
     '--no-first-run',
     '--no-default-browser-check',
-    # Captains' bills print while the till is covered or minimized.
+    # Captains' bills print while the window is covered, minimized or hidden.
     '--disable-background-timer-throttling',
     '--disable-renderer-backgrounding',
     '--disable-backgrounding-occluded-windows',
-    $Url
+    $(if ($App) { "--app=$Url" } else { $Url })
   )
   return $true
 }

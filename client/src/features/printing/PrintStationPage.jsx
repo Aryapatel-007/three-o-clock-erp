@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import BrandLogo from '../../components/ui/BrandLogo.jsx';
@@ -21,6 +21,14 @@ const KEPT = 8;
 export default function PrintStationPage() {
   const { user } = useAuth();
   const [printed, setPrinted] = useState([]);
+  // 2026-10-22. box/windows/print-agent.ps1 finds this window by its title and hides it.
+  useEffect(() => {
+    const before = document.title;
+    document.title = 'Cafe POS printer';
+    return () => {
+      document.title = before;
+    };
+  }, []);
   const onPrinted = useCallback(
     (bill) => setPrinted((list) => [{ ...bill, at: new Date().toISOString() }, ...list].slice(0, KEPT)),
     [],
