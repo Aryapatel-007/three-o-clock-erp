@@ -251,9 +251,9 @@ $updateTrigger = New-ScheduledTaskTrigger -Once -At (Get-Date).Date.AddMinutes(5
 $updateSettings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit (New-TimeSpan -Hours 2) -MultipleInstances IgnoreNew
 Register-ScheduledTask -TaskName $UpdateTask -Action $updateAction -Trigger $updateTrigger -Settings $updateSettings -Principal $system -Force | Out-Null
 
-# The print window (print-agent.ps1): captains' bills print here by themselves. In the
-# signed-in person's own session, since a browser and its printer live there, at sign-in
-# and every minute after, so a window closed by mistake comes back within a minute.
+# The till (print-agent.ps1, start-till.ps1), which also prints captains' bills by itself. In
+# the signed-in person's own session, since a browser and its printer live there, at sign-in
+# and every minute after, so a till closed by mistake comes back within a minute.
 $printerAction = New-ScheduledTaskAction -Execute "$env:SystemRoot\System32\wscript.exe" -Argument "`"$(Join-Path $PSScriptRoot 'print-agent.vbs')`"" -WorkingDirectory $Root
 $printerTrigger = New-ScheduledTaskTrigger -AtLogOn
 $printerTrigger.Repetition = (New-ScheduledTaskTrigger -Once -At (Get-Date) -RepetitionInterval (New-TimeSpan -Minutes 1) -RepetitionDuration (New-TimeSpan -Days 3650)).Repetition
@@ -275,9 +275,7 @@ for ($i = 0; $i -lt 60 -and -not $up; $i++) {
 }
 if (-not $up) { Fail "The server did not start. Read $LogDir\server.log." }
 Write-Host "The server is running at $url"
-# The print window opens now, not only at the next sign-in to Windows.
-Start-ScheduledTask -TaskName $PrinterTask -ErrorAction SilentlyContinue
-# The print window opens now, not only at the next sign-in to Windows.
+# The till opens now, not only at the next sign-in to Windows.
 Start-ScheduledTask -TaskName $PrinterTask -ErrorAction SilentlyContinue
 
 if ($ownerPhone) {
@@ -310,32 +308,18 @@ foreach ($icon in @(@{ Name = 'Cafe POS'; Page = '' }, @{ Name = 'Cafe POS - Con
   $shortcut.Description = 'Opens the cafe system, starting the server if it is not running.'
   $shortcut.Save()
 }
-# The counter's till: this PC's own address, printing with no dialog. The website's
-# launcher (tools\silent-printing) would put the counter on the website, where
-# captains' bills sent to this PC never arrive.
-$till = $shell.CreateShortcut((Join-Path $desktop 'Cafe POS - Till (prints without asking).lnk'))
-$till.TargetPath = Join-Path $PSScriptRoot 'till.cmd'
-$till.WorkingDirectory = $Root
-$till.WindowStyle = 7
-$till.IconLocation = "$env:SystemRoot\System32\SHELL32.dll,16"
-$till.Description = 'The till on this PC, printing bills with no print dialog.'
-$till.Save()
-# 2026-10-22. Each printing window keeps its own paper settings and Chrome print settings; these set them once.
-foreach ($setup in @(@{ Name = 'Cafe POS - Printer setup (captains'' bills)'; Window = 'Printer' }, @{ Name = 'Cafe POS - Printer setup (till)'; Window = 'Till' })) {
-  $shortcut = $shell.CreateShortcut((Join-Path $desktop "$($setup.Name).lnk"))
-  $shortcut.TargetPath = Join-Path $PSScriptRoot 'printer-setup.cmd'
-  $shortcut.Arguments = $setup.Window
-  $shortcut.WorkingDirectory = $Root
-  $shortcut.IconLocation = "$env:SystemRoot\System32\SHELL32.dll,16"
-  $shortcut.Description = 'Opens this printing window once with the print dialog, to set its paper size, margins and scale.'
-  $shortcut.Save()
+# 2026-10-22. "Cafe POS" opens the till itself (start-till.ps1), so the icons that
+# opened a till or set up printing are gone: one icon, nothing to choose. The tools
+# stay in box\windows (print-settings.cmd) for whoever looks after the PC.
+foreach ($old in @('Cafe POS - Till (prints without asking)', 'Cafe POS - Printer setup (captains'' bills)', 'Cafe POS - Printer setup (till)', 'Cafe POS - Fix printing')) {
+  foreach ($folder in @($desktop, [Environment]::GetFolderPath('Desktop'))) {
+    Remove-Item -Path (Join-Path $folder "$old.lnk") -Force -ErrorAction SilentlyContinue
+  }
 }
-$fixPrinting = $shell.CreateShortcut((Join-Path $desktop 'Cafe POS - Fix printing.lnk'))
-$fixPrinting.TargetPath = Join-Path $PSScriptRoot 'print-settings.cmd'
-$fixPrinting.WorkingDirectory = $Root
-$fixPrinting.IconLocation = "$env:SystemRoot\System32\SHELL32.dll,16"
-$fixPrinting.Description = 'Shows how every browser on this PC prints, copies the working settings, clears a broken paper size, resets the printer.'
-$fixPrinting.Save()
+# The print window of 2026-10-22 morning had its own profile; the till prints captains' bills now.
+Get-CimInstance Win32_Process -Filter "Name = 'chrome.exe' OR Name = 'msedge.exe'" |
+  Where-Object { $_.CommandLine -like '*Cafe POS Printer*' } |
+  ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
 
 $addresses = Get-NetIPAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue | Where-Object { $_.IPAddress -match '^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)' } | Select-Object -ExpandProperty IPAddress
 $portPart = if ($port -eq 80) { '' } else { ":$port" }
@@ -353,7 +337,7 @@ if (Select-String -Path $EnvFile -Pattern '^UPDATE_TOKEN=.+' -Quiet) {
 if (-not (Select-String -Path $EnvFile -Pattern '^RESEND_API_KEY=.+' -Quiet)) {
   Write-Host 'The day-end email is off until RESEND_API_KEY is set in .env (docs\WINDOWS-INSTALL.md section 5c).' -ForegroundColor Yellow
 }
-Write-Host 'At the counter: open the till with "Cafe POS - Till (prints without asking)" on the desktop.'
-Write-Host 'Captains'' bills print by themselves in the "Cafe POS printer" window. Sign in there once with a cashier or manager login.' -ForegroundColor Green
+Write-Host 'The till opens by itself when Windows starts, and from "Cafe POS" on the desktop. It prints with no dialog.'
+Write-Host 'Sign in to the till once with a cashier or manager login: it prints its bills and the captains'' bills.' -ForegroundColor Green
 Read-Host 'Press Enter to close'
 Start-Process $url

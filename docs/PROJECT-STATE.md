@@ -630,6 +630,16 @@ Things not yet decided. Move them to the decision log once settled.
 
 Newest entry at the top. Keep the last ten or so, delete older ones.
 
+### 2026-10-22 Arya with Claude Code, one icon opens the till; the website counter's print settings on the PC
+
+Arya: the restaurant must not choose between Chrome, a till launcher and a print window; clicking Cafe POS opens the app. And the bill must print as on the website's counter, where Arya found the best result: the printer's roll, 72 mm, 4 mm each side.
+1. `box/windows/start-till.ps1`: the till in the "Cafe POS Till" profile with `--kiosk-printing`. The **Cafe POS** icon (`open.ps1`) and the "CafePOS Printer" task (`print-agent.ps1`, at Windows sign-in and every minute) both open it, so there is one window and one sign-in. The till prints captains' bills itself; the separate print window (`/print-station`, its own profile) is no longer opened. `till.cmd` runs the same. The installer removes the Till, Printer setup and Fix printing icons and closes the old print window.
+2. `useDeviceSettings.js`: on the PC (plain http; the website is https) every device moves once to Thermal 80 mm, the printer's roll, 72 mm, 4 mm each side, Normal, and "Print bills sent by captains" on. A later choice on This device is kept. Checked in Node: new device, old settings, a later choice, and https left alone.
+3. Why: with "As long as the bill" Chrome put the short page at the end of the driver's 80(72.1) x 3276 mm page, so a page of blank paper came out first; the driver already skips blank after the last line, so the roll prints just the bill. At 78 mm the right side was cut.
+4. On live Z Chaat at Arya's word: bills `2026-27/000193` and `000194` print count set from 39 and 19 to 1 (printer tests). Asked to hard delete the test bills 191 to 193 and renumber the real card-paid 194 to 191; refused by the session's permission check, and advised against (the guest holds 194). Arya voided 191 to 193 instead; their orders #225 to #227 still wait to bill until cancelled. Bills 176, 189 and 190 stay voided.
+
+Not run on Windows: the till opening, the task, the installer's icon removal.
+
 ### 2026-10-22 Arya with Claude Code, bills cut short and shifted on the cafe PC
 
 Arya: on the cafe PC the bill was shorter than its content and shifted right, as in the website's early testing. The bill printing code is identical to the live website's (`db49297`). The difference is the browser profiles: the till and the print window print silently from new profiles, and Chrome keeps paper size, margins and scale per profile.
