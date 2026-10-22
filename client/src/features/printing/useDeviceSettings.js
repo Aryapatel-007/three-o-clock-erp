@@ -115,6 +115,14 @@ function readStored() {
  * the one window that prints (box/windows/start-till.ps1). A later choice on
  * This device is kept. The website never runs this.
  */
+/**
+ * What prints best on Z Chaat's Rugtek, measured on the website's counter: the
+ * printer's roll, 72 mm, 4 mm each side. The cafe PC's hidden printer window
+ * always prints with it, whatever This device holds, since nobody can open its
+ * This device (PrintStationPage).
+ */
+export const CAFE_PC_PAPER = Object.freeze({ paperLength: 'ROLL', printWidth: 'STANDARD', edgeMargin: 'MORE' });
+
 // 2: only the till prints captains' bills. At 1 every browser on the PC did, and a plain Chrome
 // window that took a bill first showed the print dialog instead of printing (Arya, 2026-10-22).
 const CAFE_PC_PRINT_SETUP = 2;

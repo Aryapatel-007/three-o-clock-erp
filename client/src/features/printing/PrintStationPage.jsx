@@ -5,6 +5,7 @@ import BrandLogo from '../../components/ui/BrandLogo.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { formatTimeIst } from '../../utils/formatDate.js';
 import CaptainBillPrinter from './CaptainBillPrinter.jsx';
+import { CAFE_PC_PAPER } from './useDeviceSettings.js';
 
 const KEPT = 8;
 
@@ -36,7 +37,7 @@ export default function PrintStationPage() {
 
   return (
     <main className="v2 min-h-full bg-ground p-6 text-ink">
-      <CaptainBillPrinter always onPrinted={onPrinted} />
+      <CaptainBillPrinter always onPrinted={onPrinted} paper={CAFE_PC_PAPER} />
       <div className="mx-auto grid max-w-xl gap-4">
         <BrandLogo height={40} />
         <h1 className="type-title">Cafe POS printer</h1>

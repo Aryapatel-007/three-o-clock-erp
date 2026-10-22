@@ -68,7 +68,8 @@ function contentLoaded(doc) {
  * Resolves once print() has been called; rejects if the browser refused, so a
  * caller can say "Not printed" rather than believing it worked.
  */
-export async function printDocument({ printer: chosen, bodyHtml, styles = '' }) {
+// `paper`: paperLength, edgeMargin and printWidth for this print only, over This device (2026-10-22, the cafe PC's printer window).
+export async function printDocument({ printer: chosen, bodyHtml, styles = '', paper = null }) {
   // P21. The browser tests record the words that would print. Only a test's init script sets this.
   if (typeof window.__E2E_PRINT__ === 'function') {
     const holder = document.createElement('div');
@@ -77,7 +78,7 @@ export async function printDocument({ printer: chosen, bodyHtml, styles = '' }) 
     return;
   }
   const printer = PRINTERS[chosen] ? chosen : 'THERMAL_80';
-  const { paperLength, edgeMargin, printWidth } = readDeviceSettings();
+  const { paperLength, edgeMargin, printWidth } = { ...readDeviceSettings(), ...(paper ?? {}) };
   const widthMm = contentWidthMm(printer, edgeMargin, printWidth);
   /**
    * The content gets its width in millimetres, not the page's. Without it,

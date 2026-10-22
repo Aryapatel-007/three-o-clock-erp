@@ -72,7 +72,7 @@ export async function thermalLogoDataUrl(dataUrl) {
  * prints, and only the device whose claim succeeds prints it. Resolves to
  * null when another device took it.
  */
-export async function printBill(billId, { printer, logoDataUrl = null, forRequestAt = null }) {
+export async function printBill(billId, { printer, logoDataUrl = null, forRequestAt = null, paper = null }) {
   const data = await getInvoice(billId);
   let document;
   if (PRINTERS[printer]?.thermal === false) {
@@ -84,7 +84,7 @@ export async function printBill(billId, { printer, logoDataUrl = null, forReques
     document = { printer, bodyHtml: thermalBillHtml(data, { printer, logoDataUrl: logo, qrSvg, textSize: readDeviceSettings().billTextSize }), styles: THERMAL_BILL_STYLES };
   }
   if (!forRequestAt) {
-    await printDocument(document);
+    await printDocument({ ...document, paper });
     return markBillPrinted(billId);
   }
   let recorded;
@@ -94,6 +94,6 @@ export async function printBill(billId, { printer, logoDataUrl = null, forReques
     if (error?.code === 'DUPLICATE') return null;
     throw error;
   }
-  await printDocument(document);
+  await printDocument({ ...document, paper });
   return recorded;
 }
