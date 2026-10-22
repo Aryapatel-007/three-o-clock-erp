@@ -182,6 +182,13 @@ function Set-EnvLine($key, $value) {
 # server refuses: a bare origin never names the default port.
 if (Select-String -Path $EnvFile -Pattern '^CLIENT_ORIGIN=http://localhost:80$' -Quiet) { Set-EnvLine 'CLIENT_ORIGIN' 'http://localhost' }
 Ensure-EnvLine 'SYNC_MODE' 'ONE_WAY'
+# 2026-10-22, Arya: a PC that already sends to the website (its secret is set) takes the
+# website's changes too. One-way only sent, so the PC never had the website's bills or cancels.
+if (Select-String -Path $EnvFile -Pattern '^REPLICATION_SECRET=.+' -Quiet) {
+  if (-not (Select-String -Path $EnvFile -Pattern '^MIRROR_URL=.+' -Quiet)) { Set-EnvLine 'MIRROR_URL' 'https://zchaat-pos-api.onrender.com' }
+  Set-EnvLine 'SYNC_MODE' 'TWO_WAY'
+  Write-Host 'Two-way sync with the website is on: this PC takes the website''s changes as well as sending its own.'
+}
 Ensure-EnvLine 'UPDATE_AUTO' 'on'
 Ensure-EnvLine 'UPDATE_WINDOW' '04:00-05:00'
 Ensure-EnvLine 'UPDATE_REPO' 'riship-17/Cafezza-Offline'
