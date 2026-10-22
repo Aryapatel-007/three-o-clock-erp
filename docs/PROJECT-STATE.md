@@ -630,6 +630,15 @@ Things not yet decided. Move them to the decision log once settled.
 
 Newest entry at the top. Keep the last ten or so, delete older ones.
 
+### 2026-10-22 Arya with Claude Code, bills cut short and shifted on the cafe PC
+
+Arya: on the cafe PC the bill was shorter than its content and shifted right, as in the website's early testing. The bill printing code is identical to the live website's (`db49297`). The difference is the browser profiles: the till and the print window print silently from new profiles, and Chrome keeps paper size, margins and scale per profile.
+1. `printText.js` waits for the frame's images and fonts (at most 3 seconds) before measuring the bill, so a logo still decoding cannot make the page shorter than the bill. Not reproduced on a fast machine; a safeguard.
+2. The print window links to This device ("Printer settings for this window"), and This device links back; that window has no address bar.
+3. `box/windows/printer-setup.cmd` and `.ps1`, and two desktop icons from the installer: each opens one window's profile once with the print dialog on, at This device, so its Chrome print settings can be set to the website counter's. WINDOWS-INSTALL 5c.
+
+Tests: `designGuard`, `printing`, `clientNameGuard`, 27 passing. Lint passes. Not run on Windows or the Rugtek.
+
 ### 2026-10-21 Rishi with Claude Code, P63 two-way sync: IN PROGRESS (Cafezza-Offline)
 
 Paused at Rishi's word, for another account to continue. Prompt and spec:

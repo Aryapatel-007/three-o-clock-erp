@@ -1,3 +1,5 @@
+import { Link, useLocation } from 'react-router-dom';
+
 import { useAuth } from '../../context/AuthContext.jsx';
 import { BILL_TEXT_SIZES, EDGE_MARGINS, PAPER_LENGTHS, PRINT_WIDTHS, PRINTER_KEYS, PRINTERS } from './printers.js';
 import { DENSITIES, TEXT_SIZES, THEMES, useDeviceSettings } from './useDeviceSettings.js';
@@ -16,6 +18,7 @@ const LANGUAGE_LABELS = { NONE: 'None', GUJARATI: 'Gujarati', HINDI: 'Hindi' };
  */
 export default function DeviceSettingsPage() {
   const { user, features } = useAuth();
+  const location = useLocation();
   const [settings, update] = useDeviceSettings();
   const isKitchen = user?.role === 'KITCHEN' || user?.role === 'OWNER' || user?.role === 'MANAGER';
   const isTill = ['OWNER', 'MANAGER', 'CASHIER'].includes(user?.role);
@@ -27,6 +30,11 @@ export default function DeviceSettingsPage() {
         <header>
           <h1 className="type-title">This device</h1>
           <p className="type-caption text-muted">Saved on this computer or tablet only, whoever signs in.</p>
+          {location.state?.from === '/print-station' && (
+            <Link to="/print-station" className="type-body text-accent underline">
+              Back to the printer window
+            </Link>
+          )}
         </header>
 
         <Choice

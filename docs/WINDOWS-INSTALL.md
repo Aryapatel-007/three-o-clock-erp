@@ -186,6 +186,16 @@ numbers, which stay valid in their own series.
 
 ### After moving the cafe from the website to the PC
 
+**Bills cut short or shifted to one side on the PC.** The till and the print
+window each print silently from their own browser profile, and Chrome keeps
+its print settings (paper size, margins, scale) per profile, so a new one
+prints with Chrome's defaults. Set each once, the same as the website counter:
+double-click **Cafe POS - Printer setup (captains' bills)**, then **Cafe POS -
+Printer setup (till)**. Each opens its window with the print dialog on, at This
+device: set the bill's paper as on the website counter, then print one bill
+through the dialog with the Rugtek's paper size, margins and scale, and close
+the window. The print window also has **Printer settings for this window**.
+
 A browser keeps each device's settings and sign-in per address, so every
 device starts empty on the PC's address. Once, on each:
 

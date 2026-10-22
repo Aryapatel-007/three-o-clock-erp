@@ -320,6 +320,16 @@ $till.WindowStyle = 7
 $till.IconLocation = "$env:SystemRoot\System32\SHELL32.dll,16"
 $till.Description = 'The till on this PC, printing bills with no print dialog.'
 $till.Save()
+# 2026-10-22. Each printing window keeps its own paper settings and Chrome print settings; these set them once.
+foreach ($setup in @(@{ Name = 'Cafe POS - Printer setup (captains'' bills)'; Window = 'Printer' }, @{ Name = 'Cafe POS - Printer setup (till)'; Window = 'Till' })) {
+  $shortcut = $shell.CreateShortcut((Join-Path $desktop "$($setup.Name).lnk"))
+  $shortcut.TargetPath = Join-Path $PSScriptRoot 'printer-setup.cmd'
+  $shortcut.Arguments = $setup.Window
+  $shortcut.WorkingDirectory = $Root
+  $shortcut.IconLocation = "$env:SystemRoot\System32\SHELL32.dll,16"
+  $shortcut.Description = 'Opens this printing window once with the print dialog, to set its paper size, margins and scale.'
+  $shortcut.Save()
+}
 
 $addresses = Get-NetIPAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue | Where-Object { $_.IPAddress -match '^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)' } | Select-Object -ExpandProperty IPAddress
 $portPart = if ($port -eq 80) { '' } else { ":$port" }

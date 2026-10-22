@@ -45,6 +45,23 @@ const nextFrame = (win) =>
     setTimeout(done, 100);
   });
 
+/** The longest a print waits for its images and fonts before measuring anyway. */
+const CONTENT_WAIT_MS = 3000;
+
+/**
+ * Waits for the frame's images (the logo) and fonts before the bill is
+ * measured. An image not yet decoded lays out with no height, so the page was
+ * written shorter than the bill and the printer cut it off before the end: on
+ * the cafe PC, slower than a developer's machine (Z Chaat, 2026-10-22). Never
+ * waits more than CONTENT_WAIT_MS, so a broken image cannot stop a print.
+ */
+function contentLoaded(doc) {
+  const images = Array.from(doc.images).map((image) => image.decode().catch(() => {}));
+  const fonts = doc.fonts?.ready ?? Promise.resolve();
+  const loaded = Promise.all([...images, fonts]);
+  return Promise.race([loaded, new Promise((resolve) => setTimeout(resolve, CONTENT_WAIT_MS))]);
+}
+
 /**
  * Prints an HTML body on this device's printer. `bodyHtml` is trusted markup
  * built by this folder; every value in it was escaped by its builder.
@@ -96,6 +113,7 @@ export async function printDocument({ printer: chosen, bodyHtml, styles = '' }) 
   ${styles}
 </style></head><body><div id="print-root" style="${rootStyle}">${bodyHtml}</div></body></html>`);
     doc.close();
+    await contentLoaded(doc);
     await nextFrame(frame.contentWindow);
 
     // Measured after layout at the printed width, then the page is written: see pageCss.

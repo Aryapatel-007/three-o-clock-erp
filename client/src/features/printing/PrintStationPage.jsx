@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react';
+import { Link } from 'react-router-dom';
 
 import BrandLogo from '../../components/ui/BrandLogo.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
@@ -36,6 +37,10 @@ export default function PrintStationPage() {
           starts again by itself with Windows.
         </p>
         <p className="type-caption text-muted">Signed in as {user?.name}.</p>
+        {/* 2026-10-22. This window has its own browser profile and no address bar, so its paper settings are reached from here. */}
+        <Link to="/device" state={{ from: '/print-station' }} className="type-body text-accent underline">
+          Printer settings for this window
+        </Link>
         <section className="rounded-lg border border-line bg-surface p-4">
           <h2 className="type-heading">Printed in this window</h2>
           {printed.length === 0 ? (
