@@ -329,6 +329,10 @@ foreach ($old in @('Cafe POS - Till (prints without asking)', 'Cafe POS - Printe
 Get-CimInstance Win32_Process -Filter "Name = 'chrome.exe' OR Name = 'msedge.exe'" |
   Where-Object { $_.CommandLine -like '*Cafe POS Printer*' -or $_.CommandLine -like '*Cafe POS Till*' } |
   ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
+# 2026-10-22. Chrome keeps its paper size, margins and scale per browser profile, and the till's
+# profile never had them chosen, so it printed with blank paper above the bill. The Chrome on
+# this PC that prints on the bill printer has them right: the till takes the same (print-settings.ps1).
+try { & (Join-Path $PSScriptRoot 'print-settings.ps1') -AutoCopy } catch { Write-Host "Chrome's print settings were not copied: $($_.Exception.Message)" -ForegroundColor Yellow }
 
 $addresses = Get-NetIPAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue | Where-Object { $_.IPAddress -match '^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)' } | Select-Object -ExpandProperty IPAddress
 $portPart = if ($port -eq 80) { '' } else { ":$port" }

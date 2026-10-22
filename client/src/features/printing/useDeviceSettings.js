@@ -40,13 +40,14 @@ const DEFAULTS = Object.freeze({
   // device that saved one is moved from on its next load.
   printer: DEFAULT_PRINTER,
   // 2026-10-09. BILL or ROLL: how long a thermal page is. printers.js says why.
-  paperLength: DEFAULT_PAPER_LENGTH,
+  // 2026-10-22, offline only: every device starts on what prints with no gap above on the Rugtek (CAFE_PC_PAPER).
+  paperLength: 'ROLL',
   // 2026-10-09. SMALL, NORMAL or LARGE: the thermal bill's text, from invoiceHtml.js.
   billTextSize: DEFAULT_BILL_TEXT_SIZE,
   // 2026-10-09. NONE, SMALL or MORE: space kept clear at each side of a roll, from printers.js.
-  edgeMargin: DEFAULT_EDGE_MARGIN,
+  edgeMargin: 'MORE',
   // 2026-10-10. WIDE (78 mm) or STANDARD (72 mm): the 80 mm roll's printed width, from printers.js.
-  printWidth: DEFAULT_PRINT_WIDTH,
+  printWidth: 'STANDARD',
   autoPrintKots: false,
   // P25 Part D. A counter computer prints the bills captains send it.
   printCaptainBills: false,
@@ -126,8 +127,9 @@ export const CAFE_PC_PAPER = Object.freeze({ paperLength: 'ROLL', printWidth: 'S
 // 3: only the hidden printer window (PrintStationPage, which prints whatever this switch says)
 // prints captains' bills, always on CAFE_PC_PAPER. At 1 every browser on the PC did, and a plain
 // Chrome window showed the print dialog; at 2 the till did too, on its own paper, and left blank
-// paper above the bill (Arya, 2026-10-22).
-const CAFE_PC_PRINT_SETUP = 3;
+// paper above the bill (Arya, 2026-10-22). 4: the same paper once more on every device on the PC,
+// with the offline defaults now the same (printers.js).
+const CAFE_PC_PRINT_SETUP = 4;
 
 export function applyCafePcPrintSetup() {
   const stored = readStored() ?? lastWritten ?? {};

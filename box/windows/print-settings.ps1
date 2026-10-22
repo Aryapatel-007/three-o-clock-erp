@@ -16,7 +16,10 @@
 # A copy of each Preferences file it changes is kept beside it as Preferences.bak.
 # Written in plain ASCII for Windows PowerShell 5.1.
 
-param([switch]$ReportOnly, [string]$ResetPrinter)
+#   5. -AutoCopy (the installer, 2026-10-22): copies, with no questions, the settings of
+#      the profile that prints on the bill printer with a sane paper (everyday Chrome
+#      first) into both Cafe POS windows, so the till prints as that Chrome does.
+param([switch]$ReportOnly, [string]$ResetPrinter, [switch]$AutoCopy)
 
 $ErrorActionPreference = 'Stop'
 
@@ -146,6 +149,21 @@ for ($index = 0; $index -lt $profiles.Count; $index++) {
   $flag = if ($sticky -and $sticky.Broken) { '   <-- BROKEN: paper too long, Chrome cannot print it' } else { '' }
   [void]$lines.Add("[$($index + 1)] $($profile.Label)")
   [void]$lines.Add("    $state$flag")
+}
+
+if ($AutoCopy) {
+  # A profile that prints on the default printer (the Rugtek), with a paper Chrome can print.
+  $printerName = if ($default) { $default.Name } else { 'POS' }
+  $source = $profiles | Where-Object {
+    -not $_.Target -and $_.Sticky -and -not $_.Sticky.Broken -and ($_.Sticky.Text -like "*printer: $printerName*" -or $_.Sticky.Text -like '*printer: POS*')
+  } | Sort-Object { if ($_.Everyday -and $_.Label -like '*Chrome*Default*') { 0 } elseif ($_.Everyday) { 1 } else { 2 } } | Select-Object -First 1
+  if (-not $source) { Write-Host 'No browser on this PC has bill printer settings to copy; the till keeps its own.'; exit 0 }
+  foreach ($target in ($profiles | Where-Object { $_.Target })) {
+    Stop-Profile $target
+    Write-Sticky $target.File $source.Sticky.Raw
+  }
+  Write-Host "The till prints as $($source.Label) does: $($source.Sticky.Text)" -ForegroundColor Green
+  exit 0
 }
 
 $report = Join-Path ([Environment]::GetFolderPath('Desktop')) 'print-settings-report.txt'
