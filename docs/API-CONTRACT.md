@@ -9515,6 +9515,10 @@ share the day, and only the PC closes it." Reads are unchanged.
 | `GET /sync/status` | OWNER, MANAGER | `{ mode, node (BOX or CLOUD), peerUrl (box only), pushed { shippedSeq, newestSeq, waiting }, pulled { seq, at }, lastError, lastErrorAt, conflictsUnseen }` |
 | `GET /sync/conflicts?seen=true|false&page&limit` | OWNER, MANAGER | paged list, newest first: `{ id, coll, documentId, kind (EDITED_BOTH, SAME_SLOT, DELETED_HERE), title, detail, fields, keptFrom (BOX or CLOUD), detectedOn, detectedAt, seenAt, seenByName, link }` |
 | `POST /sync/conflicts/:conflictId/seen` | OWNER, MANAGER | body `{}`; `data` the conflict with `seenAt` and `seenBy` |
+| `POST /sync/conflicts/:conflictId/keep` | OWNER, MANAGER | 2026-10-22. body `{ version: "LOCAL" \| "INCOMING" \| "RESULT" }`: that version is written here with a new `updatedAt` (RESULT changes nothing), then the conflict is seen. Each conflict lists `versions: [{ key, from }]` |
+| `POST /sync/now` | OWNER, MANAGER | 2026-10-22. body `{}`. On the box a whole round (pull, then push) at once, or a push when one-way; on the cloud its changelog is brought up to date for the box's next pull. `data`: `{ did, failed, status, changes }` |
+| `GET /sync/changes` | OWNER, MANAGER | 2026-10-22. The last 100 changes the other side's sync made here, newest first: `{ id, coll, documentId, title, outcome, from, at, wasNew, canUndo, undoBlocked, undoneAt, link }`. Kept on this side only |
+| `POST /sync/changes/:changeId/undo` | OWNER, MANAGER | 2026-10-22. Puts this side's version from before that change back, with a new `updatedAt`, so the next sync takes it to the other side. Refused (422) for a record the other side made new, or one already undone |
 
 `GET /auth/me` gains `sync: { mode, server, conflictsUnseen }`: `server` is the
 answering server's `DEPLOYMENT_ROLE` (`CLOUD` is the website; the P62 connection

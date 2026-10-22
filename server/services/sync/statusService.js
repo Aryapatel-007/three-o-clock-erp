@@ -66,7 +66,19 @@ function present(conflict, names) {
     seenAt: conflict.seenAt,
     seenByName: conflict.seenBy ? names.get(String(conflict.seenBy)) ?? null : null,
     link: linkFor(conflict.coll, String(conflict.documentId)),
+    // 2026-10-22. The versions a person can choose to keep (POST .../keep): LOCAL is the side that found it.
+    versions: [
+      ...(conflict.localDoc ? [{ key: 'LOCAL', from: conflict.detectedOn }] : []),
+      ...(conflict.incomingDoc ? [{ key: 'INCOMING', from: conflict.detectedOn === SYNC_NODES.BOX ? SYNC_NODES.CLOUD : SYNC_NODES.BOX }] : []),
+    ],
   };
+}
+
+/** One conflict with its kept versions, for choosing one. */
+export async function readConflict(restaurantId, conflictId) {
+  const conflict = await SyncConflict.findOne({ _id: conflictId, restaurantId }).lean();
+  if (!conflict) throw new NotFoundError();
+  return conflict;
 }
 
 async function namesFor(restaurantId, conflicts) {

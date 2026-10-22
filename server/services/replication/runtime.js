@@ -84,31 +84,69 @@ async function startChangelogWriter() {
  * P63. The box's round: pull then push, for every restaurant, paced by SYNC_EVERY_SECONDS
  * and SYNC_HOURS (sync/pacing.js) and backing off when the cloud is away.
  */
+// The box's shipper, and the round in progress: the timer and Sync now share them, one round at a time.
+let boxShipper = null;
+let roundInFlight = null;
+let syncFailures = 0;
+let syncNextAt = 0;
+
+/** One two-way round: pull everything waiting, then push. Gives back whether any step failed. */
+async function exchangeRound() {
+  let failed = false;
+  for (const restaurantId of await localRestaurantIds()) {
+    for (let round = 0; round < 50; round += 1) {
+      const outcome = await pullOnce(restaurantId, { pump: pumpChangelog });
+      if (outcome === 'FAILED') failed = true;
+      if (outcome !== 'PULLED') break;
+    }
+  }
+  await writer?.pump();
+  const shipped = await boxShipper.tick();
+  if (shipped?.some((outcome) => outcome === 'FAILED')) failed = true;
+  syncFailures = failed ? syncFailures + 1 : 0;
+  syncNextAt = failed ? Date.now() + RETRY_DELAYS_MS[Math.min(syncFailures - 1, RETRY_DELAYS_MS.length - 1)] : 0;
+  return { failed };
+}
+
+function runRound(round) {
+  if (!roundInFlight) roundInFlight = round().finally(() => { roundInFlight = null; });
+  return roundInFlight;
+}
+
+/**
+ * 2026-10-22. Sync now, from the Sync page. On the box: a whole round at once,
+ * outside the pace and any wait after a failure (two-way), or a push (one-way).
+ * On the cloud: its own latest changes go into the changelog, ready for the
+ * box's next pull. Gives back what this side could do.
+ */
+export async function syncNow() {
+  if (currentRole() === ROLES.BOX && boxShipper) {
+    if (!isTwoWay()) {
+      await writer?.pump();
+      const shipped = await boxShipper.tick();
+      return { did: 'PUSHED', failed: Boolean(shipped?.some((outcome) => outcome === 'FAILED')) };
+    }
+    const { failed } = await runRound(exchangeRound);
+    return { did: 'PULLED_AND_PUSHED', failed };
+  }
+  if (writer) {
+    await writer.pump();
+    return { did: 'READY_FOR_THE_PC', failed: false };
+  }
+  return { did: 'NOTHING', failed: false };
+}
+
 function startTwoWayExchange() {
-  const shipper = new Shipper();
+  boxShipper = new Shipper();
   const everyMs = config.SYNC_EVERY_SECONDS * 1_000;
   const hours = parseSyncHours(config.SYNC_HOURS);
-  let failures = 0;
-  let nextAt = 0;
   let lastAt = 0;
   every(TWO_WAY_TICK_MS, 'The two-way sync', async () => {
-    if (Date.now() < nextAt) return;
+    if (Date.now() < syncNextAt) return;
     await writer?.pump();
     if (!shouldExchange({ now: nowUtc(), lastAt, waiting: await hasUnshippedChanges(), everyMs, hours })) return;
     lastAt = nowUtc().getTime();
-    let failed = false;
-    for (const restaurantId of await localRestaurantIds()) {
-      for (let round = 0; round < 50; round += 1) {
-        const outcome = await pullOnce(restaurantId, { pump: pumpChangelog });
-        if (outcome === 'FAILED') failed = true;
-        if (outcome !== 'PULLED') break;
-      }
-    }
-    await writer?.pump();
-    const shipped = await shipper.tick();
-    if (shipped?.some((outcome) => outcome === 'FAILED')) failed = true;
-    failures = failed ? failures + 1 : 0;
-    nextAt = failed ? Date.now() + RETRY_DELAYS_MS[Math.min(failures - 1, RETRY_DELAYS_MS.length - 1)] : 0;
+    await runRound(exchangeRound);
   });
 }
 
@@ -138,8 +176,8 @@ export async function startReplication() {
     return;
   }
 
-  const shipper = new Shipper();
-  every(SHIP_EVERY_MS, 'The shipper', () => shipper.tick());
+  boxShipper = new Shipper();
+  every(SHIP_EVERY_MS, 'The shipper', () => boxShipper.tick());
 
   let pullFailures = 0;
   let pullAfter = 0;
@@ -163,6 +201,10 @@ export async function startReplication() {
 
 export async function stopReplication() {
   for (const timer of timers.splice(0)) clearInterval(timer);
+  await roundInFlight?.catch(() => {});
+  boxShipper = null;
+  syncFailures = 0;
+  syncNextAt = 0;
   stopWriterStateRefresh();
   if (writer) {
     // What the stream has waiting goes into the changelog before the database closes.

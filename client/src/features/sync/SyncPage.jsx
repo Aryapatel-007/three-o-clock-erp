@@ -2,7 +2,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 
-import { listSyncConflicts, markSyncConflictSeen } from '../../api/sync.js';
+import { keepSyncConflictVersion, listSyncChanges, listSyncConflicts, markSyncConflictSeen, syncNow, undoSyncChange } from '../../api/sync.js';
+import { errorMessage } from '../billing/errorCopy.js';
 import Button from '../../components/ui/Button.jsx';
 import ErrorMessage from '../../components/ui/ErrorMessage.jsx';
 import StateChip from '../../components/ui/StateChip.jsx';
@@ -32,11 +33,15 @@ export default function SyncPage() {
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-4 p-4">
-      <header>
-        <h1 className="type-title">Sync</h1>
-        <p className="type-body text-muted">The cafe PC and the website, kept in step.</p>
+      <header className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="type-title">Sync</h1>
+          <p className="type-body text-muted">The cafe PC and the website, kept in step.</p>
+        </div>
+        <SyncNowButton isBox={status?.data?.node === 'BOX'} />
       </header>
       <StatusCard status={status} />
+      <IncomingChanges />
       <section className="rounded-xl border border-line bg-surface p-4">
         <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
           <h2 className="type-label">{showSeen ? 'Conflicts already seen' : 'Sync conflicts to check'}</h2>
@@ -54,6 +59,112 @@ export default function SyncPage() {
         </ul>
       </section>
     </div>
+  );
+}
+
+/**
+ * 2026-10-22. Sync now. On the cafe PC a whole round at once: the website's
+ * changes in, then this PC's out. On the website its own changes are made
+ * ready; the PC takes them on its next round, within a minute while it is on.
+ */
+function SyncNowButton({ isBox }) {
+  const queryClient = useQueryClient();
+  const [said, setSaid] = useState(null);
+  const now = useMutation({
+    mutationFn: syncNow,
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ['sync'] });
+      const words = {
+        PULLED_AND_PUSHED: 'Synced: the website’s changes are in, and this PC’s have gone.',
+        PUSHED: 'This PC’s changes have gone to the website.',
+        READY_FOR_THE_PC: 'Ready: the cafe PC takes the website’s changes on its next sync, within a minute while it is on.',
+        NOTHING: 'Nothing to sync on this server.',
+      };
+      setSaid({ tone: result.failed ? 'alert' : 'ok', text: result.failed ? 'The sync could not finish. See Last problem below; it tries again by itself.' : words[result.did] ?? 'Synced.' });
+    },
+    onError: (error) => setSaid({ tone: 'alert', text: errorMessage(error) }),
+  });
+  return (
+    <div className="flex flex-col items-end gap-1">
+      <Button isLoading={now.isPending} onClick={() => now.mutate()}>
+        {now.isPending ? (isBox ? 'Syncing…' : 'Getting ready…') : 'Sync now'}
+      </Button>
+      {said && <p className={`type-caption max-w-xs text-right ${said.tone === 'alert' ? 'text-alert' : 'text-muted'}`}>{said.text}</p>}
+    </div>
+  );
+}
+
+const OUTCOME = { APPLIED: 'Taken as it came', MERGED: 'Merged with a change here', DELETED: 'Removed' };
+
+/** 2026-10-22. What the other side's changes did here, newest first, each with Undo. */
+function IncomingChanges() {
+  const changes = useQuery({ queryKey: ['sync', 'changes'], queryFn: listSyncChanges, refetchInterval: 30_000 });
+  const rows = changes.data ?? [];
+  return (
+    <section className="rounded-xl border border-line bg-surface p-4">
+      <h2 className="type-label mb-1">What came in</h2>
+      <p className="type-caption mb-3 text-muted">
+        Changes the other side sent here, newest first. Each is kept unless you undo it; an undo goes back to the other side at the next sync.
+      </p>
+      {changes.isError && <ErrorMessage error={changes.error} />}
+      {changes.isLoading && <p className="type-body text-muted">Reading…</p>}
+      {changes.data && rows.length === 0 && <p className="type-body text-muted">Nothing has come in yet.</p>}
+      <ul className="flex flex-col divide-y divide-line">
+        {rows.map((change) => <IncomingRow key={change.id} change={change} />)}
+      </ul>
+    </section>
+  );
+}
+
+function IncomingRow({ change }) {
+  const queryClient = useQueryClient();
+  const [confirming, setConfirming] = useState(false);
+  const undo = useMutation({
+    mutationFn: () => undoSyncChange(change.id),
+    onSuccess: () => {
+      setConfirming(false);
+      queryClient.invalidateQueries();
+    },
+  });
+  return (
+    <li className="flex flex-col gap-2 py-3">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <span className="type-heading">{change.title}</span>
+        <span className="type-caption text-muted">
+          From {SIDE[change.from] ?? change.from} · {formatDateIst(change.at)} {formatTimeIst(change.at)}
+        </span>
+      </div>
+      <p className="type-caption text-muted">{change.wasNew ? 'New here' : OUTCOME[change.outcome] ?? change.outcome}</p>
+      <div className="flex flex-wrap items-center gap-2">
+        {change.link && (
+          <Link to={change.link} className="type-label inline-flex min-h-12 items-center rounded-full border border-line px-4 hover:bg-sunken">
+            Open it
+          </Link>
+        )}
+        {change.undoneAt ? (
+          <span className="type-caption text-muted">Undone at {formatTimeIst(change.undoneAt)}</span>
+        ) : change.canUndo ? (
+          confirming ? (
+            <>
+              <span className="type-body">Put back how it was here before this change?</span>
+              <Button size="sm" variant="secondary" isLoading={undo.isPending} onClick={() => undo.mutate()}>
+                Yes, undo it
+              </Button>
+              <Button size="sm" variant="quiet" onClick={() => setConfirming(false)}>
+                Keep it
+              </Button>
+            </>
+          ) : (
+            <Button size="sm" variant="quiet" onClick={() => setConfirming(true)}>
+              Undo
+            </Button>
+          )
+        ) : (
+          <span className="type-caption text-muted">Kept. {change.undoBlocked}</span>
+        )}
+      </div>
+      {undo.isError && <ErrorMessage error={undo.error} />}
+    </li>
   );
 }
 
@@ -109,9 +220,9 @@ function StatusCard({ status }) {
 
 function ConflictRow({ conflict }) {
   const queryClient = useQueryClient();
-  const seen = useMutation({
-    mutationFn: () => markSyncConflictSeen(conflict.id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['sync'] }),
+  const keep = useMutation({
+    mutationFn: (version) => (version === 'RESULT' ? markSyncConflictSeen(conflict.id) : keepSyncConflictVersion(conflict.id, version)),
+    onSuccess: () => queryClient.invalidateQueries(),
   });
   return (
     <li className="flex flex-col gap-2 py-3">
@@ -134,14 +245,22 @@ function ConflictRow({ conflict }) {
           </Link>
         )}
         {!conflict.seenAt ? (
-          <Button size="sm" variant="secondary" isLoading={seen.isPending} onClick={() => seen.mutate()}>
-            Mark as seen
-          </Button>
+          <>
+            {/* 2026-10-22. Which version to keep: as merged, or either side's whole version. */}
+            <Button size="sm" variant="secondary" isLoading={keep.isPending && keep.variables === 'RESULT'} onClick={() => keep.mutate('RESULT')}>
+              Keep as it is
+            </Button>
+            {(conflict.versions ?? []).map((version) => (
+              <Button key={version.key} size="sm" variant="quiet" isLoading={keep.isPending && keep.variables === version.key} onClick={() => keep.mutate(version.key)}>
+                Use {SIDE[version.from] ?? version.from}&rsquo;s version
+              </Button>
+            ))}
+          </>
         ) : (
           <span className="type-caption text-muted">Seen{conflict.seenByName ? ` by ${conflict.seenByName}` : ''}</span>
         )}
       </div>
-      {seen.isError && <ErrorMessage error={seen.error} />}
+      {keep.isError && <ErrorMessage error={keep.error} />}
     </li>
   );
 }

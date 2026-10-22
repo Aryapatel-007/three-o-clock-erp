@@ -28,6 +28,7 @@ import { otherNode, recordConflict } from './conflicts.js';
 import { docHash, sameDoc } from './hash.js';
 import { threeWayMerge } from './merge.js';
 import { syncNode } from './mode.js';
+import { isListed, noteIncoming } from './recentChanges.js';
 import { getSyncDoc, noteApplied, setBase } from './syncDocs.js';
 
 /** The live channel's topics a change to each collection should wake. */
@@ -168,13 +169,23 @@ async function applyOnce(db, restaurantId, entry) {
 export async function applyPeerEntries(db, restaurantId, entries) {
   const counts = Object.fromEntries(Object.values(APPLY_OUTCOMES).map((outcome) => [outcome, 0]));
   const topics = new Set();
+  const changed = [];
   for (const entry of entries) {
+    // 2026-10-22. This side's version before the change, so the Sync page can undo it.
+    const listed = isListed(entry.coll);
+    const before = listed ? await db.collection(entry.coll).findOne({ _id: entry.documentId }) : null;
     const outcome = await applyPeerEntry(db, restaurantId, entry);
     counts[outcome] += 1;
     if (outcome !== APPLY_OUTCOMES.SAME && outcome !== APPLY_OUTCOMES.STALE) {
       for (const topic of TOPICS_OF[entry.coll] ?? []) topics.add(topic);
     }
+    if (listed && CHANGED_HERE.has(outcome)) {
+      changed.push({ coll: entry.coll, documentId: entry.documentId, outcome, before, after: entry.doc ?? null });
+    }
   }
   for (const topic of topics) announce(topic, String(restaurantId));
+  await noteIncoming(db, restaurantId, changed);
   return counts;
 }
+
+const CHANGED_HERE = new Set([APPLY_OUTCOMES.APPLIED, APPLY_OUTCOMES.MERGED, APPLY_OUTCOMES.DELETED]);

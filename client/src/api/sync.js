@@ -17,3 +17,23 @@ export function listSyncConflicts({ seen = false, page = 1, limit = 50 } = {}) {
 export function markSyncConflictSeen(conflictId) {
   return api.post(`/sync/conflicts/${conflictId}/seen`, {});
 }
+
+/** POST /sync/conflicts/:id/keep. `version`: LOCAL, INCOMING or RESULT. 2026-10-22. */
+export function keepSyncConflictVersion(conflictId, version) {
+  return api.post(`/sync/conflicts/${conflictId}/keep`, { version });
+}
+
+/** POST /sync/now: `{ did, failed, status, changes }`. 2026-10-22. */
+export function syncNow() {
+  return api.post('/sync/now', {});
+}
+
+/** GET /sync/changes: what the other side's changes did here, newest first. 2026-10-22. */
+export function listSyncChanges() {
+  return api.get('/sync/changes');
+}
+
+/** POST /sync/changes/:id/undo. 2026-10-22. */
+export function undoSyncChange(changeId) {
+  return api.post(`/sync/changes/${changeId}/undo`, {});
+}
