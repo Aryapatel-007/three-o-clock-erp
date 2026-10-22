@@ -314,19 +314,19 @@ describe('the PC\'s pace (P63, inside Render\'s free hours)', () => {
   });
 });
 
-describe('the website\'s own numbers', () => {
+// 2026-10-22, Arya: one series for both, the website billing only while the PC is off.
+describe('one series for the PC and the website', () => {
   const restaurantId = new ObjectId();
   const branchId = new ObjectId();
 
-  it('numbers orders and tickets from 900001 on the website, and as before on the PC', async () => {
+  it('numbers orders and tickets in the same run on the website and the PC', async () => {
     asCloud();
-    assert.equal(await nextNumber({ restaurantId, branchId, name: 'ORDER' }), 900_001);
-    assert.equal(await nextNumber({ restaurantId, branchId, name: 'ORDER' }), 900_002);
-    asBox();
     assert.equal(await nextNumber({ restaurantId, branchId, name: 'ORDER' }), 1);
+    asBox();
+    assert.equal(await nextNumber({ restaurantId, branchId, name: 'ORDER' }), 2);
   });
 
-  it('bills on the website in the W series, gap-free, beside the PC\'s series', async () => {
+  it('bills on the website in the same series as the PC, gap-free', async () => {
     const reserve = async (invoice = null) => {
       const session = await mongoose.startSession();
       try {
@@ -340,15 +340,11 @@ describe('the website\'s own numbers', () => {
       }
     };
     asCloud();
-    const first = await reserve();
-    assert.equal(first.billNumber, '2026-27/W00001');
-    assert.equal(first.invoiceSeries, '2026-27/W');
-    assert.equal(first.billSequence, 900_000_001);
-    assert.equal((await reserve()).billNumber, '2026-27/W00002');
-    assert.equal((await reserve({ mode: 'PREFIX', prefix: 'ZC/', startingNumber: 500 })).billNumber, 'ZC/W1');
-    assert.equal(numberInSeries('2026-27/W', 900_000_007), '2026-27/W00007');
-    asBox();
     assert.equal((await reserve()).billNumber, '2026-27/000001');
+    asBox();
+    assert.equal((await reserve()).billNumber, '2026-27/000002');
+    // A W number from before still reads as it was printed.
+    assert.equal(numberInSeries('2026-27/W', 900_000_007), '2026-27/W00007');
   });
 });
 

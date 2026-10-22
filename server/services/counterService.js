@@ -15,7 +15,6 @@
  * orders for a reason neither of them can act on. $inc does the read, the add
  * and the write inside the database, where nothing can interleave.
  */
-import { isTwoWayCloud } from './sync/mode.js';
 import { Counter } from '../models/Counter.js';
 
 /**
@@ -56,7 +55,7 @@ export async function nextNumber({ restaurantId, branchId, name }) {
    * M3 added `scope` to carry a bill sequence's financial year. ORDER and KOT
    * do not reset, so their scope is null, but it still has to be named here.
    */
-  if (isTwoWayCloud()) return nextWebsiteNumber({ restaurantId, branchId, name });
+  // 2026-10-22, Arya: the website numbers orders and tickets in the same run as the cafe PC.
 
   const counter = await Counter.findOneAndUpdate(
     { restaurantId, branchId, name, scope: null },
@@ -75,12 +74,5 @@ export async function nextNumber({ restaurantId, branchId, name }) {
  */
 export const WEBSITE_NUMBER_SCOPE = 'W';
 export const WEBSITE_NUMBER_START = 900_000;
-
-async function nextWebsiteNumber({ restaurantId, branchId, name }) {
-  const filter = { restaurantId, branchId, name, scope: WEBSITE_NUMBER_SCOPE };
-  await Counter.updateOne(filter, { $setOnInsert: { value: WEBSITE_NUMBER_START } }, { upsert: true });
-  const counter = await Counter.findOneAndUpdate(filter, { $inc: { value: 1 } }, { new: true });
-  return counter.value;
-}
 
 export default { nextNumber };
