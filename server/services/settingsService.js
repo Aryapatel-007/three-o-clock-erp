@@ -93,6 +93,11 @@ const SETTING_PATHS = Object.freeze({
   'payments.otherModes': 'settings.payments.otherModes',
   'reports.onHoldTallyCode': 'settings.reports.onHoldTallyCode',
   'reports.dayEndEmails': 'settings.reports.dayEndEmails',
+  // P65.
+  'reports.ca.enabled': 'settings.reports.ca.enabled',
+  'reports.ca.name': 'settings.reports.ca.name',
+  'reports.ca.email': 'settings.reports.ca.email',
+  'reports.ca.whatsapp': 'settings.reports.ca.whatsapp',
 
   'floor.sectionOrder': 'settings.floor.sectionOrder',
   'floor.longOpenMinutes': 'settings.floor.longOpenMinutes',
@@ -130,6 +135,13 @@ const SETTING_PATHS = Object.freeze({
   'assistant.handoffHours': 'settings.assistant.handoffHours',
   'assistant.dailyAiLimit': 'settings.assistant.dailyAiLimit',
 });
+
+/**
+ * P65. Settings whose values are a third party's contact details. Their audit
+ * line says the field changed and who changed it, never the value: the audit
+ * collection carries no personal data (DB-SCHEMA section 13, CONVENTIONS 12).
+ */
+const UNRECORDED_VALUE_PATHS = Object.freeze(new Set(['reports.ca.name', 'reports.ca.email', 'reports.ca.whatsapp']));
 
 /** The modules a restaurant can switch off. P02. */
 export const FEATURE_NAMES = Object.freeze(['inventory', 'attendance', 'online']);
@@ -456,6 +468,12 @@ export async function updateSettings(
 
   if (patch.appearance !== undefined) assertAppearanceComplete(before.appearance, patch.appearance);
 
+  // P65. The pack goes by email, so it cannot be switched on without one.
+  if (patch.reports?.ca?.enabled === true) {
+    const email = patch.reports.ca.email !== undefined ? patch.reports.ca.email : before.reports.ca.email;
+    if (!email) throw new BusinessRuleError("Add the CA's email first: the pack goes by email.");
+  }
+
   // P64. Drawing the accent on an invoice: the accent must still pass the accent rules.
   if (patch.invoiceLayout?.useBrandAccent === true) {
     assertPrintableAccent({ ...before.appearance, ...(patch.appearance ?? {}) });
@@ -512,11 +530,13 @@ export async function updateSettings(
           amountInPaise: null,
           // A field path and two scalars. No personal data goes in here, for
           // the reason DB-SCHEMA section 13 gives.
-          details: {
-            field: change.apiPath,
-            previousValue: String(change.previous),
-            newValue: String(change.next),
-          },
+          details: UNRECORDED_VALUE_PATHS.has(change.apiPath)
+            ? { field: change.apiPath, valueRecorded: false }
+            : {
+                field: change.apiPath,
+                previousValue: String(change.previous),
+                newValue: String(change.next),
+              },
         },
         session,
       );

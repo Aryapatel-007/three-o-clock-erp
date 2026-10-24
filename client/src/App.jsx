@@ -59,6 +59,7 @@ const DeviceSettingsPage = lazyScreen(settingsGroup, 'DeviceSettingsPage');
 const PrintStationPage = lazyScreen(settingsGroup, 'PrintStationPage');
 const AppearancePage = lazyScreen(settingsGroup, 'AppearancePage');
 const InvoiceLayoutPage = lazyScreen(settingsGroup, 'InvoiceLayoutPage');
+const CaReportsPage = lazyScreen(settingsGroup, 'CaReportsPage');
 const SettingsPage = lazyScreen(settingsGroup, 'SettingsPage');
 const StationsPage = lazyScreen(settingsGroup, 'StationsPage');
 const IntegrationsPage = lazyScreen(integrationsGroup, 'IntegrationsPage');
@@ -593,6 +594,18 @@ export default function App() {
           <ProtectedRoute>
             <RequireRole roles={SETTINGS_ROLES}>
               <InvoiceLayoutPage />
+            </RequireRole>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* P65. The CA's month, owner only; the server enforces it. */}
+      <Route
+        path="/settings/ca-reports"
+        element={
+          <ProtectedRoute>
+            <RequireRole roles={SETTINGS_ROLES}>
+              <CaReportsPage />
             </RequireRole>
           </ProtectedRoute>
         }

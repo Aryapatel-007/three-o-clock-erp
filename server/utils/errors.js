@@ -812,8 +812,9 @@ export class TallyAlreadyExportedError extends AppError {
 
 /** P25 Part J. Only closed days are exported. */
 export class DayNotClosedError extends AppError {
-  constructor(businessDates) {
-    super(`Close the day first: ${businessDates.join(', ')}. Only closed days go to Tally.`, {
+  /** P65. `purpose` says what needs the days closed; Tally's sentence by default. */
+  constructor(businessDates, purpose = 'Only closed days go to Tally.') {
+    super(`Close the day first: ${businessDates.join(', ')}. ${purpose}`, {
       statusCode: 422,
       code: ERROR_CODES.DAY_NOT_CLOSED,
       details: { businessDates },

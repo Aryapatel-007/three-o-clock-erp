@@ -126,6 +126,14 @@ export const LABELS = Object.freeze({
   CASH_TAKEN_OUT: 'Cash taken out',
   KEPT_FOR_TOMORROW: 'Kept for tomorrow',
   TAKEN_OUT_AT_CLOSE: 'Taken out at close',
+  // P65, R20 CA Pack.
+  LINE: 'Line',
+  DETAIL: 'Detail',
+  CODE: 'Code',
+  CHECK: 'Check',
+  OPENING: 'Opening',
+  CLOSING: 'Closing',
+  ADJUSTED: 'Adjusted',
 });
 
 export const LABEL_VALUES = Object.freeze(Object.values(LABELS));

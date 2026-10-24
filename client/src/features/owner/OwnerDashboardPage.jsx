@@ -1,7 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 
+import { getCaSends } from '../../api/caReports.js';
 import { getReport } from '../../api/reportsV2.js';
+import { monthWords, sendWords } from '../settings/CaSendHistory.jsx';
 import ErrorMessage from '../../components/ui/ErrorMessage.jsx';
 import Money, { moneyText } from '../../components/ui/Money.jsx';
 import { useTheme } from '../../context/ThemeProvider.jsx';
@@ -119,6 +121,9 @@ export default function OwnerDashboardPage() {
         {failed && <ErrorMessage error={failed.error} />}
         {!failed && !ready && <p className="py-12 text-center text-sm text-dash-muted">Reading today&apos;s figures…</p>}
         {ready && <Figures date={date} today={today.data} day={day.data} hours={hours.data} />}
+
+        {/* P65. Last month's CA pack, when it did not go. */}
+        <CaPackNotice />
 
         {/* P62. The WiFi the system runs on, the devices connected, the cloud copy. */}
         <OwnerNetworkCard />
@@ -363,5 +368,22 @@ function TickCircle() {
       <circle cx="8" cy="8" r="7.2" stroke="currentColor" strokeWidth="1.6" />
       <path d="M4.8 8.2L7 10.4L11.2 5.8" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" />
     </svg>
+  );
+}
+
+/**
+ * P65. The most recent month's CA pack, shown only when it was not sent: a day
+ * still open, a check failing, or the email service refusing it. Nothing when
+ * the send is off or the month went.
+ */
+function CaPackNotice() {
+  const sends = useQuery({ queryKey: ['ca-sends'], queryFn: getCaSends, refetchInterval: REFRESH_MS * 5 });
+  const latest = sends.data?.ca?.enabled ? sends.data.sends[0] : null;
+  if (!latest || !['REFUSED', 'FAILED'].includes(latest.status)) return null;
+  return (
+    <Link to="/settings/ca-reports" className="flex flex-col gap-1 rounded-xl border border-dash-line bg-dash-card px-4 py-3 hover:bg-dash-track">
+      <span className="text-sm font-semibold">The CA pack for {monthWords(latest.period)} was not sent</span>
+      <span className="text-xs text-dash-muted">{sendWords(latest)}</span>
+    </Link>
   );
 }

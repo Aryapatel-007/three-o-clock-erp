@@ -38,6 +38,7 @@ import replicationRoutes, { REPLICATION_ROUTES_PATH } from './routes/replication
 import { startReplication, stopReplication } from './services/replication/runtime.js';
 import { startBackups, stopBackups } from './services/backup/backupService.js';
 import { startJobLoop } from './services/integrations/jobRunner.js';
+import { startCaSends, stopCaSends } from './services/caPackService.js';
 import { attachLiveChannel, closeLiveChannel } from './services/live/socketServer.js';
 import { recordServerStart } from './services/serverStartService.js';
 import { describeKey, findMissingIndexes } from './services/indexService.js';
@@ -277,6 +278,8 @@ export async function startServer() {
   const app = createApp();
   // P25 Part G. One loop per process; version 1 runs one instance.
   if (!config.isTest) startJobLoop();
+  // P65. The CA's month, checked every hour wherever the job loop runs.
+  if (!config.isTest) startCaSends();
 
   // 2026-10-17. Bound to 0.0.0.0 by name: Render's port scan looks there, and
   // with Node's default (::) a deploy timed out though the server was answering.
@@ -302,6 +305,7 @@ export async function startServer() {
   // through a database call.
   installShutdownHandlers(async () => {
     closeLiveChannel(live);
+    stopCaSends();
     await closeHttpServer(server);
     // P54. What the change diary has waiting goes up before the database closes.
     await stopBackups().catch((error) => logger.warn({ err: error }, 'Backups did not stop cleanly.'));

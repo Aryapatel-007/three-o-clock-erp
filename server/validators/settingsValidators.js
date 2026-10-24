@@ -39,7 +39,7 @@ import {
   THERMAL_SHOW_DEFAULTS,
 } from '../models/Restaurant.js';
 import { checkAccent } from '../utils/colour.js';
-import { basisPoints } from './common.js';
+import { basisPoints, normalisePhoneIndia } from './common.js';
 
 export const SETTINGS_REASON_MAX_LENGTH = 200;
 
@@ -380,6 +380,24 @@ const reports = z
       .array(z.string().trim().toLowerCase().email('Is not an email address.'), { error: 'Must be a list of email addresses.' })
       .max(5, 'At most 5 addresses.')
       .refine((list) => new Set(list).size === list.length, 'The same address is listed twice.')
+      .optional(),
+    // P65. The CA's details. "" or null clears a field.
+    ca: z
+      .object({
+        enabled: z.boolean({ error: 'Must be true or false.' }).optional(),
+        name: receiptText(80, "The CA's name").optional(),
+        email: z
+          .union([z.string(), z.null()])
+          .transform((value) => (value === null || value.trim() === '' ? null : value.trim().toLowerCase()))
+          .refine((value) => value === null || z.email().safeParse(value).success, 'Is not an email address.')
+          .optional(),
+        whatsapp: z
+          .union([z.string(), z.null()])
+          .transform((value) => (value === null || value.trim() === '' ? null : normalisePhoneIndia(value)))
+          .refine((value) => value === null || /^[6-9]\d{9}$/.test(value), 'Must be a 10 digit Indian mobile number.')
+          .optional(),
+      })
+      .strict()
       .optional(),
   })
   .strict();
