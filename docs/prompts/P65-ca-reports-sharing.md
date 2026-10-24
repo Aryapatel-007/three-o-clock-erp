@@ -1,153 +1,199 @@
-# P65 The CA's month: one pack, shared, signed off
+# P65 The CA's month, sent by itself
 
-Model: Opus, high. Owner: Rishi (M19, M21, M7). Depends on: P64, and P29's
-closed days.
+Model: Opus, high. Owner: Rishi (M19, M7). Depends on: P64, for the HSN codes
+section 4C.3 adds up.
 
 Asked for by Rishi on 2026-10-24: "reports can be shared to the CA, and the
-work for the restaurant and the CA gets easy."
+work for the restaurant and the CA gets easy." From MyBillBook's CA Reports
+Sharing screen, seen in his own account on 2026-10-24 (app version 9.25.1,
+Pro plan).
 
 Read before starting: `docs/REPORT-SPEC.md` R8, R9 and R10,
 `docs/RECONCILIATION-RULES.md`, `server/services/reports/engine.js`,
-`server/services/integrations/tally/exportService.js`,
-`server/services/emailService.js`, `docs/REPLICATION.md` section 2.
+`server/services/emailService.js`, `server/services/backup/backupService.js`
+(for how a recurring job is scheduled here), `docs/REPLICATION.md` section 2.
 
-## 1. What already exists
+## 1. What the screen Rishi pointed at actually does
 
-More than it looks. The accountant's path is half built:
+Four fields and a switch: CA name, CA WhatsApp number, CA email (optional),
+Enable Sharing. One line of behaviour: GSTR reports go to the CA on the 1st of
+every month. There is no portal, no login and no link. The "1 CA" in their
+plans is this, not a seat.
 
-1. R8 GST gives the rate-wise figures. R9 Tally Export builds balanced vouchers
-   as XML, from closed days only, refuses to build while any ERROR check fails,
-   and refuses to export a date twice until the owner says the old vouchers
-   were deleted from Tally. R10 Invoice Register proves there is no gap in the
-   series. Every report already exports as a workbook from the same envelope
-   the screen drew, so a file can never disagree with a screen.
+**An earlier draft of this prompt got that wrong** and designed a tokenised
+share link, a public route, expiry and revocation, with a seventh
+`ACCOUNTANT` role behind it. All of that is dropped. It is written down here
+so nobody reads the old idea somewhere and rebuilds it. If a CA ever asks to
+filter and drill for themselves, that is a new prompt with a real CA asking.
+
+## 2. What already exists
+
+Most of the hard part:
+
+1. R8 GST gives the rate-wise figures. R9 Tally Export builds balanced
+   vouchers from closed days only, refuses while any ERROR check fails, and
+   refuses to export a date twice. R10 Invoice Register proves the series has
+   no gap. Every report exports as a workbook built from the envelope the
+   screen drew, so a file can never disagree with a screen.
 2. `emailService.js` sends through Resend, used by P44's day-end message.
-3. Every report runs the checks in `docs/RECONCILIATION-RULES.md` and shows a
-   red strip rather than hiding itself.
+3. P54's `startBackups` is the pattern for a recurring job: one ticker started
+   with the server, which decides on each tick whether anything is due.
 
-## 2. What is missing
+## 3. What is missing
 
-1. **One pack.** A CA wants a month, not nineteen downloads. Today the owner
-   has to know which reports matter and pick the dates on each.
-2. **A way in.** The CA has no account, and should not need the owner's phone
-   and password. Everything today is behind a staff sign-in.
-3. **Filing shape.** R8 answers "what GST do we owe". A GSTR-1 return also wants
-   a rate-wise B2C summary, an HSN or SAC summary, and the document series with
-   its voided numbers. P64 adds the HSN field this needs.
-4. **A signature.** Nothing records that the CA looked, which is also the gate
-   M3's decision D1 has been waiting on since 2026-08-30: a CA confirming the
-   GST output on a real printed bill. This prompt is how that finally closes.
+A single pack instead of nineteen downloads, a monthly send, and the GSTR-1
+shape: a rate-wise B2C summary, an HSN or SAC summary (P64 adds the codes) and
+the document series with its voided numbers.
 
-## 3. What to build
+## 4. What to build
 
-A. **Spec first**: `docs/REPORT-SPEC.md` gains R20, the CA Pack;
-   `docs/API-CONTRACT.md` a P65 section; `docs/DB-SCHEMA.md` the `cashares`
-   collection; `docs/GLOSSARY.md` section 49 for the CA's words;
-   `docs/RECONCILIATION-RULES.md` any check the pack adds; and the rows in the
-   prompts README and the build plan. Classify the new model in
-   `server/config/replication.js` or the tripwire test fails (P62).
+### A. Spec first
 
-B. **R20, the CA Pack**, a sectioned report like R9, through the one engine,
-   with `requiresPassingChecks` and closed days only. Sections:
-   1. **Cover** — restaurant, legal name, GSTIN, FSSAI, the period, which of
-      its days are closed, and when the pack was generated.
-   2. **Outward supplies, rate-wise** — taxable value, CGST, SGST per slab, and
-      the platform-collected 0% supplies on their own line with section 9(5)
-      named, because that is the line a CA will ask about first.
-   3. **HSN and SAC summary** — from the codes P64 freezes on each bill line.
-      Lines with no code are their own "not recorded" row, never guessed. Same
-      rule as R11's treatment of bills from before P03.
-   4. **Document series** — R10's numbers in order, voided ones included and
-      marked, so the CA can see the series is unbroken.
-   5. **Money received** — by payment method, with On Hold and unpaid, matching
-      R5 and R2 to the paisa.
-   6. **On Hold movement** — opening, charged, collected, adjusted, closing.
-   7. **Cash and expenses** — the month's expenses by category from the cash
-      book, bank deposits as contra, cash to the owner as drawings, exactly as
-      P29 already maps them for Tally.
-   8. **Checks** — every reconciliation check for the period, each named, with
-      what it compared.
-   The workbook writes one sheet per section, which the engine already supports
-   as `sheetPerSection` for R9. The Tally XML for the same period is offered
-   beside it, from the existing export service, not a second builder.
+`docs/REPORT-SPEC.md` gains R20; `docs/API-CONTRACT.md` a P65 section;
+`docs/DB-SCHEMA.md` the `careportsends` collection and the `settings.reports.ca`
+group; `docs/GLOSSARY.md` section 49; the rows in the prompts README and
+`docs/CAFFEZA-BUILD-PLAN.md` sections 3 and 6. Classify the new model in
+`server/config/replication.js` or the tripwire test fails (P62).
 
-C. **How the CA gets it.** Two ways are possible and they are not equal; this
-   is the decision to settle before writing code.
-   - **A share link, recommended for v1.** A new `cashares` record: one
-     restaurant, one period, created by an OWNER, an expiry, revocable, and
-     only the hash of its token stored, which is the pattern `TallyBridge`
-     already uses for the bridge's token. The CA opens
-     `/api/v1/public/ca/:token`, reads the pack and downloads the workbook and
-     the XML. It sits outside the general rate limiter with its own, like the
-     public page, and the slug lookup is a sanctioned `skipTenantGuard` use,
-     which means the tripwire's sanctioned count in
-     `tests/skipTenantGuard.test.js` moves from four to five, deliberately and
-     in the same commit. Every open is audited.
-   - **A seventh role, `ACCOUNTANT`.** `server/config/roles.js` opens with "The
-     six roles. This list is closed." Adding one touches every permission
-     table, every `requireRole` call site and the Staff screen, and gives the
-     CA a phone-number login inside a restaurant's user list. It is the better
-     answer in the long run, because the CA could then filter and drill exactly
-     as the owner does. It is also a much larger blast radius for something no
-     CA has used yet.
-   Build the link now. Keep the role as its own prompt, written once a real CA
-   has used a pack and said what they still had to ask for.
+### B. The CA's details, without their number in the audit trail
 
-D. **Monthly, by itself.** On the 1st, for the month just ended, the pack is
-   built and emailed to `settings.reports.caEmails`, a mirror of P44's
-   `dayEndEmails`, at most five addresses, with the workbook and the Tally XML
-   attached. Resend takes base64 attachments; `sendEmail` gains an optional
-   `attachments` argument and nothing else changes. If a day in the month is
-   still open, the email says so and names the dates rather than sending a
-   half month quietly. That refusal is the feature.
+`settings.reports.ca`: `{ enabled, name, email, whatsapp }`, beside P44's
+`dayEndEmails`, owner only, every field defaulted so no restaurant needs a
+migration.
 
-E. **The sign-off.** The CA marks a period reviewed, with an optional note. It
-   is stored on the share, audited as `CA_PACK_REVIEWED`, and shown on the
-   owner's dashboard beside the month. `CA_PACK_SHARED`, `CA_PACK_OPENED`,
-   `CA_PACK_REVOKED` are the other three new actions, OWNER-only on the
-   activity log, added to `docs/CAFFEZA-BUILD-PLAN.md` section 6.
+**There is a trap here, and it must be handled in the same commit.**
+`settingsService.js` writes a `SETTINGS_CHANGED` audit line per changed field
+carrying `previousValue` and `newValue` as strings, under a comment promising
+no personal data goes in there. Saving the CA's number through it would write
+a phone number into the audit trail, which CONVENTIONS section 12 and P27 both
+forbid. So the three CA contact fields are marked in `settingsService` as
+recorded without their values: the audit line says the CA's contact changed and
+who changed it, and never the number, the address or the name. A test asserts
+that saving a CA number leaves no audit line containing it.
 
-F. **Screens.** `/reports/ca` for the owner: pick a month, see the pack, copy
-   or email the link, see who opened it and when, revoke it. The CA's own view
-   is the same envelope rendered by the existing `ReportPage`, read-only, with
-   no sidebar and no links into the ERP.
+The CA's details are the restaurant's configuration, not a guest's record. They
+never reach `/auth/me`, never reach a report, and never appear in a log line.
 
-## 4. What the pack must never carry
+### C. R20, the CA Pack
 
-A guest's mobile number, name or any other personal detail. A CA needs invoice
-numbers and amounts, not a customer list, and the DPDP consent P27 records is
-for offers, not for handing a contact list to a third party. The thermal bill
-already masks a mobile to its last four digits; the pack carries none at all.
-No phone number in the link, and no personal data in any URL, which CONVENTIONS
-section 3 already forbids. A test asserts no `customer` field reaches R20.
+One sectioned report, through the one engine, closed days only, with
+`requiresPassingChecks` exactly as R9 has it. Sections:
 
-## 5. Where it runs
+1. **Cover** — restaurant, legal name, GSTIN, FSSAI, the period, which of its
+   days are closed, when the pack was built, and the plain sentence from
+   section 5 about what the pack does not cover.
+2. **Outward supplies, rate-wise** — taxable value, CGST and SGST per slab,
+   with the platform-collected 0% supplies on their own line naming section
+   9(5), because that is the first line a CA will ask about.
+3. **HSN and SAC summary** — from the codes P64 freezes on each bill line.
+   Lines with no code are their own "not recorded" row, never guessed, the
+   same rule R11 already uses for bills from before P03.
+4. **Document series** — R10's numbers in order, voided ones included and
+   marked, so the CA can see the series is unbroken.
+5. **Money received** — by payment method, with On Hold and unpaid, matching
+   R5 and R2 to the paisa.
+6. **On Hold movement** — opening, charged, collected, adjusted, closing.
+7. **Cash and expenses** — the month's expenses by category, bank deposits as
+   contra and cash to the owner as drawings, exactly as P29 already maps them
+   for Tally.
+8. **Checks** — every reconciliation check for the period, each named, with
+   what it compared.
 
-With two-way sync on (P63) the cafe PC is the writer and the cloud is a
-read-only mirror. A CA pack is a read, so it should be served from the cloud
-rather than from a PC in a cafe during service. But a mirror can lag, and a
-pack built from a half-applied month would be wrong in the most expensive way.
-So: the pack refuses to build unless every business date in the period is
-closed **and** the mirror's cursor has passed the last changelog entry for that
-period. `ReplicationState` and `ReplicaCursor` already carry what is needed to
-answer that. Say it plainly on screen when it refuses: the day is not closed,
-or the copy is still catching up.
+The workbook writes one sheet per section, which the engine already supports as
+`sheetPerSection` for R9. The same period's Tally XML comes from the existing
+export service, never a second builder.
+
+### D. The monthly send
+
+A ticker started with the server, in P54's shape. On each tick: for each
+restaurant with `ca.enabled`, if the previous month has no `careportsends` row,
+every one of its business dates is closed, and the machine holds the whole month
+(section 4F), build the pack and email it.
+
+`careportsends`: `restaurantId`, `period` (`"2026-10"`), `status`
+(`SENT`, `FAILED`, `REFUSED`), `refusedReason`, `sentAt`, `to`, the file names,
+and the checks summary. A unique index on `{ restaurantId, period }` is what
+makes a restart, a second machine or a retry unable to send twice — a unique
+index rather than a service check, for the same reason `stockmovements` uses
+one: a check has a race in its middle.
+
+`sendEmail` gains an optional `attachments` argument, in Resend's shape, and
+nothing else about it changes. The email carries the workbook and the Tally XML
+and says in its first line what period it covers.
+
+With a day still open the send does not go. It records `REFUSED` with the open
+dates and tells the owner on their dashboard. **That refusal is the feature**:
+a CA who receives half a month and files from it is worse off than a CA who
+receives nothing.
+
+WhatsApp is not built here. P37 sends to guests through approved templates and
+reads `customers` and offers consent; a CA is neither a guest nor a customer
+record, and bending that path around one accountant would put a third party
+into the collection that exists for guests. A CA on WhatsApp is its own small
+prompt: one utility template and a send path of its own.
+
+### E. The screen
+
+Settings, CA reports (owner only): the four fields, what will be sent and when,
+the last twelve sends with their status, **Send now** for a month the owner
+picks, and Download for the workbook and the XML. A refused month says why in
+words: which dates are open, or which check failed.
+
+New audit action `CA_PACK_SENT`, OWNER only on the activity log, in build plan
+section 6. Changing the CA's details is already `SETTINGS_CHANGED`, under 4B's
+rule.
+
+### F. Where it runs
+
+The pack is a read, but it must be a read of a complete month. Under P63 the
+cafe PC is the writer and the cloud has its own copy, and under P62 the mirror
+is read-only and can lag. So the send refuses unless every business date in the
+period is closed **and** the machine running it holds the period's last change:
+`ReplicationState` and `ReplicaCursor` already carry what is needed to answer
+that. It runs wherever the job loop runs, and the internet is what Resend needs,
+not the cafe.
+
+## 5. What the pack does not carry, and what it cannot claim
+
+Say each of these on the cover, not in a comment. A CA who discovers them
+later trusts nothing else in the pack.
+
+1. **No purchases, so no input GST.** M9 is deferred, so nothing in this system
+   records a purchase bill. The pack is outward supplies only: there is no
+   purchase register, no input tax credit and no GSTR-2B reconciliation, and
+   the CA assembles that side as they do today. This is the single largest gap
+   between this pack and what a general billing app hands a CA.
+2. **Everything is B2C.** `accounts` carries no GSTIN field, so a corporate On
+   Hold account cannot be told from a walk-in. If Z Chaat starts invoicing a
+   registered company that wants input credit, that is a schema addition and a
+   decision of its own, not something to infer from an account's name.
+3. **No credit notes.** A bill voided before the return is filed is a cancelled
+   number in the series, which the pack shows. A refund after filing needs a
+   credit note under section 34, and this system has no such document.
+4. **No e-invoicing.** No IRN and no signed QR. It is turnover-gated and is its
+   own prompt, with its own decision about the threshold Z Chaat has reached.
+5. **No guest personal data.** Not a name, not a number, not a masked number. A
+   CA needs invoice numbers and amounts, not a customer list, and the consent
+   P27 records is for offers, not for handing contacts to a third party. A test
+   asserts no customer field reaches R20.
 
 ## 6. Tests
 
 Server: the golden day's month produces a pack whose every section reconciles
-with R2, R5, R8 and R10 to the paisa; an open day in the period refuses the
-build and names the date; a failing ERROR check refuses the build, as R9 does;
-a share token is stored only as a hash and a wrong token is a 401; an expired
-or revoked share is refused; a second open writes a second audit line; the pack
-contains no customer field; a lagging mirror refuses, and the same request
-succeeds once the cursor passes.
+with R2, R5, R8 and R10 to the paisa; an open day refuses the build and names
+the date; a failing ERROR check refuses it, as R9 does; the unique index means
+a second send for one period writes nothing and sends nothing, proved by
+running the tick twice; a Resend failure records `FAILED` and is tried again on
+the next tick, never twice in one; saving a CA number writes no audit line
+containing it (it fails when the field is left out of 4B's list, tried on
+purpose); the pack contains no customer field; a lagging mirror refuses, and
+the same request succeeds once the cursor passes.
 
-Browser: the owner shares a month, opens the link in a clean session with no
-cookie, downloads the workbook, and marks it reviewed.
+Browser: the owner sets the CA's details, sends a month by hand, sees it in the
+history, and downloads the workbook. The e2e server's fake Resend (P44) receives
+it with both attachments.
 
-## 7. Effort, honestly
+## 7. Effort
 
-Three sessions: the spec and R20; the share, the email and the schedule; the
-screens. P64 comes first, because without its HSN field section 3 of the pack
-has nothing to add up.
+Two sessions: the spec and R20; the send, the settings and the screen. P64 comes
+first, because without its HSN codes section 4C.3 has nothing to add up.
