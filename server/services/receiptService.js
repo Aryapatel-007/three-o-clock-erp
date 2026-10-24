@@ -18,7 +18,7 @@
  */
 import { discountReasonText } from '../config/discountReasons.js';
 import { groupBillLines } from '../utils/billLines.js';
-import { paiseToRupees } from '../utils/money.js';
+import { paiseToIndianWords, paiseToRupees } from '../utils/money.js';
 import { toIst } from '../utils/time.js';
 
 const RULE = '-';
@@ -118,7 +118,7 @@ function discountLabel(discount) {
  * `settings.receipt`; a missing one prints the name, GSTIN and FSSAI, and no
  * header or footer lines.
  */
-export function buildInvoiceData({ restaurant, bill, receipt = {} }) {
+export function buildInvoiceData({ restaurant, bill, receipt = {}, lineNotes = null }) {
   const showGstin = receipt.showGstin ?? true;
   const showFssai = receipt.showFssai ?? true;
   const printCount = bill.printCount ?? 0;
@@ -140,6 +140,10 @@ export function buildInvoiceData({ restaurant, bill, receipt = {} }) {
       fssaiNumber: showFssai ? restaurant.fssaiLicenseNumber || null : null,
       headerAbove: receipt.headerLine1 || null,
       headerLines: [receipt.headerLine2].filter(Boolean),
+      // P64. Printed on the full page only, each under its own switch.
+      panNumber: restaurant.panNumber || null,
+      msmeNumber: restaurant.msmeNumber || null,
+      termsText: receipt.termsText || null,
     },
     billId: String(bill._id ?? bill.id),
     billNumber: bill.billNumber,
@@ -165,9 +169,17 @@ export function buildInvoiceData({ restaurant, bill, receipt = {} }) {
       unitPriceInPaise: line.unitPriceInPaise,
       lineTotalInPaise: line.lineTotalInPaise,
       taxRateBps: line.taxRateBps,
+      // P64. Frozen on the line; null on a bill from before P64.
+      hsnCode: line.hsnCode ?? null,
+      notes: noteOf(lineNotes, line.orderLineId),
     })),
     // P35. The same dish once: what every printed bill lists. Computed, never stored.
-    itemRows: groupBillLines(bill.lines),
+    itemRows: groupBillLines(bill.lines).map(({ orderLineIds, ...row }) => ({
+      ...row,
+      orderLineIds,
+      // P64. Each line's note once.
+      notes: [...new Set(orderLineIds.map((id) => noteOf(lineNotes, id)).filter(Boolean))],
+    })),
     itemTotalInPaise: bill.subtotalInPaise,
     discount: bill.discount
       ? {
@@ -187,6 +199,8 @@ export function buildInvoiceData({ restaurant, bill, receipt = {} }) {
     gstInPaise: bill.totalTaxInPaise,
     roundOffInPaise: bill.roundOffInPaise,
     billTotalInPaise: bill.grandTotalInPaise,
+    // P64. Spelled by money.js, never by a theme.
+    billTotalInWords: paiseToIndianWords(bill.grandTotalInPaise),
     payments: (bill.payments ?? []).map((payment) => ({
       methodName: payment.methodName ?? payment.method,
       amountInPaise: payment.amountInPaise,
@@ -195,6 +209,12 @@ export function buildInvoiceData({ restaurant, bill, receipt = {} }) {
     footerText: receipt.footerText || null,
     reviewLinkUrl: receipt.reviewLinkUrl || null,
   };
+}
+
+/** An order line's note, from a map of order line id to note, or null. */
+function noteOf(lineNotes, orderLineId) {
+  if (!lineNotes || orderLineId === null || orderLineId === undefined) return null;
+  return lineNotes.get(String(orderLineId)) || null;
 }
 
 /**

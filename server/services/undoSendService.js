@@ -45,6 +45,8 @@ const SNAPSHOT_FIELDS = [
   'categoryName',
   // P46.
   'isOpenItem',
+  // P64.
+  'hsnCode',
 ];
 
 function unsentCopy(line, req, at) {

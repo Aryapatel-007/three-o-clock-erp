@@ -26,6 +26,7 @@ import {
 import { sumPaise } from '../utils/money.js';
 import { scoped } from '../utils/scopedQuery.js';
 import { nowUtc } from '../utils/time.js';
+import { getSetting } from './settingsService.js';
 
 /* --------------------------------------------------------------------------
  * Reading
@@ -156,6 +157,8 @@ export async function buildLineSnapshots(req, lineRequests, { taxTreatment = TAX
     'name',
   );
   const categoryNames = new Map(categories.map((category) => [String(category._id), category.name]));
+  // P64. The code a dish with none of its own is frozen at, read once.
+  const defaultSacCode = await getSetting(req.restaurantId, 'invoice.defaultSacCode', { req });
 
   const now = nowUtc();
 
@@ -252,6 +255,8 @@ export async function buildLineSnapshots(req, lineRequests, { taxTreatment = TAX
       // kept and the order is not blocked over it.
       categoryId: item.categoryId ?? null,
       categoryName: categoryNames.get(String(item.categoryId)) ?? null,
+      // P64. Frozen like the price and the rate: the item's code, else the default SAC.
+      hsnCode: item.hsnCode || defaultSacCode || null,
       quantity: request.quantity,
       addOns,
       notes: request.notes ?? null,

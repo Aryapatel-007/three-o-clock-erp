@@ -56,6 +56,9 @@ export const RECEIPT_HEADER_MAX_LENGTH = 40;
 export const RECEIPT_FOOTER_MAX_LENGTH = 200;
 /** P25. The review link printed as a QR code at the foot of every bill. */
 export const REVIEW_LINK_MAX_LENGTH = 300;
+// P64. The terms and conditions on the full-page invoice, and the SAC for restaurant service.
+export const TERMS_TEXT_MAX_LENGTH = 600;
+export const DEFAULT_SAC_CODE = '996331';
 
 /**
  * Tax configuration. Shapes from docs/DB-SCHEMA.md section 17.
@@ -123,6 +126,8 @@ const receiptSettingsSchema = new mongoose.Schema(
     showServerName: { type: Boolean, required: true, default: false },
     // P25. An https address; every printed bill ends with its QR code.
     reviewLinkUrl: { type: String, trim: true, maxlength: REVIEW_LINK_MAX_LENGTH, default: null },
+    // P64. Printed at the foot of the full-page invoice when `invoiceLayout.show.terms` is on.
+    termsText: { type: String, trim: true, maxlength: TERMS_TEXT_MAX_LENGTH, default: null },
   },
   { _id: false },
 );
@@ -208,6 +213,73 @@ const invoiceSettingsSchema = new mongoose.Schema(
         message: 'Must be a whole number.',
       },
     },
+    /**
+     * P64. The SAC an order line freezes when its dish has no HSN or SAC code
+     * of its own. 996331 is restaurant service. Only lines added afterwards
+     * follow a change.
+     */
+    defaultSacCode: { type: String, required: true, trim: true, default: DEFAULT_SAC_CODE, match: /^\d{4,8}$/ },
+  },
+  { _id: false },
+);
+
+/**
+ * P64. How the full-page tax invoice is laid out, and what it and the thermal
+ * roll show. Every default prints exactly what CLASSIC and the thermal bill
+ * printed before P64, so a restaurant that never opens the screen sees no
+ * change. The mandatory core of a tax invoice (CGST Rule 46) is not here at
+ * all: no switch can take it off.
+ */
+export const INVOICE_THEMES = Object.freeze(['CLASSIC', 'GST_DETAILED', 'MODERN', 'COMPACT']);
+export const INVOICE_SHOW_DEFAULTS = Object.freeze({
+  time: true,
+  captain: true,
+  cashier: false,
+  covers: true,
+  table: true,
+  orderType: true,
+  customerName: false,
+  customerMobileMasked: false,
+  itemNote: false,
+  hsn: false,
+  paymentBreakdown: true,
+  onHoldOutstanding: false,
+  amountInWords: false,
+  declaration: false,
+  signatureLine: false,
+  reviewQr: true,
+  pan: true,
+  msme: true,
+  terms: true,
+  copyMarking: false,
+});
+export const THERMAL_SHOW_DEFAULTS = Object.freeze({
+  time: true,
+  cashier: true,
+  covers: false,
+  table: true,
+  orderType: true,
+  customerName: true,
+  customerMobileMasked: true,
+  itemNote: false,
+  paymentBreakdown: true,
+  onHoldOutstanding: false,
+  amountInWords: false,
+  reviewQr: true,
+});
+
+const switches = (defaults) =>
+  new mongoose.Schema(
+    Object.fromEntries(Object.entries(defaults).map(([key, value]) => [key, { type: Boolean, required: true, default: value }])),
+    { _id: false },
+  );
+
+const invoiceLayoutSettingsSchema = new mongoose.Schema(
+  {
+    theme: { type: String, enum: INVOICE_THEMES, required: true, default: 'CLASSIC' },
+    useBrandAccent: { type: Boolean, required: true, default: false },
+    show: { type: switches(INVOICE_SHOW_DEFAULTS), default: () => ({}) },
+    thermalShow: { type: switches(THERMAL_SHOW_DEFAULTS), default: () => ({}) },
   },
   { _id: false },
 );
@@ -568,6 +640,8 @@ const settingsSchema = new mongoose.Schema(
     inventory: { type: inventorySettingsSchema, default: () => ({}) },
     features: { type: featureSettingsSchema, default: () => ({}) },
     invoice: { type: invoiceSettingsSchema, default: () => ({}) },
+    // P64.
+    invoiceLayout: { type: invoiceLayoutSettingsSchema, default: () => ({}) },
     delivery: { type: deliverySettingsSchema, default: () => ({}) },
     discounts: { type: discountSettingsSchema, default: () => ({}) },
     billing: { type: billingSettingsSchema, default: () => ({}) },
@@ -596,7 +670,8 @@ const settingsSchema = new mongoose.Schema(
  * the bytes. A slot is empty when `sha256` is null; every field has a default,
  * so a restaurant written before P22 reads back two empty slots.
  */
-export const LOGO_SLOTS = Object.freeze({ LIGHT_GROUND: 'lightGround', DARK_GROUND: 'darkGround' });
+// P64. SIGNATURE is the owner's signature for the full-page invoice, under the same rules.
+export const LOGO_SLOTS = Object.freeze({ LIGHT_GROUND: 'lightGround', DARK_GROUND: 'darkGround', SIGNATURE: 'signature' });
 export const LOGO_SLOT_NAMES = Object.freeze(Object.keys(LOGO_SLOTS));
 export const LOGO_CONTENT_TYPES = Object.freeze(['image/png', 'image/webp', 'image/jpeg']);
 
@@ -618,6 +693,7 @@ const brandLogosSchema = new mongoose.Schema(
   {
     lightGround: { type: logoSlotSchema, default: () => ({}) },
     darkGround: { type: logoSlotSchema, default: () => ({}) },
+    signature: { type: logoSlotSchema, default: () => ({}) },
   },
   { _id: false },
 );
@@ -635,6 +711,10 @@ const restaurantSchema = new mongoose.Schema(
 
     /** 14 digits. */
     fssaiLicenseNumber: { type: String, trim: true },
+
+    /** P64. Optional, printed on the full-page invoice: the PAN and the Udyam (MSME) number. */
+    panNumber: { type: String, trim: true, uppercase: true, default: null },
+    msmeNumber: { type: String, trim: true, uppercase: true, default: null },
 
     address: { type: addressSchema, default: () => ({}) },
 

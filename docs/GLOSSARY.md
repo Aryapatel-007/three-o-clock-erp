@@ -884,3 +884,9 @@ Added by P64. Printed words on the full-page invoice and the screens that set it
 | **Invoice settings** | The tab for the full-page invoice: the theme and what it shows |
 | **Print settings** | The tab that previews the invoice on A4 or A5 and chooses the copy |
 | **Thermal settings** | The tab for what the thermal roll shows |
+| **Invoice layout** | The settings screen for the three tabs above |
+| **Invoice date** | The date the bill was issued, printed when Time issued is off |
+| **Guest** | On the full page: the guest's name, when its switch is on |
+| **Mobile** | On the full page: the last four digits of the guest's mobile, as XXXXXX1234 |
+| **Tax summary** | On GST detailed: each rate's net sales, and its CGST and SGST rate and amount |
+| **CGST rate, SGST rate** | Half the GST rate each, like 2.5% on a 5% dish |

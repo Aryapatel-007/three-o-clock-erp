@@ -57,6 +57,7 @@ const TableArrangePage = lazyScreen(settingsGroup, 'TableArrangePage');
 const TableManagementPage = lazyScreen(settingsGroup, 'TableManagementPage');
 const DeviceSettingsPage = lazyScreen(settingsGroup, 'DeviceSettingsPage');
 const AppearancePage = lazyScreen(settingsGroup, 'AppearancePage');
+const InvoiceLayoutPage = lazyScreen(settingsGroup, 'InvoiceLayoutPage');
 const SettingsPage = lazyScreen(settingsGroup, 'SettingsPage');
 const StationsPage = lazyScreen(settingsGroup, 'StationsPage');
 const IntegrationsPage = lazyScreen(integrationsGroup, 'IntegrationsPage');
@@ -579,6 +580,18 @@ export default function App() {
           <ProtectedRoute>
             <RequireRole roles={SETTINGS_ROLES}>
               <AppearancePage />
+            </RequireRole>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* P64. The invoice layout, owner only; the server's settings rule enforces it. */}
+      <Route
+        path="/settings/invoice-layout"
+        element={
+          <ProtectedRoute>
+            <RequireRole roles={SETTINGS_ROLES}>
+              <InvoiceLayoutPage />
             </RequireRole>
           </ProtectedRoute>
         }
