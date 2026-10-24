@@ -112,12 +112,51 @@ E. **The four themes, as four pure functions of one payload.**
    bill Z Chaat's guests know, and P25 and the 2026-10-09 decisions measured it
    on real paper.
 
-F. **The screen.** Invoice layout sits on `/settings/invoice-layout`, OWNER
-   only, like Appearance, which it is modelled on and for the same reason: the
-   live preview needs width the settings form does not have. It previews a real
-   bill through `ReceiptPreviewPage`'s existing path, switching theme, paper
-   and switches without saving, and saves through `PATCH /settings` with a
-   reason, audited as `SETTINGS_CHANGED` like everything else.
+F. **The screens, three of them.** Rishi's own MyBillBook account, seen on
+   2026-10-24, splits this three ways, and the split is better than one page
+   because it follows the three things being set up: **Invoice settings** is
+   the full-page document a guest is emailed or handed, **Print settings** is
+   the paper and theme for a printer, and **Thermal settings** is the roll. The
+   code already has that seam — `invoiceHtml`, the paper sizes in
+   `printers.js`, and `thermalBillHtml` — so the screens follow it rather than
+   cutting across it.
+
+   All three sit under `/settings/invoice-layout`, OWNER only, as tabs of one
+   page modelled on Appearance and for the same reason: the live preview needs
+   width the settings form does not have. Each previews a real bill through
+   `ReceiptPreviewPage`'s existing path, switching theme, paper and switches
+   without saving, and saves through `PATCH /settings` with a reason, audited
+   as `SETTINGS_CHANGED` like everything else. The per-device choices (printer,
+   width, edge margin, text size) stay on This device, where they belong: they
+   are that counter's printer, not the restaurant's.
+
+G. **Four small things from their sample invoice**, each additive and each
+   worth having on a document a CA or a company guest will keep:
+   - **A signature image.** A second slot beside `brandLogos`, with the exact
+     rules P22 settled for a logo: PNG, WebP or JPEG read from the file's own
+     bytes, SVG always refused, the bytes `select: false` so they never ride
+     along with `GET /settings` or the restaurant document `authenticate`
+     loads on every request. It prints above the existing signature line.
+   - **The amount in words**, already in `show` under `amountInWords`. It is
+     written by one helper beside `paiseToWholeRupeesText` in `money.js`,
+     never by a theme, so four themes cannot spell a number four ways.
+   - **Terms and conditions**, a text block in `settings.receipt` beside the
+     footer, with the same empty-string-is-null rule M7 settled for the three
+     fields already there.
+   - **PAN, and MSME or Udyam number**, two optional fields on the restaurant
+     beside the GSTIN and FSSAI it already prints, shown under `show`.
+
+   - **The copy marking.** Checked against CBIC's own text of CGST Rule 48 on
+     2026-10-24, because a first draft of this prompt got it wrong and called
+     it a goods-only rule. It is not. Rule 48(1) puts a supply of **goods** in
+     triplicate (ORIGINAL FOR RECIPIENT, DUPLICATE FOR TRANSPORTER, TRIPLICATE
+     FOR SUPPLIER); Rule 48(2) puts a supply of **services** in duplicate,
+     marked ORIGINAL FOR RECIPIENT and DUPLICATE FOR SUPPLIER. A restaurant
+     serving food is supplying a service, so the duplicate pair is the one
+     that applies. The full-page themes carry the marking, defaulting to
+     ORIGINAL FOR RECIPIENT, with the supplier's copy available from the same
+     screen. The thermal roll is left alone: it is one physical copy handed
+     over a counter, and nobody prints a second for the file.
 
 ## 4. Tests
 
