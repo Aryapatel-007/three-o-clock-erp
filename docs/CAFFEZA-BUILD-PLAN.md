@@ -189,6 +189,7 @@ M8 reads them all.
 | `PLATFORM_PAYOUT_RECORDED` | `PAYOUT` | M17, from P09 | Platform money arriving |
 | `BRAND_LOGO_SET` | `SETTINGS` | M20, from P22 | The restaurant's logo changed |
 | `BRAND_LOGO_REMOVED` | `SETTINGS` | M20, from P22 | The restaurant's logo was removed |
+| `CA_PACK_SENT` | `REPORT` | M19, from P65 | The month's figures left the restaurant for its CA |
 
 ---
 
