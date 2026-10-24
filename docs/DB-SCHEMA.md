@@ -3117,6 +3117,29 @@ changes, and no migration.
 | `orders` | `lines[].billedWithoutKot` | Boolean | false | True on a dish the counter billed without sending to the kitchen: it went from not sent straight to served, with `servedAt` set and `firedAt` and `kotId` left null |
 | `bills` | `lines[].billedWithoutKot` | Boolean | false | Copied from the order line when the bill is made |
 
+## 60. Invoice themes, HSN codes and print fields (P64)
+
+`docs/prompts/P64-invoice-themes-and-print-fields.md`. Additive: every field
+has a default, no existing value changes, no migration. Adds to sections 1
+(`settings`, `brandLogos`), 6 (`menuitems`) and 12 (`bills.lines`).
+
+| Collection | Field | Type | Default | Notes |
+|---|---|---|---|---|
+| `menuitems` | `hsnCode` | String or null | null | 4 to 8 digits. The item's own HSN or SAC code |
+| `orders` | `lines[].hsnCode` | String or null | null | Frozen when the line is added: the item's code, else `settings.invoice.defaultSacCode`. Null on lines from before P64 |
+| `bills` | `lines[].hsnCode` | String or null | null | Copied from the order line. Never back-filled |
+| `restaurants` | `panNumber` | String or null | null | `AAAAA9999A` |
+| `restaurants` | `msmeNumber` | String or null | null | An Udyam number, `UDYAM-GJ-01-0012345` |
+| `restaurants` | `brandLogos.signature` | Logo slot | empty | The P22 slot shape; `data` is `select: false` |
+| `restaurants` | `settings.invoice.defaultSacCode` | String | `"996331"` | 4 to 8 digits |
+| `restaurants` | `settings.receipt.termsText` | String or null | null | Up to 600 characters |
+| `restaurants` | `settings.invoiceLayout.theme` | String | `CLASSIC` | `CLASSIC`, `GST_DETAILED`, `MODERN`, `COMPACT` |
+| `restaurants` | `settings.invoiceLayout.useBrandAccent` | Boolean | false | |
+| `restaurants` | `settings.invoiceLayout.show.*` | Boolean | see API-CONTRACT P64 2 | Twenty switches for the full page |
+| `restaurants` | `settings.invoiceLayout.thermalShow.*` | Boolean | see API-CONTRACT P64 2 | Twelve switches for the roll |
+
+The defaults print what CLASSIC and the thermal bill printed before P64.
+
 ---
 
 # P62. Replication, intake and the box

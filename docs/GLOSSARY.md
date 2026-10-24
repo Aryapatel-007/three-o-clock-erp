@@ -866,3 +866,33 @@ Added 2026-10-22.
 | **Cafe POS - Till (prints without asking)** | The desktop icon on the cafe PC that opens the till at the PC's own address, printing bills with no dialog |
 | **Not printed yet** | On a captain's bill, 30 seconds after Print at counter: no counter has printed it, so the counter's This device must have Print bills sent by captains on, with the till open |
 | **Cafe POS printer** | The window on the cafe PC that prints captains' bills by itself, opened by Windows at sign-in |
+
+---
+
+## 48. Invoice themes and printed fields
+
+Added by P64. Printed words on the full-page invoice and the screens that set it up.
+
+| Term | Meaning |
+|---|---|
+| **Invoice theme** | How the full-page tax invoice is laid out: Classic, GST detailed, Modern or Compact. Every figure is the same on all four |
+| **Classic** | The full-page invoice as it printed before P64 |
+| **GST detailed** | The theme with an HSN or SAC column, a rate summary, the amount in words, the declaration and a signature line |
+| **Modern** | Classic with a band in the restaurant's accent and lighter rules |
+| **Compact** | A tighter layout for A5 paper, with the same content |
+| **HSN/SAC** | The code a line is classified under for GST. A dish with no code of its own prints the restaurant's default SAC, 996331, restaurant service |
+| **Default SAC code** | The code printed for any dish without one of its own |
+| **Amount in words** | The bill total spelled in rupees and paise, in lakh and crore |
+| **Declaration** | The printed line that the invoice shows the actual price and the particulars are true and correct |
+| **Authorised signatory** | The words under the signature line, beside the restaurant's legal name |
+| **Signature image** | The owner's signature, uploaded once and printed above the signature line |
+| **Terms and conditions** | The restaurant's own text printed at the foot of the full-page invoice |
+| **PAN** | The restaurant's Permanent Account Number |
+| **Udyam number** | The restaurant's MSME registration number |
+| **Account balance** | On an On Hold bill: what the account owes in all, now (its outstanding) |
+| **Original for recipient** | The copy marking on the guest's copy of a full-page invoice (CGST Rule 48(2)) |
+| **Duplicate for supplier** | The copy marking on the restaurant's own copy |
+| **Use the accent colour** | Draw the full-page invoice's band and rules in the accent chosen on Appearance |
+| **Invoice settings** | The tab for the full-page invoice: the theme and what it shows |
+| **Print settings** | The tab that previews the invoice on A4 or A5 and chooses the copy |
+| **Thermal settings** | The tab for what the thermal roll shows |

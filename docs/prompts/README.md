@@ -70,5 +70,7 @@ The full table, with dependencies and owners, is in
 | P59 | A captain's bill prints once, and the guest count moves to the first Send | Built 2026-10-21. Arya's read outstanding. |
 | P60 | Bill without KOT | Built 2026-10-21. Arya's read outstanding. |
 | P61 | A simple Day Close | Built 2026-10-21. Arya's read outstanding. |
+| P64 | Invoice themes, and what prints on a bill | Built 2026-10-25, not deployed. Arya's read outstanding. |
+| P65 | The CA's month, sent by itself | Built 2026-10-25, not deployed. Arya's read outstanding. |
 
 Prompt files that do not exist yet are added as they are written.
