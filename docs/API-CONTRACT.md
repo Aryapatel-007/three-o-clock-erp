@@ -9524,3 +9524,151 @@ share the day, and only the PC closes it." Reads are unchanged.
 answering server's `DEPLOYMENT_ROLE` (`CLOUD` is the website; the P62 connection
 bar and banner show only off it), and `conflictsUnseen` is for OWNER and MANAGER
 (null for other roles).
+
+# P64 Invoice themes, and what prints on a bill
+
+Spec 2026-10-25, `docs/prompts/P64-invoice-themes-and-print-fields.md`. Changes
+M3 section 16.1 (the invoice read), M2 12.x (order lines), M1 (menu items), M7
+(settings), M0 2.2 (`PATCH /restaurant`) and M20 P22 (logo slots). No figure
+moves: `utils/tax.js`, `computeBillTotals` and the invoice series are untouched.
+
+## 1. HSN and SAC codes
+
+`POST` and `PATCH /menu-items` take `hsnCode`: a string of 4 to 8 digits after
+trimming, or null (`""` is stored as null). Anything else is 400.
+
+`settings.invoice.defaultSacCode`, a string of 4 to 8 digits, default `"996331"`
+(restaurant service). It may be sent on its own: the mode, prefix and starting
+number rule (send all three together) is about those three only.
+
+When a line is added to an order, its `hsnCode` is frozen from the item's own
+code, else the restaurant's `defaultSacCode` at that moment. The bill line copies
+it. A line or bill line from before P64 has `hsnCode: null`; it is never filled
+in later, and prints blank. Changing an item's code changes only lines added
+afterwards.
+
+## 2. `settings.invoiceLayout` (OWNER, through `PATCH /settings`)
+
+```json
+{
+  "invoiceLayout": {
+    "theme": "CLASSIC",
+    "useBrandAccent": false,
+    "show": {
+      "time": true, "captain": true, "cashier": false, "covers": true, "table": true,
+      "orderType": true, "customerName": false, "customerMobileMasked": false,
+      "itemNote": false, "hsn": false, "paymentBreakdown": true, "onHoldOutstanding": false,
+      "amountInWords": false, "declaration": false, "signatureLine": false, "reviewQr": true,
+      "pan": true, "msme": true, "terms": true, "copyMarking": false
+    },
+    "thermalShow": {
+      "time": true, "cashier": true, "covers": false, "table": true, "orderType": true,
+      "customerName": true, "customerMobileMasked": true, "itemNote": false,
+      "paymentBreakdown": true, "onHoldOutstanding": false, "amountInWords": false, "reviewQr": true
+    }
+  }
+}
+```
+
+- `theme`: `CLASSIC`, `GST_DETAILED`, `MODERN`, `COMPACT`. Anything else is 400.
+- Every field has a default, so a restaurant written before P64 reads back the
+  whole group. The defaults print exactly what CLASSIC and the thermal bill
+  printed before P64.
+- `useBrandAccent: true` draws the accent the restaurant chose on Appearance
+  (M7 P20A). It is checked again with `utils/colour.js` `checkAccent` when it is
+  switched on; a colour that fails is 422 `BUSINESS_RULE_VIOLATED` with the
+  rule's sentence. No colour is stored in this group.
+- The mandatory core of a tax invoice (CGST Rule 46) is not a switch: the
+  supplier's name, address and GSTIN, TAX INVOICE, the invoice number and its
+  date, each line's value, each rate's taxable value, CGST and SGST, and the
+  bill total print on every theme with every switch off. The GSTIN still follows
+  `receipt.showGstin`, which is the restaurant's own declaration that it has one
+  to print; the date prints even when `show.time` is off, without the time.
+- `settings.receipt.showGstin`, `showFssai` and `showServerName` stay where
+  they are and are read by every theme and the thermal bill. `show.captain`
+  only adds a second choice for the full page: a captain prints there when both
+  are on.
+- Each changed field is one `SETTINGS_CHANGED` line, as every setting is.
+
+`settings.receipt.termsText`: up to 600 characters, `""` and null both clear it,
+the M7 rule for the receipt text fields.
+
+## 3. The restaurant's PAN and Udyam number
+
+`PATCH /restaurant` takes `panNumber` (`AAAAA9999A`, uppercased) and
+`msmeNumber` (an Udyam number, `UDYAM-GJ-01-0012345`, uppercased); null clears
+either. Both are returned with the restaurant.
+
+## 4. The signature image (changes M20 P22)
+
+A third slot, `SIGNATURE`, beside `LIGHT_GROUND` and `DARK_GROUND`, through the
+same three endpoints with every rule P22 settled: PNG, WebP or JPEG read from
+the file's own bytes, SVG refused, 200 KB, 128 to 1024 pixels a side, the bytes
+`select: false`, audited as `BRAND_LOGO_SET` and `BRAND_LOGO_REMOVED` with
+`slot: "SIGNATURE"`. `GET /auth/me` `appearance.logos` is unchanged and does not
+list it. It prints above the signature line.
+
+## 5. The invoice read gains (M3 16.1)
+
+```json
+{
+  "restaurant": { "…": "…", "panNumber": null, "msmeNumber": null, "termsText": null },
+  "lines": [ { "…": "…", "hsnCode": "996331", "notes": "Less spicy" } ],
+  "itemRows": [ { "…": "…", "hsnCode": "996331", "notes": ["Less spicy"] } ],
+  "billTotalInWords": "Rupees Five Hundred Ten Only",
+  "onHoldOutstandingInPaise": null,
+  "signature": null,
+  "layout": {
+    "theme": "CLASSIC", "accent": null,
+    "show": { "…": "…" }, "thermalShow": { "…": "…" }
+  }
+}
+```
+
+- `hsnCode` is the frozen code, or null. `itemRows` keep lines with different
+  codes apart.
+- `notes` is the order line's note, read from the order the bill belongs to;
+  an item row lists each line's note once.
+- `billTotalInWords` is written by `paiseToIndianWords` in `utils/money.js`,
+  the one place a number is spelled, in the Indian system (lakh, crore).
+- `onHoldOutstandingInPaise` is the account's outstanding now, from
+  `accountService.outstandingFor`, on an On Hold bill only; null otherwise.
+- `signature` is `{ hash, contentType }` when the slot is set, else null. The
+  client reads the bytes from `GET /restaurant/logo/SIGNATURE`.
+- `layout` is `settings.invoiceLayout` with `accent` resolved: the Appearance
+  accent when `useBrandAccent` is on, else null.
+
+`renderReceipt` (the receipt text endpoint, M3 15) is unchanged.
+
+## 6. The themes, on the client
+
+`client/src/features/printing/themes/` holds one file per theme, registered in
+`themes/index.js`, each `{ id, title, paper, styles, render(data, options) }`.
+`render` is a pure function of the invoice data: it queries nothing and
+computes no amount. `CLASSIC` is the full-page invoice as it printed before P64.
+
+| Theme | What it is |
+|---|---|
+| `CLASSIC` | The P25 full-page invoice |
+| `GST_DETAILED` | An HSN column, a rate summary (taxable value, CGST and SGST rate and amount per slab), the amount in words, the declaration and a signature line |
+| `MODERN` | CLASSIC with an accent band and lighter rules |
+| `COMPACT` | A5 first, tighter leading, the same content |
+
+Choosing a theme on the screen proposes its usual switches (GST_DETAILED turns
+on `hsn`, `amountInWords`, `declaration`, `signatureLine` and `copyMarking`); the
+owner may change any of them before saving.
+
+The copy marking (CGST Rule 48(2), a supply of services in duplicate) prints
+"ORIGINAL FOR RECIPIENT" by default and "DUPLICATE FOR SUPPLIER" when the
+supplier's copy is chosen at print time; it is on the full page only, never on
+the roll.
+
+The screen is `/settings/invoice-layout`, OWNER only, with three tabs:
+Invoice settings (the full-page theme and its switches), Print settings (the
+paper the preview is drawn on, and the copy), Thermal settings (`thermalShow`).
+Each previews a real bill without saving, and saves through `PATCH /settings`
+with a reason.
+
+## Error codes
+
+None new.

@@ -133,6 +133,8 @@ Each prompt names its model at the top.
 | P61 | A simple Day Close | M16 | P29, P44, P50, P59 | Rishi | Opus, high |
 | P62 | The cafe box, the cloud mirror and the network | Hosting, M0, M20 | P61 | Rishi | Opus, high |
 | P63 | Two-way sync: the cafe PC and the website both take bills | Hosting, M3, M16 | P62 | Rishi | Opus, high |
+| P64 | Invoice themes, and what prints on a bill | M3, M7, M20 | P57, P59, P60 | Rishi | Opus, high |
+| P65 | The CA's month, sent by itself | M19, M7 | P64 | Rishi | Opus, high |
 
 P04, P05 and P19 do not depend on the billing chain, so they can run in parallel with it.
 The owners follow the rule "one module, one owner". Change any of them, and record the change in the decision log.
