@@ -3140,6 +3140,28 @@ has a default, no existing value changes, no migration. Adds to sections 1
 
 The defaults print what CLASSIC and the thermal bill printed before P64.
 
+## 61. The CA's month (P65)
+
+`docs/prompts/P65-ca-reports-sharing.md`. Additive: one new collection and one
+settings group with defaults; no migration.
+
+| Collection | Field | Type | Default | Notes |
+|---|---|---|---|---|
+| `restaurants` | `settings.reports.ca.enabled` | Boolean | false | |
+| `restaurants` | `settings.reports.ca.name` | String or null | null | Up to 80 characters |
+| `restaurants` | `settings.reports.ca.email` | String or null | null | Lowercased |
+| `restaurants` | `settings.reports.ca.whatsapp` | String or null | null | 10 digits; stored, not used yet |
+
+`careportsends` (CaReportSend), base schema, MIRROR in `config/replication.js`:
+`period` (`"2026-10"`), `status` (`SENDING`, `SENT`, `FAILED`, `REFUSED`),
+`trigger` (`AUTO`, `MANUAL`), `refusedReason`, `openDates` [String],
+`failedChecks` [String], `claimedAt`, `sentAt`, `to` [String], `files` [String],
+`checks { passed, failed }`, `attempts`, `lastError`, `sentBy` (User or null).
+Index `{ restaurantId, period }` unique: one row per month, which is what keeps
+a restart, a second machine or a retry from sending twice.
+
+`auditlogs.action` gains `CA_PACK_SENT` (entity `REPORT`, OWNER only to read).
+
 ---
 
 # P62. Replication, intake and the box

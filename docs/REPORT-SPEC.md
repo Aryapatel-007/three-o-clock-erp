@@ -96,6 +96,7 @@ No other role sees reports.
 | R17 | On Hold Accounts | Who owes us, and since when? |
 | R18 | Activity Log | Who did something sensitive? |
 | R19 | Bill List | The bills behind any number |
+| R20 | CA Pack | Everything the CA needs for the month, in one file (P65) |
 
 ---
 
@@ -541,6 +542,27 @@ The page every drill down opens.
 **Filters:** business date range, bill number, table, captain, order type, platform, payment method, status, has discount, has cancellations.
 **Columns:** bill number, business date, time issued, time paid, table or type, captain, covers, item total, discount, net sales, GST, round-off, bill total, how it was paid, status.
 **One bill:** every line with its shares, every payment, the discount with who applied it, and a timeline of every event on the order from opening to payment.
+
+---
+
+### R20 CA Pack
+
+A calendar month of closed days, for the restaurant's chartered accountant.
+Built by P65 and emailed on the 1st of the next month. One sheet per section:
+
+| Section | Contents |
+|---|---|
+| Cover | Restaurant, legal name, GSTIN, FSSAI, the period, its closed days, when it was built, and what the pack does not cover |
+| Outward supplies, rate-wise | R8 A and B: net sales, CGST, SGST per rate; the platform's section 9(5) supplies on their own rows |
+| HSN and SAC summary | By the code frozen on each bill line and its rate: quantity, net sales, CGST, SGST. No code: "Not recorded" |
+| Document series | R10, every number in order, voided and missing ones included |
+| Money received | R5's totals by payment method, then On Hold, Unpaid and Collections |
+| On Hold movement | Per account: opening, charged, collected, adjusted, closing |
+| Cash and expenses | Expenses by category, bank deposits (contra), cash to the owner (drawings) |
+| Checks | Every check run, with what it compared |
+
+Refuses with a day open or an ERROR check failing, as R9. Contains no guest's
+name or number. Checks: C1, C3, C4, C5.7, C5.8, C6, C13.
 
 ---
 

@@ -902,3 +902,32 @@ Added by P64. Printed words on the full-page invoice and the screens that set it
 | **Mobile** | On the full page: the last four digits of the guest's mobile, as XXXXXX1234 |
 | **Tax summary** | On GST detailed: each rate's net sales, and its CGST and SGST rate and amount |
 | **CGST rate, SGST rate** | Half the GST rate each, like 2.5% on a 5% dish |
+
+---
+
+## 49. The CA's month
+
+Added by P65.
+
+| Term | Meaning |
+|---|---|
+| **CA reports** | The settings screen that sends the month to the restaurant's chartered accountant |
+| **CA pack** | One workbook for a month of closed days: rate-wise sales, HSN and SAC summary, the document series, money received, On Hold, cash and the checks |
+| **CA's email** | Where the pack is sent on the 1st of every month |
+| **Send now** | Send a month's pack straight away, even one already sent |
+| **Sent** | The pack reached the email service |
+| **Refused** | Not sent, because a day of the month is open, a check failed, or this copy has not received the month yet. Tried again later |
+| **Failed** | The email service refused it. Tried again within the hour |
+| **Outward supplies** | The month's sales, by tax rate |
+| **HSN and SAC summary** | Net sales and tax by the code on each line |
+| **Not recorded** | A line from before HSN codes were kept, or before line shares |
+| **Document series** | Every invoice number in the month, in order, voided ones included |
+| **On Hold movement** | Each account's opening, charged, collected, adjusted and closing balance for the month |
+| **Bank deposit** | Cash taken to the bank: a contra entry, not an expense |
+| **Drawings** | Cash taken by the owner |
+| **Code** | An HSN or SAC code, on the summary |
+| **Line** | One line of the pack's cover, money or checks |
+| **Detail** | What a line of the cover says |
+| **Opening** | An account's balance at the start of the month |
+| **Closing** | An account's balance at the end of the month |
+| **Adjusted** | Adjustments to an account in the month, up or down |

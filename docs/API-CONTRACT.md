@@ -9654,3 +9654,93 @@ with a reason.
 ## Error codes
 
 None new.
+
+# P65 The CA's month, sent by itself
+
+Spec 2026-10-25, `docs/prompts/P65-ca-reports-sharing.md`. R20 in
+`docs/REPORT-SPEC.md`, DB-SCHEMA section 61, GLOSSARY section 49. Read-only
+over frozen records: no figure is worked out again.
+
+## 1. `settings.reports.ca` (OWNER, through `PATCH /settings`)
+
+```json
+{ "reports": { "ca": { "enabled": true, "name": "Mehta & Co", "email": "ca@example.com", "whatsapp": "9876543210" } } }
+```
+
+- `enabled` defaults to false; `name`, `email` and `whatsapp` to null. `""`
+  clears a field. `name` is up to 80 characters, `email` an email address
+  (lowercased), `whatsapp` a 10-digit Indian mobile.
+- Switching `enabled` on without an email (sent now or stored) is 422
+  `BUSINESS_RULE_VIOLATED`, "Add the CA's email first: the pack goes by email."
+  The WhatsApp number is stored for a later prompt; nothing is sent to it.
+- The three contact fields are recorded without their values: their
+  `SETTINGS_CHANGED` line has `details: { field, valueRecorded: false }` and no
+  `previousValue` or `newValue`. They never reach `/auth/me`, a report or a log.
+
+## 2. R20 CA Pack, `GET /api/v1/reports/v2/ca-pack?month=2026-10&format=json|xlsx`
+
+OWNER only. One calendar month of business dates, through the report engine.
+
+- Every business date of the month must be closed, else 422 `DAY_NOT_CLOSED`
+  with `details.businessDates`, "Close the day first: … The CA pack covers whole
+  months of closed days."
+- Any failing ERROR check refuses it with 422 `CHECK_FAILED`, as R9.
+- On a read-only mirror, and on the cloud while `SYNC_MODE=TWO_WAY`, the copy
+  must hold the month's last change: the restaurant's `replicacursors` row has
+  no gap and its `lastCapturedAt` is at or after the latest `closedAt` of the
+  month's closes. Otherwise 422 `BUSINESS_RULE_VIOLATED`, "This copy has not
+  received the whole month yet. Figures are as of …".
+
+Sections, in order, `sheetPerSection` in the workbook: `cover`, `outward`
+(rate-wise, the platform's section 9(5) supplies on their own rows), `hsn`
+(by HSN or SAC code and rate; lines with no code as "Not recorded"), `documents`
+(R10's register, voided and missing numbers included), `money` (R5's totals
+by method, then On Hold, Unpaid, Collections), `onHold` (per account: opening,
+charged, collected, adjusted, closing), `cash` (expenses by category, bank
+deposits, cash to the owner), `checks`. No customer field appears anywhere.
+
+Checks: C1, C5.7, C5.8 (HSN or SAC codes add up to net sales), C6, C13, C3, C4.
+
+## 3. The monthly send
+
+A ticker started with the server, every hour, wherever the job loop runs
+(`mayRunWriterLoops`). For each restaurant with `reports.ca.enabled` and an
+email, from the 1st of a month (by business date) it acts on the previous
+month when that month has no `careportsends` row, or one that is `FAILED` or
+`REFUSED`. It claims the row first (insert, or `FAILED`/`REFUSED` to `SENDING`),
+so two machines or a restart never send one month twice; a `SENT` or `SENDING`
+month is left alone. Then:
+
+- a day open, a failing check, or a copy behind: `REFUSED` with the reason,
+  `openDates` and `failedChecks`; tried again on a later tick;
+- built: the workbook and, when Tally is connected with every ledger mapped,
+  the month's Tally XML from the export service, emailed to `reports.ca.email`;
+  `SENT` and `CA_PACK_SENT` audited;
+- Resend refused: `FAILED` with the error, tried again on the next tick.
+
+`emailService.sendEmail` takes an optional `attachments: [{ filename, content }]`
+(`content` base64), passed to Resend as it is.
+
+## 4. Endpoints (OWNER)
+
+| Route | Body or query | Answer |
+|---|---|---|
+| `GET /reports/ca/sends` | | `{ ca: { enabled, hasEmail }, sends: [last 12, newest period first: { period, status, refusedReason, openDates, failedChecks, sentAt, to, files, checks: { passed, failed }, trigger, attempts, lastError }] }` |
+| `POST /reports/ca/send` | `{ month: "2026-10" }` | Sends now (trigger `MANUAL`), even a month already `SENT`. 200 the send row; a month `SENDING` is 409 `DUPLICATE`; a refusal is 422 with its reason, and the row is `REFUSED` |
+| `GET /reports/ca/tally-xml?month=2026-10` | | The month's Tally XML file, built by the export service and recorded nowhere. 422 `INTEGRATION_NOT_ACTIVE` without Tally, `TALLY_MAPPING_INCOMPLETE` with a ledger missing |
+
+Audit `CA_PACK_SENT` (entity `REPORT`, label the period), OWNER only on the
+activity log, with `details: { period, trigger, files }`: never the address.
+
+The owner's dashboard shows the last month's send when it is `REFUSED` or
+`FAILED`, with its reason.
+
+## 5. What the pack does not carry
+
+Printed on its cover: no purchases (so no input GST, no GSTR-2B), every sale
+is B2C (accounts carry no GSTIN), no credit notes, no e-invoicing, and no guest
+personal data.
+
+## Error codes
+
+None new. `DAY_NOT_CLOSED` takes the sentence for its purpose.
