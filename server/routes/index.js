@@ -34,6 +34,7 @@ import settingsRoutes from './settingsRoutes.js';
 import accountRoutes from './accountRoutes.js';
 import dayCloseRoutes from './dayCloseRoutes.js';
 import reportV2Routes from './reportV2Routes.js';
+import caReportRoutes from './caReportRoutes.js';
 import paymentMethodRoutes from './paymentMethodRoutes.js';
 import stationRoutes from './stationRoutes.js';
 import systemRoutes from './systemRoutes.js';
@@ -65,6 +66,8 @@ router.use(paymentMethodRoutes);
 router.use(accountRoutes);
 router.use(dayCloseRoutes);
 router.use(reportV2Routes);
+// P65.
+router.use(caReportRoutes);
 router.use(auditRoutes);
 // P30. The record of server starts, for the owner.
 router.use(systemRoutes);

@@ -36,6 +36,7 @@ export const REPORTS = [
   { id: 'R17', name: 'accounts', title: 'On Hold Accounts', group: 'Money', question: 'Who owes us, and since when?', roles: MANAGERS, dateMode: 'asOf', filters: ['accountId'] },
   { id: 'R8', name: 'gst', title: 'GST', group: 'Tax and accounts', question: 'What GST do we owe, and what goes in the returns?', roles: MANAGERS, dateMode: 'range' },
   { id: 'R9', name: 'tally-export', title: 'Tally Export', group: 'Tax and accounts', question: 'The file the accountant imports', roles: MANAGERS, dateMode: 'range', downloadOnly: true },
+  { id: 'R20', name: 'ca-pack', title: 'CA Pack', group: 'Tax and accounts', question: 'Everything the CA needs for the month, in one file', roles: OWNER, path: '/settings/ca-reports' },
   { id: 'R10', name: 'invoice-register', title: 'Invoice Register', group: 'Tax and accounts', question: 'Every invoice number, in order, with no gaps', roles: MANAGERS, dateMode: 'range', paged: true },
   { id: 'R11', name: 'menu', title: 'Menu Performance', group: 'Menu and people', question: 'Which categories and items earn the money?', roles: MANAGERS, dateMode: 'range', filters: ['orderType', 'categoryName'] },
   { id: 'R12', name: 'captains', title: 'Captains', group: 'Menu and people', question: "How did each captain's tables do?", roles: MANAGERS, dateMode: 'range', filters: ['orderType'] },

@@ -174,6 +174,12 @@ export default function SettingsPage() {
           </Link>
         </Section>
 
+        <Section title="CA reports" description="Your chartered accountant's details, and the month's pack sent to them by email on the 1st.">
+          <Link to="/settings/ca-reports" className="type-button flex min-h-12 w-fit items-center rounded-lg border border-ink bg-surface px-4 hover:bg-sunken">
+            Open CA reports
+          </Link>
+        </Section>
+
         {/* P30. The free server's starts, the owner's to read; this page is the owner's alone. */}
         <ServerCard />
 

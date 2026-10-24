@@ -32,6 +32,7 @@ export const REPLICATION = Object.freeze({
   BackupState: local(OWNER.EACH, "P54's own resume point; shipping it would restore another machine's place."),
   Bill: mirror('Bills, with their GST invoice numbers.'),
   Branch: mirror('The outlet, its online page slug and settings.'),
+  CaReportSend: mirror('P65. Which months went to the CA; a promoted copy must not send them again.'),
   CashMovement: mirror('The cash book.'),
   Category: mirror('Menu sections.'),
   ChangelogCounter: local(OWNER.BOX, "The changelog's own sequence. The mirror tracks what it applied in replicacursors."),

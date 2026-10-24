@@ -19,6 +19,7 @@ import { AttendanceEntry } from './AttendanceEntry.js';
 import { AuditLog } from './AuditLog.js';
 import { Bill } from './Bill.js';
 import { Branch } from './Branch.js';
+import { CaReportSend } from './CaReportSend.js';
 import { CashMovement } from './CashMovement.js';
 import { Category } from './Category.js';
 import { ChangelogCounter } from './ChangelogCounter.js';
@@ -74,6 +75,7 @@ export const ALL_MODELS = Object.freeze([
   BackupState,
   Bill,
   Branch,
+  CaReportSend,
   CashMovement,
   Category,
   ChangelogCounter,

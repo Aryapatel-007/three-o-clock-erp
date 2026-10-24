@@ -559,7 +559,7 @@ Built by P65 and emailed on the 1st of the next month. One sheet per section:
 | Money received | R5's totals by payment method, then On Hold, Unpaid and Collections |
 | On Hold movement | Per account: opening, charged, collected, adjusted, closing |
 | Cash and expenses | Expenses by category, bank deposits (contra), cash to the owner (drawings) |
-| Checks | Every check run, with what it compared |
+| Checks run | Every check run, with what it compared |
 
 Refuses with a day open or an ERROR check failing, as R9. Contains no guest's
 name or number. Checks: C1, C3, C4, C5.7, C5.8, C6, C13.

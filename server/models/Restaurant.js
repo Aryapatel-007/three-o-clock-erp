@@ -413,6 +413,23 @@ const reportSettingsSchema = new mongoose.Schema(
     onHoldTallyCode: { type: String, default: null, maxlength: 20, trim: true },
     // P44. Who gets the day-end message by email. At most 5, lowercased.
     dayEndEmails: { type: [String], default: [] },
+    /**
+     * P65. The restaurant's chartered accountant, sent the month's pack on the
+     * 1st. Configuration, not a guest's record; its contact fields are audited
+     * without their values (settingsService), and never reach /auth/me.
+     */
+    ca: {
+      type: new mongoose.Schema(
+        {
+          enabled: { type: Boolean, required: true, default: false },
+          name: { type: String, trim: true, maxlength: 80, default: null },
+          email: { type: String, trim: true, lowercase: true, default: null },
+          whatsapp: { type: String, trim: true, default: null, match: /^[6-9]\d{9}$/ },
+        },
+        { _id: false },
+      ),
+      default: () => ({}),
+    },
   },
   { _id: false },
 );

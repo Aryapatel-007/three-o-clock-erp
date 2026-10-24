@@ -86,7 +86,8 @@ const DEFAULTS = {
   payments: { requireTerminalForLinkedMethods: true, otherModes: ['Swiggy Dineout', 'Zomato Dineout', 'EazyDiner', 'Cheque', 'Bank transfer', 'Coupon'] },
   // P25 Part J.
   // P44 added dayEndEmails.
-  reports: { onHoldTallyCode: null, dayEndEmails: [] },
+  // P65, changed on purpose: the CA's details, off and empty.
+  reports: { onHoldTallyCode: null, dayEndEmails: [], ca: { enabled: false, name: null, email: null, whatsapp: null } },
   // P19.
   floor: { sectionOrder: [], longOpenMinutes: 90, requireGuestCount: false },
   // P20A.
