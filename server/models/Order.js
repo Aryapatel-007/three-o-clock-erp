@@ -282,6 +282,13 @@ const orderLineSchema = new mongoose.Schema(
     categoryName: { type: String, trim: true, default: null },
 
     /**
+     * P64. The HSN or SAC code when the line was added: the item's own, else
+     * the restaurant's `invoice.defaultSacCode`. Null on lines from before P64,
+     * and never filled in later.
+     */
+    hsnCode: { type: String, trim: true, default: null },
+
+    /**
      * The item's own GST rate, kept for reference when this line is frozen at
      * 0% on a PLATFORM_COLLECTS order. Null on NORMAL orders. P06.
      */

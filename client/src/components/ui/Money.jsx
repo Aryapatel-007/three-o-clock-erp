@@ -10,14 +10,9 @@
  * required rather than an element: an aria-label, a confirmation sentence
  * passed to a toast, a button whose label is one sentence.
  */
-const GROUPING = new Intl.NumberFormat('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+import { moneyText } from './moneyText.js';
 
-export function moneyText(paise, { symbol = true } = {}) {
-  if (!Number.isInteger(paise)) return '';
-  const sign = paise < 0 ? '-' : '';
-  const rupees = GROUPING.format(Math.abs(paise) / 100);
-  return symbol ? `${sign}₹${rupees}` : `${sign}${rupees}`;
-}
+export { moneyText };
 
 /**
  * A short rupee label for an axis tick, in Indian units.

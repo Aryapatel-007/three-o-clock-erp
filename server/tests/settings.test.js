@@ -10,7 +10,7 @@
  */
 import assert from 'node:assert/strict';
 
-import { DEFAULT_DENOMINATIONS, DEFAULT_EXPENSE_CATEGORIES } from '../models/Restaurant.js';
+import { DEFAULT_DENOMINATIONS, DEFAULT_EXPENSE_CATEGORIES, INVOICE_SHOW_DEFAULTS, THERMAL_SHOW_DEFAULTS } from '../models/Restaurant.js';
 import { after, before, beforeEach, describe, it } from 'node:test';
 
 import { AuditLog } from '../models/AuditLog.js';
@@ -51,11 +51,20 @@ const DEFAULTS = {
     showFssai: true,
     showServerName: false,
     reviewLinkUrl: null,
+    // P64.
+    termsText: null,
   },
   inventory: { lowStockAlertsEnabled: true },
   // P02.
   features: { inventory: true, attendance: true, online: false },
-  invoice: { mode: 'FINANCIAL_YEAR', prefix: null, startingNumber: null },
+  invoice: { mode: 'FINANCIAL_YEAR', prefix: null, startingNumber: null, defaultSacCode: '996331' },
+  // P64. Changed on purpose: the defaults print what CLASSIC and the thermal bill printed before.
+  invoiceLayout: {
+    theme: 'CLASSIC',
+    useBrandAccent: false,
+    show: { ...INVOICE_SHOW_DEFAULTS },
+    thermalShow: { ...THERMAL_SHOW_DEFAULTS },
+  },
   // P06.
   delivery: { platformCollectsGst: true },
   discounts: { cashierMayApplyPlatformDiscounts: false },

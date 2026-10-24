@@ -7,9 +7,10 @@
  * print queue all print through here, so a bill looks the same whoever prints
  * it.
  */
+import { fetchLogoDataUrl } from '../../api/brand.js';
 import { getInvoice, markBillPrinted } from '../../api/bills.js';
 
-import { INVOICE_STYLES, invoiceHtml, THERMAL_BILL_STYLES, thermalBillHtml } from './invoiceHtml.js';
+import { invoiceHtml, invoiceStyles, THERMAL_BILL_STYLES, thermalBillHtml } from './invoiceHtml.js';
 import { PRINTERS } from './printers.js';
 import { printDocument } from './printText.js';
 import { readDeviceSettings } from './useDeviceSettings.js';
@@ -25,6 +26,20 @@ export async function reviewQrSvg(url) {
   if (!url) return null;
   const { default: QRCode } = await import('qrcode');
   return QRCode.toString(url, { type: 'svg', margin: 0, errorCorrectionLevel: 'M' });
+}
+
+/**
+ * P64. The signature image, as a `data:` URL, only when the bill's layout
+ * prints the signature line and a signature is set. Kept by its hash, so a
+ * counter printing forty bills fetches it once.
+ */
+const signatures = new Map();
+
+export function signatureDataUrl(data) {
+  const hash = data?.signature?.hash;
+  if (!hash || !data.layout?.show?.signatureLine) return Promise.resolve(null);
+  if (!signatures.has(hash)) signatures.set(hash, fetchLogoDataUrl('SIGNATURE').catch(() => null));
+  return signatures.get(hash);
 }
 
 /**
@@ -72,12 +87,17 @@ export async function thermalLogoDataUrl(dataUrl) {
  * prints, and only the device whose claim succeeds prints it. Resolves to
  * null when another device took it.
  */
-export async function printBill(billId, { printer, logoDataUrl = null, forRequestAt = null }) {
+export async function printBill(billId, { printer, logoDataUrl = null, forRequestAt = null, copy = 'RECIPIENT' }) {
   const data = await getInvoice(billId);
   let document;
   if (PRINTERS[printer]?.thermal === false) {
-    const qrSvg = await reviewQrSvg(data.reviewLinkUrl);
-    document = { printer, bodyHtml: invoiceHtml(data, { qrSvg, logoDataUrl }), styles: INVOICE_STYLES };
+    // P64. The restaurant's theme, its signature, and which copy this is.
+    const [qrSvg, signature] = await Promise.all([reviewQrSvg(data.reviewLinkUrl), signatureDataUrl(data)]);
+    document = {
+      printer,
+      bodyHtml: invoiceHtml(data, { qrSvg, logoDataUrl, signatureDataUrl: signature, copy }),
+      styles: invoiceStyles(data.layout?.theme),
+    };
   } else {
     // 2026-10-09: a thermal bill is laid out from the invoice data too, in the layout guests know.
     const [qrSvg, logo] = await Promise.all([reviewQrSvg(data.reviewLinkUrl), thermalLogoDataUrl(logoDataUrl)]);

@@ -1,5 +1,8 @@
 /**
- * The full-page tax invoice, for A4 and A5. P25 Part C4.
+ * The full-page tax invoice, for A4 and A5, and the thermal bill. P25 Part C4.
+ *
+ * P64: the full page is drawn by the restaurant's theme, in themes/, and this
+ * file chooses it; the thermal bill stays one layout and reads `thermalShow`.
  *
  * Laid out from GET /bills/:billId/invoice, the same data the thermal receipt
  * is laid out from on the server, so the two never print different amounts.
@@ -14,130 +17,31 @@
  * names this file as the one exception, which is why the thermal bill's logo
  * markup, `thermalLogoHtml`, lives here too.
  */
-import { moneyText } from '../../components/ui/Money.jsx';
+import { moneyText } from '../../components/ui/moneyText.js';
 
 import { billFontPx, DEFAULT_BILL_TEXT_SIZE } from './printers.js';
 import { escapeHtml } from './printText.js';
+import { CLASSIC_STYLES } from './themes/classic.js';
+import { themeFor } from './themes/index.js';
+import { SHARED_STYLES } from './themes/shared.js';
 
-const ORDER_TYPE_WORDS = { DINE_IN: 'Dine-in', TAKEAWAY: 'Takeaway', DELIVERY: 'Delivery' };
+/** The styles of the CLASSIC page, inside the print frame or the preview frame. */
+export const INVOICE_STYLES = CLASSIC_STYLES + SHARED_STYLES;
 
-const percent = (bps) => `${bps / 100}%`;
-
-/** The styles of the page, inside the print frame or the preview frame. */
-export const INVOICE_STYLES = `
-  .invoice { font: 10pt/1.35 "Anek Latin", system-ui, sans-serif; color: black; }
-  .invoice h1 { font-size: 16pt; margin: 0; }
-  .invoice .muted { color: dimgray; }
-  .invoice .head { display: flex; justify-content: space-between; gap: 6mm; align-items: flex-start; }
-  .invoice .logo { max-height: 18mm; max-width: 50mm; display: block; margin-bottom: 2mm; }
-  .invoice .box { border: 0.3mm solid black; padding: 2mm 3mm; min-width: 50mm; }
-  .invoice .box div { display: flex; justify-content: space-between; gap: 4mm; }
-  .invoice .title { text-align: center; font-weight: 700; letter-spacing: 0.08em; margin: 4mm 0 2mm; }
-  .invoice .duplicate { text-align: center; font-weight: 700; border: 0.3mm solid black; padding: 1mm; margin-bottom: 3mm; }
-  .invoice table { width: 100%; border-collapse: collapse; margin-top: 3mm; }
-  .invoice th, .invoice td { padding: 1.2mm 1.5mm; border-bottom: 0.2mm solid darkgray; text-align: left; vertical-align: top; }
-  .invoice th { border-bottom: 0.4mm solid black; font-weight: 600; }
-  .invoice .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
-  .invoice tr { break-inside: avoid; page-break-inside: avoid; }
-  .invoice .totals { margin-left: auto; width: 60%; margin-top: 3mm; break-inside: avoid; }
-  .invoice .totals div { display: flex; justify-content: space-between; padding: 0.8mm 0; }
-  .invoice .grand { border-top: 0.4mm solid black; border-bottom: 0.4mm solid black; font-size: 14pt; font-weight: 700; margin-top: 1mm; }
-  .invoice .foot { margin-top: 6mm; text-align: center; break-inside: avoid; }
-  .invoice .review { display: flex; flex-direction: column; align-items: center; gap: 1mm; margin-top: 3mm; }
-  .invoice .review svg { width: 28mm; height: 28mm; }
-  .invoice .voided { text-align: center; font-weight: 700; font-size: 14pt; margin: 3mm 0; }
-`;
-
-function money(paise) {
-  return escapeHtml(moneyText(paise));
+/** P64. The styles of a theme's page. */
+export function invoiceStyles(themeId) {
+  return themeFor(themeId).styles;
 }
 
-/** A row of the totals block. */
-const total = (label, paise, className = '') =>
-  `<div class="${className}"><span>${escapeHtml(label)}</span><span class="num">${money(paise)}</span></div>`;
-
 /**
- * The page as HTML. `qrSvg` is the review link's QR code, already an SVG
- * string from the qrcode package; `logoDataUrl` is the restaurant's logo for
- * light grounds, or null.
+ * The page as HTML, in the restaurant's theme (P64), or `options.theme` for a
+ * preview. `qrSvg` is the review link's QR code, already an SVG string from the
+ * qrcode package; `logoDataUrl` is the restaurant's logo for light grounds and
+ * `signatureDataUrl` its signature image, or null; `copy` is RECIPIENT or
+ * SUPPLIER; `show` replaces the data's switches for a preview.
  */
-export function invoiceHtml(data, { qrSvg = null, logoDataUrl = null } = {}) {
-  const r = data.restaurant;
-  const details = [
-    r.legalName,
-    r.address,
-    r.phone ? `Phone ${r.phone}` : null,
-    r.gstin ? `GSTIN ${r.gstin}` : null,
-    r.fssaiNumber ? `FSSAI ${r.fssaiNumber}` : null,
-  ].filter(Boolean);
-
-  const facts = [
-    // P29. A bill changed before payment, under the same number, says so under it.
-    ['Invoice number', data.isRevised ? `${data.billNumber}, revised bill` : data.billNumber],
-    ['Time issued', data.issuedAtIst],
-    ['Order type', ORDER_TYPE_WORDS[data.orderType] ?? data.orderType],
-    ['Table', data.tableName],
-    ['Captain', data.captainName],
-    ['Covers', data.guestCount],
-    [data.platform?.name, data.platform?.orderId],
-  ].filter(([label, value]) => label && value !== null && value !== undefined && value !== '');
-
-  // P35. The server's item rows: the same dish ordered in two rounds prints once.
-  const lineRows = (data.itemRows ?? data.lines)
-    .map((line) => {
-      const name = line.itemName + (line.variantName ? ` (${line.variantName})` : '');
-      const addOns = line.addOnNames.length ? `<div class="muted">+ ${escapeHtml(line.addOnNames.join(', '))}</div>` : '';
-      return `<tr><td>${escapeHtml(name)}${addOns}</td><td class="num">${line.quantity}</td><td class="num">${money(line.unitPriceInPaise)}</td><td class="num">${money(line.lineTotalInPaise)}</td></tr>`;
-    })
-    .join('');
-
-  const taxRows = data.taxRows
-    .map(
-      (row) =>
-        `<tr><td>${percent(row.taxRateBps)}</td><td class="num">${money(row.netSalesInPaise)}</td><td class="num">${money(row.cgstInPaise)}</td><td class="num">${money(row.sgstInPaise)}</td></tr>`,
-    )
-    .join('');
-
-  const payments = data.payments.map((payment) => total(payment.methodName, payment.amountInPaise)).join('');
-
-  return `<div class="invoice">
-  ${data.isDuplicate ? '<div class="duplicate">DUPLICATE</div>' : ''}
-  <div class="head">
-    <div>
-      ${logoDataUrl ? `<img class="logo" src="${escapeHtml(logoDataUrl)}" alt="" />` : ''}
-      ${r.headerAbove ? `<div class="muted">${escapeHtml(r.headerAbove)}</div>` : ''}
-      <h1>${escapeHtml(r.name)}</h1>
-      ${r.headerLines.map((line) => `<div>${escapeHtml(line)}</div>`).join('')}
-      ${details.map((line) => `<div class="muted">${escapeHtml(line)}</div>`).join('')}
-    </div>
-    <div class="box">${facts.map(([label, value]) => `<div><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>`).join('')}</div>
-  </div>
-  <div class="title">TAX INVOICE</div>
-  ${data.isVoided ? '<div class="voided">VOIDED</div>' : ''}
-  <table>
-    <thead><tr><th>Item</th><th class="num">Quantity</th><th class="num">Rate</th><th class="num">Line total</th></tr></thead>
-    <tbody>${lineRows}</tbody>
-  </table>
-  <table>
-    <thead><tr><th>Tax rate</th><th class="num">Net sales</th><th class="num">CGST</th><th class="num">SGST</th></tr></thead>
-    <tbody>${taxRows}</tbody>
-  </table>
-  <div class="totals">
-    ${total('Item total', data.itemTotalInPaise)}
-    ${data.discount ? total(data.discount.label, -data.discount.amountInPaise) : ''}
-    ${data.discount?.reason ? `<div class="muted"><span>${escapeHtml(data.discount.reason)}</span></div>` : ''}
-    ${total('CGST', data.cgstInPaise)}
-    ${total('SGST', data.sgstInPaise)}
-    ${data.roundOffInPaise !== 0 ? total('Round-off', data.roundOffInPaise) : ''}
-    ${total('Bill total', data.billTotalInPaise, 'grand')}
-    ${payments}
-    ${data.accountName ? `<div><span>On Hold</span><span>${escapeHtml(data.accountName)}</span></div>` : ''}
-  </div>
-  <div class="foot">
-    <div>${escapeHtml(data.footerText ?? 'Thank you')}</div>
-    ${qrSvg ? `<div class="review">${qrSvg}<div>Scan to review us</div></div>` : ''}
-  </div>
-</div>`;
+export function invoiceHtml(data, options = {}) {
+  return themeFor(options.theme ?? data.layout?.theme).render(data, options);
 }
 
 /**
@@ -178,14 +82,36 @@ function dateAndTime(stamp = '') {
   return { date: day && month ? `${day}/${month}/${year.slice(-2)}` : date, time };
 }
 
-export function thermalBillHtml(data, { printer, logoDataUrl = null, qrSvg = null, textSize = DEFAULT_BILL_TEXT_SIZE } = {}) {
+/**
+ * P64. What the roll shows, from `layout.thermalShow`. A bill read before P64,
+ * or a preview with no layout, shows what the roll always showed.
+ */
+const THERMAL_DEFAULTS = Object.freeze({
+  time: true,
+  cashier: true,
+  covers: false,
+  table: true,
+  orderType: true,
+  customerName: true,
+  customerMobileMasked: true,
+  itemNote: false,
+  paymentBreakdown: true,
+  onHoldOutstanding: false,
+  amountInWords: false,
+  reviewQr: true,
+});
+
+export function thermalBillHtml(data, { printer, logoDataUrl = null, qrSvg = null, textSize = DEFAULT_BILL_TEXT_SIZE, show: preview } = {}) {
+  const show = { ...THERMAL_DEFAULTS, ...(preview ?? data.layout?.thermalShow ?? {}) };
   const r = data.restaurant;
   const plain = (paise) => moneyText(paise, { symbol: false });
   const row = (left, right, cls = '') => `<div class="pair ${cls}"><span>${left}</span><span>${right}</span></div>`;
   const { date, time } = dateAndTime(data.issuedAtIst);
+  const placeWords = show.orderType ? ORDER_PLACE_WORDS[data.orderType] ?? '' : '';
+  const tableWords = show.table && data.tableName ? escapeHtml(data.tableName) : '';
   const place = data.platform
     ? `${escapeHtml(data.platform.name)}: ${escapeHtml(data.platform.orderId)}`
-    : `${ORDER_PLACE_WORDS[data.orderType] ?? ''}${data.tableName ? `: ${escapeHtml(data.tableName)}` : ''}`;
+    : `${placeWords}${tableWords ? `${show.orderType ? ': ' : ''}${tableWords}` : ''}`;
 
   // P35. The server's item rows, the same dish once; Total Qty below is unchanged.
   const items = (data.itemRows ?? data.lines)
@@ -193,7 +119,9 @@ export function thermalBillHtml(data, { printer, logoDataUrl = null, qrSvg = nul
       const name = escapeHtml(line.itemName + (line.variantName ? ` (${line.variantName})` : ''));
       const each = Number.isInteger(line.lineTotalInPaise / line.quantity) ? line.lineTotalInPaise / line.quantity : line.unitPriceInPaise;
       const addOns = line.addOnNames.length ? `<div class="addon">+ ${escapeHtml(line.addOnNames.join(', '))}</div>` : '';
-      return `<tr><td>${name}${addOns}</td><td class="q">${line.quantity}</td><td class="p">${plain(each)}</td><td class="a">${plain(line.lineTotalInPaise)}</td></tr>`;
+      const notes = Array.isArray(line.notes) ? line.notes : line.notes ? [line.notes] : [];
+      const note = show.itemNote && notes.length ? `<div class="addon">${escapeHtml(notes.join('; '))}</div>` : '';
+      return `<tr><td>${name}${addOns}${note}</td><td class="q">${line.quantity}</td><td class="p">${plain(each)}</td><td class="a">${plain(line.lineTotalInPaise)}</td></tr>`;
     })
     .join('');
   const totalQty = data.lines.reduce((sum, line) => sum + line.quantity, 0);
@@ -206,6 +134,8 @@ export function thermalBillHtml(data, { printer, logoDataUrl = null, qrSvg = nul
     .join('');
   const roundOff = data.roundOffInPaise === 0 ? '' : row('Round off', `${data.roundOffInPaise > 0 ? '+' : ''}${plain(data.roundOffInPaise)}`);
   const guest = data.customer;
+  const guestName = show.customerName ? guest?.name ?? '' : '';
+  const guestMobile = show.customerMobileMasked && guest?.mobileLast4 ? ` (M: XXXXXX${escapeHtml(guest.mobileLast4)})` : '';
   const storeLines = [
     ...r.addressLines,
     r.phone ? `Mo No-${r.phone}` : null,
@@ -227,15 +157,15 @@ export function thermalBillHtml(data, { printer, logoDataUrl = null, qrSvg = nul
   ${data.isVoided ? '<div class="c big">*** VOIDED ***</div>' : ''}
   <hr />
   ${
-    guest
-      ? `<div>Name: ${escapeHtml(guest.name ?? '')}${guest.mobileLast4 ? ` (M: XXXXXX${escapeHtml(guest.mobileLast4)})` : ''}</div><hr />`
+    guest && (guestName || guestMobile)
+      ? `<div>Name: ${escapeHtml(guestName)}${guestMobile}</div><hr />`
       : ''
   }
   ${row(`Date: ${escapeHtml(date)}`, place)}
-  <div>${escapeHtml(time)}</div>
-  ${row(data.cashierName ? `Cashier: ${escapeHtml(data.cashierName)}` : '', `Bill No.: ${escapeHtml(data.billNumber)}`)}
+  ${show.time ? `<div>${escapeHtml(time)}</div>` : ''}
+  ${row(show.cashier && data.cashierName ? `Cashier: ${escapeHtml(data.cashierName)}` : '', `Bill No.: ${escapeHtml(data.billNumber)}`)}
   ${data.isRevised ? '<div class="c">Revised bill</div>' : ''}
-  ${data.captainName ? `<div>Captain: ${escapeHtml(data.captainName)}</div>` : ''}
+  ${data.captainName ? `<div>Captain: ${escapeHtml(data.captainName)}</div>` : ''}${show.covers && data.guestCount ? `<div>Covers: ${data.guestCount}</div>` : ''}
   <hr />
   <table>
     <thead><tr><th>Item</th><th class="q">Qty.</th><th class="p">Price</th><th class="a">Amount</th></tr></thead>
@@ -249,13 +179,13 @@ export function thermalBillHtml(data, { printer, logoDataUrl = null, qrSvg = nul
     ${taxes}
     <hr />
     ${roundOff}
-    ${row('Grand Total', `₹ ${plain(data.billTotalInPaise)}`, 'big')}
+    ${row('Grand Total', `₹ ${plain(data.billTotalInPaise)}`, 'big')}${show.amountInWords && data.billTotalInWords ? `<div>${escapeHtml(data.billTotalInWords)}</div>` : ''}
     <hr />
-    ${data.payments.map((payment) => row(`Paid: ${escapeHtml(payment.methodName)}`, plain(payment.amountInPaise))).join('')}
-    ${data.accountName ? `<div>On Hold: ${escapeHtml(data.accountName)}</div>` : ''}
+    ${show.paymentBreakdown ? data.payments.map((payment) => row(`Paid: ${escapeHtml(payment.methodName)}`, plain(payment.amountInPaise))).join('') : ''}
+    ${data.accountName ? `<div>On Hold: ${escapeHtml(data.accountName)}</div>` : ''}${show.onHoldOutstanding && Number.isInteger(data.onHoldOutstandingInPaise) ? row('Account balance', plain(data.onHoldOutstandingInPaise)) : ''}
   </div>
   <div class="c foot">${escapeHtml(data.footerText ?? 'Thank you')}</div>
-  ${qrSvg ? `<div class="review">${qrSvg}<div>Scan to review us</div></div>` : ''}
+  ${show.reviewQr && qrSvg ? `<div class="review">${qrSvg}<div>Scan to review us</div></div>` : ''}
   <div class="feed"></div>
 </div>`;
 }

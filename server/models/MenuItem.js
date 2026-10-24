@@ -159,6 +159,13 @@ const menuItemSchema = new mongoose.Schema({
   isOpenItem: { type: Boolean, default: false },
 
   /**
+   * P64. The item's own HSN or SAC code, 4 to 8 digits, or null. An order line
+   * freezes it when the dish is added, or the restaurant's default SAC when this
+   * is null, and the bill copies the line. Never read at print time.
+   */
+  hsnCode: { type: String, trim: true, default: null, match: /^\d{4,8}$/ },
+
+  /**
    * Subdocument ids here are permanent once issued.
    *
    * M4 attaches a recipe to a menuItemId plus an optional variantId, and M2

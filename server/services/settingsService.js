@@ -16,9 +16,9 @@
 import { AUDIT_ACTIONS, AUDIT_ENTITY_TYPES } from '../models/AuditLog.js';
 import { Bill } from '../models/Bill.js';
 import { Counter, COUNTER_NAMES } from '../models/Counter.js';
-import { INVOICE_MODES, Restaurant } from '../models/Restaurant.js';
+import { INVOICE_MODES, INVOICE_SHOW_DEFAULTS, Restaurant, THERMAL_SHOW_DEFAULTS } from '../models/Restaurant.js';
 import { recordAudit } from './auditService.js';
-import { ACCENT_PRESETS, checkBrandPair, nightVariant } from '../utils/colour.js';
+import { ACCENT_PRESETS, checkAccent, checkBrandPair, nightVariant } from '../utils/colour.js';
 import { BusinessRuleError, ERROR_CODES, ValidationError } from '../utils/errors.js';
 import { financialYearFor, nowUtc } from '../utils/time.js';
 import { withOptionalTransaction } from '../utils/transaction.js';
@@ -50,6 +50,8 @@ const SETTING_PATHS = Object.freeze({
   'receipt.showFssai': 'settings.receipt.showFssai',
   'receipt.showServerName': 'settings.receipt.showServerName',
   'receipt.reviewLinkUrl': 'settings.receipt.reviewLinkUrl',
+  // P64.
+  'receipt.termsText': 'settings.receipt.termsText',
 
   'inventory.lowStockAlertsEnabled': 'settings.inventory.lowStockAlertsEnabled',
 
@@ -60,6 +62,12 @@ const SETTING_PATHS = Object.freeze({
   'invoice.mode': 'settings.invoice.mode',
   'invoice.prefix': 'settings.invoice.prefix',
   'invoice.startingNumber': 'settings.invoice.startingNumber',
+  // P64.
+  'invoice.defaultSacCode': 'settings.invoice.defaultSacCode',
+  'invoiceLayout.theme': 'settings.invoiceLayout.theme',
+  'invoiceLayout.useBrandAccent': 'settings.invoiceLayout.useBrandAccent',
+  ...Object.fromEntries(Object.keys(INVOICE_SHOW_DEFAULTS).map((key) => [`invoiceLayout.show.${key}`, `settings.invoiceLayout.show.${key}`])),
+  ...Object.fromEntries(Object.keys(THERMAL_SHOW_DEFAULTS).map((key) => [`invoiceLayout.thermalShow.${key}`, `settings.invoiceLayout.thermalShow.${key}`])),
 
   'delivery.platformCollectsGst': 'settings.delivery.platformCollectsGst',
 
@@ -294,6 +302,8 @@ async function lastIssuedUnderPrefix(restaurantId, prefix) {
  * made sure all three fields are present and consistent with the mode.
  */
 async function assertInvoiceChangeAllowed(restaurantId, current, next) {
+  // P64. `defaultSacCode` may be sent on its own; the series rules are about the other three.
+  if (['mode', 'prefix', 'startingNumber'].every((key) => next[key] === undefined)) return;
   const unchanged =
     current.mode === next.mode &&
     current.prefix === next.prefix &&
@@ -384,15 +394,30 @@ function assertAppearanceComplete(current, next) {
 }
 
 /**
+ * P64. The accent a full-page invoice is drawn in, checked again by
+ * utils/colour.js before it is put on a tax document. A preset always passes;
+ * a custom colour stored before a rule tightened might not, and is refused.
+ */
+function assertPrintableAccent(appearance) {
+  const accent = resolvedAccent(appearance);
+  const verdict = checkAccent(accent);
+  if (!verdict.ok) throw new BusinessRuleError(verdict.message);
+}
+
+/** The accent colour the restaurant chose, worked out once for every reader. */
+export function resolvedAccent(appearance) {
+  return appearance.accentPreset === 'CUSTOM' && appearance.accentHex
+    ? appearance.accentHex
+    : (ACCENT_PRESETS[appearance.accentPreset] ?? ACCENT_PRESETS.OCEAN);
+}
+
+/**
  * The look as `GET /auth/me` gives it to every role, P20A: the accent's day and
  * night colours already worked out, and the wordmark already resolved, so the
  * client does no colour arithmetic on load.
  */
 export function presentAppearance(appearance, restaurantName) {
-  const accent =
-    appearance.accentPreset === 'CUSTOM' && appearance.accentHex
-      ? appearance.accentHex
-      : (ACCENT_PRESETS[appearance.accentPreset] ?? ACCENT_PRESETS.OCEAN);
+  const accent = resolvedAccent(appearance);
   return {
     accentPreset: appearance.accentPreset,
     accent,
@@ -430,6 +455,11 @@ export async function updateSettings(
   }
 
   if (patch.appearance !== undefined) assertAppearanceComplete(before.appearance, patch.appearance);
+
+  // P64. Drawing the accent on an invoice: the accent must still pass the accent rules.
+  if (patch.invoiceLayout?.useBrandAccent === true) {
+    assertPrintableAccent({ ...before.appearance, ...(patch.appearance ?? {}) });
+  }
 
   const changes = [];
   for (const apiPath of SETTING_API_PATHS) {

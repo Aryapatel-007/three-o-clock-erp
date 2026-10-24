@@ -56,6 +56,8 @@ const SNAPSHOT_FIELDS = [
   'categoryName',
   // P46.
   'isOpenItem',
+  // P64.
+  'hsnCode',
   'status',
   'kotId',
   'addedBy',

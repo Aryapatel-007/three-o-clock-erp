@@ -38,6 +38,8 @@ function rowKey(line) {
     addOns,
     line.unitPriceInPaise,
     line.taxRateBps,
+    // P64. A code changed between rounds keeps the rounds apart, as a price does.
+    line.hsnCode ?? null,
   ]);
 }
 
@@ -59,6 +61,7 @@ export function groupBillLines(lines) {
         quantity: line.quantity,
         unitPriceInPaise: line.unitPriceInPaise,
         taxRateBps: line.taxRateBps,
+        hsnCode: line.hsnCode ?? null,
         lineTotalInPaise: line.lineTotalInPaise,
         orderLineIds: [asId(line.orderLineId)],
       });

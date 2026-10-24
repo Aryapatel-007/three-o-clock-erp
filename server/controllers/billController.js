@@ -34,7 +34,8 @@ import {
 import { cancelLinesAfterBilling, listRefunds as findRefunds, markRefundDone } from '../services/billCancelLinesService.js';
 import { markPrinted, printQueue, requestPrint } from '../services/billPrintService.js';
 import { buildInvoiceData, renderReceipt } from '../services/receiptService.js';
-import { getSetting, getSettings } from '../services/settingsService.js';
+import { getSetting, getSettings, resolvedAccent } from '../services/settingsService.js';
+import { outstandingFor } from '../services/accountService.js';
 import { sendList, sendSuccess } from '../utils/response.js';
 import { scoped, scopedForAggregate } from '../utils/scopedQuery.js';
 import { businessDateFor, nowUtc } from '../utils/time.js';
@@ -248,7 +249,7 @@ export async function getReceipt(req, res) {
 export async function getInvoice(req, res) {
   const bill = await readBill(req, req.params.billId);
   const restaurant = await Restaurant.findById(req.restaurantId);
-  const { receipt } = await getSettings(req.restaurantId, { req });
+  const { receipt, invoiceLayout, appearance } = await getSettings(req.restaurantId, { req });
   /**
    * 2026-10-09, for the thermal bill: who made the bill, read now as a label,
    * and the guest from the order. Only the last four digits of a mobile leave
@@ -256,15 +257,33 @@ export async function getInvoice(req, res) {
    */
   const [cashier, order] = await Promise.all([
     bill.billedBy ? User.findOne({ restaurantId: req.restaurantId, _id: bill.billedBy }).select('name').lean() : null,
-    Order.findOne({ ...scoped(req), _id: bill.orderId }).select('customerName customerPhone').lean(),
+    Order.findOne({ ...scoped(req), _id: bill.orderId }).select('customerName customerPhone lines._id lines.notes').lean(),
   ]);
+  /**
+   * P64. Each line's note, read from the order the bill was made from, the
+   * account's outstanding now for an On Hold bill, the signature slot, and the
+   * layout with its accent worked out. Section P64 5.
+   */
+  const lineNotes = new Map((order?.lines ?? []).map((line) => [String(line._id), line.notes ?? null]));
+  const onHoldOutstandingInPaise = bill.account?.accountId ? await outstandingFor(req, bill.account.accountId) : null;
+  const signature = restaurant.brandLogos?.signature?.sha256
+    ? { hash: restaurant.brandLogos.signature.sha256, contentType: restaurant.brandLogos.signature.contentType }
+    : null;
   return sendSuccess(res, {
-    ...buildInvoiceData({ restaurant, bill, receipt }),
+    ...buildInvoiceData({ restaurant, bill, receipt, lineNotes }),
     cashierName: cashier?.name ?? null,
     customer:
       order?.customerName || order?.customerPhone
         ? { name: order.customerName ?? null, mobileLast4: order.customerPhone ? String(order.customerPhone).slice(-4) : null }
         : null,
+    onHoldOutstandingInPaise,
+    signature,
+    layout: {
+      theme: invoiceLayout.theme,
+      accent: invoiceLayout.useBrandAccent ? resolvedAccent(appearance) : null,
+      show: { ...invoiceLayout.show },
+      thermalShow: { ...invoiceLayout.thermalShow },
+    },
   });
 }
 

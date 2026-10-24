@@ -35,8 +35,9 @@ const DELETED = ['StatusBadge', 'AvailabilityStamp', 'PanelShell', 'PaymentPanel
  */
 const COLOUR_ARITHMETIC = 'utils/colour.js';
 
-/** The one component allowed to format money. */
+/** The one component allowed to format money, and its plain-text words (P64). */
 const MONEY_COMPONENT = 'components/ui/Money.jsx';
+const MONEY_TEXT = 'components/ui/moneyText.js';
 
 /** P22. The one component that draws a logo, the one file that fetches it, and the two users of `brand`. */
 const BRAND_LOGO = 'components/ui/BrandLogo.jsx';
@@ -45,6 +46,8 @@ const DISH_PHOTO = 'components/ui/DishPhoto.jsx';
 // P25. The printed tax invoice is a separate HTML document, not a screen, and
 // draws the logo BrandLogo already holds, from its data URL.
 const PRINTED_INVOICE = 'features/printing/invoiceHtml.js';
+// P64. The full-page themes draw the logo and the signature image the same way.
+const PRINTED_THEMES = 'features/printing/themes/';
 const BRAND_API = 'api/brand.js';
 const BRAND_USERS = [BRAND_LOGO, 'features/auth/LoginPage.jsx'];
 const LOOPING = /(?<![\w-])(?:[a-z-]+:)*animate-(?:spin|pulse|ping|bounce)(?![\w-])/;
@@ -113,7 +116,7 @@ describe('design guard: the whole client', () => {
   it('format money only through Money', () => {
     const found = [];
     for (const { name, code } of files) {
-      if (name === MONEY_COMPONENT) continue;
+      if (name === MONEY_COMPONENT || name === MONEY_TEXT) continue;
       code.split('\n').forEach((line, index) => {
         const where = `${name}:${index + 1}  ${line.trim().slice(0, 100)}`;
         if (/\.toLocaleString\(/.test(line)) found.push(where);
@@ -140,7 +143,7 @@ describe('design guard: the whole client', () => {
     for (const { name, code } of files) {
       code.split('\n').forEach((line, index) => {
         const where = `${name}:${index + 1}  ${line.trim().slice(0, 100)}`;
-        if (/<img\b/.test(line) && ![BRAND_LOGO, DISH_PHOTO, PRINTED_INVOICE].includes(name)) found.push(where);
+        if (/<img\b/.test(line) && ![BRAND_LOGO, DISH_PHOTO, PRINTED_INVOICE].includes(name) && !name.startsWith(PRINTED_THEMES)) found.push(where);
         // Only the brand API file asks the server for the logo's bytes.
         if (/\/restaurant\/logo/.test(line) && name !== BRAND_API) found.push(where);
       });

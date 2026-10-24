@@ -27,6 +27,7 @@ const EMPTY = {
   variants: [],
   addOns: [],
   isOpenItem: false,
+  hsnCode: '',
 };
 
 const toEntry = (sub) => ({
@@ -55,6 +56,7 @@ function buildForm(item) {
     variants: (item.variants ?? []).map(toEntry),
     addOns: (item.addOns ?? []).map(toEntry),
     isOpenItem: item.isOpenItem === true,
+    hsnCode: item.hsnCode ?? '',
   };
 }
 
@@ -103,6 +105,10 @@ export default function ItemEditorPanel({
         };
       });
 
+    // P64. Empty clears it: the restaurant's default SAC prints instead.
+    const hsnCode = form.hsnCode.trim();
+    if (hsnCode !== '' && !/^\d{4,8}$/.test(hsnCode)) errors.hsnCode = 'An HSN or SAC code is 4 to 8 digits.';
+
     const variants = buildSubs(form.variants, 'variants');
     const addOns = buildSubs(form.addOns, 'add-ons');
 
@@ -124,6 +130,7 @@ export default function ItemEditorPanel({
       variants: form.isOpenItem ? [] : variants,
       addOns: form.isOpenItem ? [] : addOns,
       isOpenItem: form.isOpenItem,
+      hsnCode: hsnCode === '' ? null : hsnCode,
     });
   }
 
@@ -198,6 +205,17 @@ export default function ItemEditorPanel({
             hint="Lower first"
           />
         </div>
+
+        {/* P64. Frozen onto each line when the dish is ordered. */}
+        <Input
+          label="HSN/SAC"
+          inputMode="numeric"
+          maxLength={8}
+          value={form.hsnCode}
+          onChange={set('hsnCode')}
+          error={fieldErrors.hsnCode}
+          hint="Leave empty to print the default SAC code from Invoice layout. Only dishes ordered from now take a change."
+        />
 
         {/* P46. An open item has no sizes or extras. */}
         {!form.isOpenItem && (

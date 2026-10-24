@@ -168,6 +168,12 @@ export default function SettingsPage() {
           </Link>
         </Section>
 
+        <Section title="Invoice layout" description="The invoice theme, what a printed bill shows, the HSN/SAC code, the PAN, the terms and the signature, with a preview of a real bill.">
+          <Link to="/settings/invoice-layout" className="type-button flex min-h-12 w-fit items-center rounded-lg border border-ink bg-surface px-4 hover:bg-sunken">
+            Open Invoice layout
+          </Link>
+        </Section>
+
         {/* P30. The free server's starts, the owner's to read; this page is the owner's alone. */}
         <ServerCard />
 

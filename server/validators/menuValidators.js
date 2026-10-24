@@ -152,6 +152,14 @@ const description = z
   ])
   .optional();
 
+/** P64. 4 to 8 digits, or null to clear. "" is stored as null, the receipt text rule. */
+export const HSN_CODE_MESSAGE = 'An HSN or SAC code is 4 to 8 digits.';
+const hsnCode = z
+  .union([z.string(), z.null()], { error: HSN_CODE_MESSAGE })
+  .transform((value) => (value === null || value.trim() === '' ? null : value.trim()))
+  .refine((value) => value === null || /^\d{4,8}$/.test(value), HSN_CODE_MESSAGE)
+  .optional();
+
 export const createMenuItemSchema = z.object({
   body: z
     .object({
@@ -174,6 +182,8 @@ export const createMenuItemSchema = z.object({
       addOns: addOns.optional(),
       // P46.
       isOpenItem: z.boolean({ error: 'Must be true or false.' }).optional(),
+      // P64.
+      hsnCode,
     })
     .strict('Is not a field you can set here.'),
 });
@@ -215,6 +225,8 @@ export const updateMenuItemSchema = z.object({
       addOns: addOns.optional(),
       // P46.
       isOpenItem: z.boolean({ error: 'Must be true or false.' }).optional(),
+      // P64.
+      hsnCode,
       isAvailable: z
         .never({ error: 'Has its own endpoint: PATCH /menu-items/:menuItemId/availability' })
         .optional(),

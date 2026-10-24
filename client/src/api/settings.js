@@ -52,9 +52,13 @@ export function changedSettings(original, current) {
   return patch;
 }
 
-/** Equal by value: a list (Today tiles, section order) is a new array after every clone. */
+/**
+ * Equal by value: a list (Today tiles, section order) or a group of switches
+ * (P64's `invoiceLayout.show`) is a new object after every clone.
+ */
 function sameValue(a, b) {
   if (Array.isArray(a) || Array.isArray(b)) return JSON.stringify(a) === JSON.stringify(b);
+  if (a && b && typeof a === 'object' && typeof b === 'object') return JSON.stringify(a) === JSON.stringify(b);
   return a === b;
 }
 
@@ -78,3 +82,7 @@ function normaliseInvoice(invoice) {
 export const getPaymentGateway = () => api.get('/settings/payments/gateway');
 export const connectPaymentGateway = (body) => api.put('/settings/payments/gateway', body);
 export const disconnectPaymentGateway = (reason) => api.delete('/settings/payments/gateway', { body: { reason } });
+
+/* M0 2.2. The restaurant's own details; P64 adds the PAN and the Udyam number. OWNER only to change. */
+export const getRestaurant = () => api.get('/restaurant');
+export const updateRestaurant = (body) => api.patch('/restaurant', body);

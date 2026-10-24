@@ -108,6 +108,8 @@ export function toBillLine(line) {
     categoryName: line.categoryName ?? null,
     // P46.
     isOpenItem: line.isOpenItem === true,
+    // P64.
+    hsnCode: line.hsnCode ?? null,
     // P60.
     billedWithoutKot: line.billedWithoutKot === true,
   };
