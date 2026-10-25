@@ -33,7 +33,7 @@ import InlinePayment from './InlinePayment.jsx';
 import { methodsForBill, paymentMethodName } from './paymentMethodsForBill.js';
 import { printBill } from '../printing/printBill.js';
 import { useTheme } from '../../context/ThemeProvider.jsx';
-import { useDeviceSettings } from '../printing/useDeviceSettings.js';
+import { billsPrintAtCounter, useDeviceSettings } from '../printing/useDeviceSettings.js';
 import VoidBillPanel from './VoidBillPanel.jsx';
 import AddItemsPanel from './AddItemsPanel.jsx';
 import CancelItemsPanel from './CancelItemsPanel.jsx';
@@ -270,6 +270,13 @@ export default function BillScreenPage() {
   const captainLockedOut = isCaptain && (bill.printCount ?? 0) > 0;
   // P59. While the counter has not printed the captain's request, a second tap would only print it again.
   const sentToCounter = waitingAtCounter(bill);
+  /**
+   * 2026-10-25. A manager's or cashier's phone has no printer either: on the
+   * cafe PC its bill goes to the counter, as a captain's (billsPrintAtCounter).
+   * Anywhere but the counter printer itself, the till may also send it there.
+   */
+  const atCounter = isCaptain || (isTill && billsPrintAtCounter(device, features));
+  const offersCounter = isCaptain || (isTill && !device.printCaptainBills);
   const captainMayTakePayment =
     isCaptain && features?.billing?.captainsMayBill && features?.billing?.captainsMayTakePayment && bill.orderType !== 'DELIVERY';
   const canTakePayment = isTill || Boolean(captainMayTakePayment);
@@ -368,16 +375,20 @@ export default function BillScreenPage() {
               </ActionButton>
             )}
             {canCharge && <ActionButton onClick={() => setPanel('charge')}>Charge to account</ActionButton>}
-            {isCaptain && !bill.isVoided && !asksForPrint && (
-              <ActionButton primary onClick={() => printRequest.mutate()} disabled={printRequest.isPending || sentToCounter}>
+            {offersCounter && !bill.isVoided && !asksForPrint && (
+              <ActionButton
+                primary={isCaptain || (atCounter && printIsPrimary)}
+                onClick={() => printRequest.mutate()}
+                disabled={printRequest.isPending || sentToCounter}
+              >
                 <PrintIcon />
                 {sentToCounter ? 'Sent to the counter' : 'Print at counter'}
               </ActionButton>
             )}
             {!asksForPrint && (
-              <ActionButton primary={printIsPrimary && !isCaptain} onClick={() => print()} disabled={printing}>
+              <ActionButton primary={printIsPrimary && !atCounter} onClick={() => print()} disabled={printing}>
                 <PrintIcon />
-                {isCaptain ? 'Print here' : <Bilingual k="printReceipt" />}
+                {atCounter ? 'Print here' : <Bilingual k="printReceipt" />}
               </ActionButton>
             )}
             <Link
@@ -581,12 +592,12 @@ export default function BillScreenPage() {
                   size="lg"
                   fullWidth
                   className="mt-4"
-                  isLoading={isCaptain ? printRequest.isPending : printing}
-                  disabled={isCaptain && sentToCounter}
-                  onClick={() => (isCaptain ? printRequest.mutate() : print())}
+                  isLoading={atCounter ? printRequest.isPending : printing}
+                  disabled={atCounter && sentToCounter}
+                  onClick={() => (atCounter ? printRequest.mutate() : print())}
                 >
                   <PrintIcon />
-                  {isCaptain
+                  {atCounter
                     ? sentToCounter
                       ? 'Sent to the counter'
                       : 'Print at counter'
@@ -594,8 +605,19 @@ export default function BillScreenPage() {
                       ? 'Print the revised bill'
                       : 'Print bill'}
                 </Button>
-                {isCaptain && sentToCounter && (
+                {atCounter && sentToCounter && (
                   <p className="type-caption mt-2 text-muted">Sent to the counter. Payment opens once it has printed.</p>
+                )}
+                {/* 2026-10-25. The till can print either way; This device says which comes first. */}
+                {isTill && (atCounter || offersCounter) && (
+                  <button
+                    type="button"
+                    disabled={atCounter ? printing : printRequest.isPending || sentToCounter}
+                    onClick={() => (atCounter ? print() : printRequest.mutate())}
+                    className="type-label mt-3 min-h-12 w-full rounded-lg text-accent underline-offset-4 hover:underline disabled:opacity-50"
+                  >
+                    {atCounter ? 'Print on this device instead' : 'Print at counter instead'}
+                  </button>
                 )}
                 <button
                   type="button"

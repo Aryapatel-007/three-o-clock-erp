@@ -50,6 +50,8 @@ const DEFAULTS = Object.freeze({
   autoPrintKots: false,
   // P25 Part D. A counter computer prints the bills captains send it.
   printCaptainBills: false,
+  // 2026-10-25. Where a bill printed from this device comes out: AUTO, HERE or COUNTER (billsPrintAtCounter).
+  billPrintsAt: 'AUTO',
   // P29 Part D, retired by P57: Save & Print on the order screen says when to print. Kept so old saved settings still read.
   printBillOnCreate: false,
   printedBillRequests: [],
@@ -78,6 +80,27 @@ const DEFAULTS = Object.freeze({
   kitchenTiles: 'BIG',
 });
 
+export const BILL_PRINT_PLACES = Object.freeze(['AUTO', 'HERE', 'COUNTER']);
+
+/**
+ * 2026-10-25. Whether a bill printed from this device goes to the counter's
+ * printer, as a captain's does (API-CONTRACT M3 16.3), instead of this device's.
+ *
+ * On the cafe PC the bill printer is on the PC itself, and only the till window
+ * prints captains' bills (`printCaptainBills`). A manager's or cashier's phone
+ * there printed to nothing: Print bill opened the phone's own printing, and no
+ * bill came out (Z Chaat, 2026-10-25). So, automatically, every device on the
+ * cafe PC's server but the till window, or one that prints captains' bills,
+ * sends to the counter. On the website it stays this device, as before. This device can
+ * choose either.
+ */
+export function billsPrintAtCounter(device, features) {
+  if (device?.billPrintsAt === 'COUNTER') return true;
+  if (device?.billPrintsAt === 'HERE') return false;
+  // The till window (?till=1) always prints here: it is the counter.
+  return features?.sync?.server === 'BOX' && !device?.cafeTill && !device?.printCaptainBills;
+}
+
 /** Same-tab listeners. The `storage` event only reaches other tabs. */
 const CHANGE_EVENT = 'erp-device-change';
 
@@ -91,7 +114,8 @@ function withDefaults(stored) {
   const billTextSize = BILL_TEXT_SIZES[rest.billTextSize] ? rest.billTextSize : DEFAULT_BILL_TEXT_SIZE;
   const edgeMargin = EDGE_MARGINS[rest.edgeMargin] ? rest.edgeMargin : DEFAULT_EDGE_MARGIN;
   const printWidth = PRINT_WIDTHS[rest.printWidth] ? rest.printWidth : DEFAULT_PRINT_WIDTH;
-  return { ...rest, printer: printerFor(stored), paperLength, billTextSize, edgeMargin, printWidth };
+  const billPrintsAt = BILL_PRINT_PLACES.includes(rest.billPrintsAt) ? rest.billPrintsAt : 'AUTO';
+  return { ...rest, printer: printerFor(stored), paperLength, billTextSize, edgeMargin, printWidth, billPrintsAt };
 }
 
 function readStored() {

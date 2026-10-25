@@ -1,9 +1,10 @@
 import { useAuth } from '../../context/AuthContext.jsx';
 import { BILL_TEXT_SIZES, EDGE_MARGINS, PAPER_LENGTHS, PRINT_WIDTHS, PRINTER_KEYS, PRINTERS } from './printers.js';
-import { DENSITIES, TEXT_SIZES, THEMES, useDeviceSettings } from './useDeviceSettings.js';
+import { BILL_PRINT_PLACES, billsPrintAtCounter, DENSITIES, TEXT_SIZES, THEMES, useDeviceSettings } from './useDeviceSettings.js';
 
 const THEME_LABELS = { AUTO: 'Automatic', DAY: 'Day', NIGHT: 'Night' };
 const DENSITY_LABELS = { COMFORTABLE: 'Comfortable', COMPACT: 'Compact' };
+const BILL_PRINT_LABELS = { AUTO: 'Automatic', HERE: 'On this device', COUNTER: 'At the counter' };
 const LANGUAGE_LABELS = { NONE: 'None', GUJARATI: 'Gujarati', HINDI: 'Hindi' };
 
 /**
@@ -160,6 +161,19 @@ export default function DeviceSettingsPage() {
             <span className="type-caption block text-muted">Reads the new order aloud, for example "New takeaway order, W 42, 3 items".</span>
           </span>
         </label>
+
+        {/* 2026-10-25. A phone has no bill printer; its bills can print at the counter, as a captain's. */}
+        {isTill && (
+          <Choice
+            legend="Bills print"
+            hint={`Automatic: at the counter on the cafe PC, except on the computer that prints captains' bills; on this device everywhere else. Now: ${
+              billsPrintAtCounter(settings, features) ? 'at the counter' : 'on this device'
+            }.`}
+            options={BILL_PRINT_PLACES.map((value) => ({ value, label: BILL_PRINT_LABELS[value] }))}
+            value={settings.billPrintsAt}
+            onChange={(billPrintsAt) => update({ billPrintsAt })}
+          />
+        )}
 
         {/* P25 Part D. The counter prints what captains send it. */}
         {isTill && (

@@ -7,6 +7,7 @@ import Money, { moneyText } from '../../components/ui/Money.jsx';
 import { createBill, requestBillPrint } from '../../api/bills.js';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { formatBasisPoints } from '../../utils/formatMoney.js';
+import { billsPrintAtCounter, useDeviceSettings } from '../printing/useDeviceSettings.js';
 import { ROLES } from '../users/roles.js';
 import DiscountPanel from './DiscountPanel.jsx';
 import { discountReasonLabel } from './discountReasons.js';
@@ -36,6 +37,9 @@ export default function BillComposer({ order, onStale, withoutKot = false, onBac
   const [error, setError] = useState(null);
 
   const isCaptain = user?.role === ROLES.WAITER;
+  // 2026-10-25. A manager's or cashier's phone on the cafe PC sends the print to the counter too.
+  const [device] = useDeviceSettings();
+  const atCounter = isCaptain || (TILL.includes(user?.role) && billsPrintAtCounter(device, features));
   const isManager = MANAGERS.includes(user?.role);
   const cashierPlatformOnly = user?.role === ROLES.CASHIER && Boolean(features?.cashierMayApplyPlatformDiscounts);
   // A reopened order carries its last bill's discount (P26); a new one is given on the new bill.
@@ -58,14 +62,14 @@ export default function BillComposer({ order, onStale, withoutKot = false, onBac
     mutationFn: async ({ andPrint }) => {
       const bill = await createBill({ orderId: order.id, version: order.version, discount, ...(withoutKot ? { withoutKot } : {}) });
       // P25 Part D. A captain's print goes to the counter's printer. A failed request leaves Print at counter on the bill.
-      if (andPrint && isCaptain) await requestBillPrint(bill.id).catch(() => null);
+      if (andPrint && atCounter) await requestBillPrint(bill.id).catch(() => null);
       return bill;
     },
     onSuccess: (bill, { andPrint }) => {
       queryClient.invalidateQueries({ queryKey: ['order', order.id] });
       queryClient.invalidateQueries({ queryKey: ['tables'] });
       // The bill screen prints it on this device, then asks for the payment (P29).
-      navigate(`/bills/${bill.id}`, { state: andPrint && !isCaptain ? { printNow: true } : null });
+      navigate(`/bills/${bill.id}`, { state: andPrint && !atCounter ? { printNow: true } : null });
     },
     onError: (mutationError) => {
       const raced = existingBillId(mutationError);
@@ -155,7 +159,7 @@ export default function BillComposer({ order, onStale, withoutKot = false, onBac
           className="type-button flex min-h-14 items-center justify-center gap-2 rounded-lg bg-accent px-4 text-on-accent hover:brightness-110 disabled:opacity-50"
         >
           <PrintIcon />
-          {busy ? 'Saving…' : isCaptain ? 'Save & Print at counter' : 'Save & Print'}
+          {busy ? 'Saving…' : atCounter ? 'Save & Print at counter' : 'Save & Print'}
         </button>
       </div>
 

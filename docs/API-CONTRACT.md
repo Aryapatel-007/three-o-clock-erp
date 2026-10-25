@@ -2842,6 +2842,14 @@ The counter device's "Print bills sent by captains" setting is a device setting
 never prints twice. P59: it claims each request with `printed` and
 `forRequestAt` before printing, so only one device prints it.
 
+2026-10-25: any role may send a bill to the counter, not only a captain (the
+endpoint was always open to all six). A device's "Bills print" setting (This
+device, no endpoint) is Automatic, On this device or At the counter. Automatic
+is At the counter on a cafe PC's server (`/auth/me` `sync.server` BOX) for every
+device but the till window and a device printing captains' bills, and On this
+device everywhere else. A manager's or cashier's phone on the cafe PC printed
+nothing before this, because it has no bill printer.
+
 ### 16.4 Cancelling an item after the bill is made (P25 Part E)
 
 ```
