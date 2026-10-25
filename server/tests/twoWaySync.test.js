@@ -348,6 +348,102 @@ describe('one series for the PC and the website', () => {
   });
 });
 
+describe('one series made safe (2026-10-25)', () => {
+  const restaurantId = new ObjectId();
+  const branchId = new ObjectId();
+  const counter = (fields) => ({
+    _id: new ObjectId(), restaurantId, branchId, name: 'ORDER', scope: null, value: 0, createdAt: at(0), updatedAt: at(0), ...fields,
+  });
+  const fyBill = (sequence, fields = {}) => ({
+    _id: new ObjectId(), restaurantId, branchId, orderId: new ObjectId(), orderNumber: 1,
+    billNumber: `2026-27/${String(sequence).padStart(6, '0')}`, billSequence: sequence, financialYear: '2026-27',
+    invoiceSeries: '2026-27', isVoided: false, status: 'PAID', createdAt: at(0), updatedAt: at(0), ...fields,
+  });
+
+  it('a counter changed on both sides keeps the higher value, and is no conflict', async () => {
+    asBox();
+    const doc = counter({ name: 'KOT', value: 10 });
+    await applyPeerEntry(db, restaurantId, entry('counters', doc));
+    await db.collection('counters').updateOne({ _id: doc._id }, { $set: { value: 14, updatedAt: at(5) } });
+    // The website counted to 12 a minute later: newer, but lower.
+    await applyPeerEntry(db, restaurantId, entry('counters', { ...doc, value: 12, updatedAt: at(6) }));
+    assert.equal((await db.collection('counters').findOne({ _id: doc._id })).value, 14);
+    assert.equal(await db.collection('syncconflicts').countDocuments({ restaurantId, coll: 'counters' }), 0);
+  });
+
+  it('two counters for one series become the PC\'s, with the higher value', async () => {
+    asCloud();
+    const websites = counter({ name: 'BILL', scope: '2026-27', value: 7 });
+    await db.collection('counters').insertOne(websites);
+    const pcs = counter({ name: 'BILL', scope: '2026-27', value: 5 });
+    await applyPeerEntry(db, restaurantId, entry('counters', pcs));
+    const left = await db.collection('counters').find({ restaurantId, name: 'BILL', scope: '2026-27' }).toArray();
+    assert.deepEqual(left.map((c) => [String(c._id), c.value]), [[String(pcs._id), 7]]);
+
+    asBox();
+    const other = counter({ name: 'RESERVATION', value: 9 });
+    const mine = counter({ name: 'RESERVATION', value: 3 });
+    await db.collection('counters').insertOne(mine);
+    await applyPeerEntry(db, restaurantId, entry('counters', other));
+    const kept = await db.collection('counters').find({ restaurantId, name: 'RESERVATION' }).toArray();
+    assert.deepEqual(kept.map((c) => [String(c._id), c.value]), [[String(mine._id), 9]]);
+  });
+
+  it('on the website, its own order with the PC\'s number takes the next free one, its copies too', async () => {
+    asCloud();
+    const websites = orderDoc(restaurantId, branchId, { orderNumber: 41 });
+    await db.collection('orders').insertOne(websites);
+    await db.collection('orders').insertOne(orderDoc(restaurantId, branchId, { orderNumber: 43 }));
+    const ticket = { _id: new ObjectId(), restaurantId, branchId, orderId: websites._id, orderNumber: 41, kotNumber: 900, lines: [], createdAt: at(0), updatedAt: at(0) };
+    await db.collection('kots').insertOne(ticket);
+    const pcs = orderDoc(restaurantId, branchId, { orderNumber: 41 });
+    assert.equal(await applyPeerEntry(db, restaurantId, entry('orders', pcs)), APPLY_OUTCOMES.APPLIED);
+
+    assert.equal((await db.collection('orders').findOne({ _id: pcs._id })).orderNumber, 41, 'the PC keeps its number');
+    const moved = await db.collection('orders').findOne({ _id: websites._id });
+    assert.equal(moved.orderNumber, 44, 'the next number free here');
+    assert.equal((await db.collection('kots').findOne({ _id: ticket._id })).orderNumber, 44, 'the ticket follows');
+    const note = await db.collection('syncconflicts').findOne({ restaurantId, coll: 'orders', documentId: websites._id });
+    assert.match(note.detail, /Order 41 .* the website's is now 44/);
+  });
+
+  it('on the website, its own bill with the PC\'s number takes the next in the series, gap-free, to reprint', async () => {
+    asCloud();
+    const websites = fyBill(301);
+    await db.collection('bills').insertOne(websites);
+    await db.collection('bills').insertOne(fyBill(302));
+    const entryOnAccount = { _id: new ObjectId(), restaurantId, branchId, billId: websites._id, billNumber: websites.billNumber, createdAt: at(0), updatedAt: at(0) };
+    await db.collection('accountentries').insertOne(entryOnAccount);
+    const pcs = fyBill(301);
+    assert.equal(await applyPeerEntry(db, restaurantId, entry('bills', pcs)), APPLY_OUTCOMES.APPLIED);
+
+    const moved = await db.collection('bills').findOne({ _id: websites._id });
+    assert.equal(moved.billNumber, '2026-27/000303');
+    assert.equal(moved.billSequence, 303);
+    assert.equal((await db.collection('accountentries').findOne({ _id: entryOnAccount._id })).billNumber, '2026-27/000303');
+    const note = await db.collection('syncconflicts').findOne({ restaurantId, coll: 'bills', documentId: websites._id });
+    assert.match(note.detail, /Reprint the website's bill/);
+  });
+
+  it('on the PC, a website bill with a number the PC holds waits for the website, with nothing to fix', async () => {
+    asBox();
+    await db.collection('bills').insertOne(fyBill(501));
+    const websites = fyBill(501);
+    assert.equal(await applyPeerEntry(db, restaurantId, entry('bills', websites)), APPLY_OUTCOMES.NOT_APPLIED);
+    assert.equal(await db.collection('bills').countDocuments({ _id: websites._id }), 0);
+    assert.equal(await db.collection('syncconflicts').countDocuments({ restaurantId, documentId: websites._id }), 0);
+  });
+
+  it('a ticket arriving with its order\'s old number takes the number the order has here', async () => {
+    asBox();
+    const order = orderDoc(restaurantId, branchId, { orderNumber: 77 });
+    await db.collection('orders').insertOne(order);
+    const ticket = { _id: new ObjectId(), restaurantId, branchId, orderId: order._id, orderNumber: 61, kotNumber: 7001, lines: [], createdAt: at(0), updatedAt: at(0) };
+    await applyPeerEntry(db, restaurantId, entry('kots', ticket));
+    assert.equal((await db.collection('kots').findOne({ _id: ticket._id })).orderNumber, 77);
+  });
+});
+
 describe('the routes', () => {
   it('answers a pull only on a two-way cloud, and only signed', async () => {
     setRoleForTest('CLOUD');

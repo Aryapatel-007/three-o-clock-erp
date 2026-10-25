@@ -287,24 +287,44 @@ describe('two-way sync between the cafe PC and the website', () => {
     // The website takes three bills while the PC is away.
     const websiteBills = [];
     for (let i = 0; i < 3; i += 1) websiteBills.push(await billTakeaway(onCloud));
-    assert.ok(websiteBills.every((bill) => bill.billNumber.includes('/W')), 'the website bills in its own series');
-    assert.ok(pcBills.every((bill) => !bill.billNumber.includes('/W')), 'the PC carries on its series');
+    // One series (2026-10-22): the website, not knowing the PC's last two bills, used their numbers.
+    const pcNumbers = new Set(pcBills.map((bill) => bill.billNumber));
+    assert.ok(websiteBills.some((bill) => pcNumbers.has(bill.billNumber)), 'the website reused a number the PC had used');
 
     // The PC is back.
     await pause(1500);
     await exchange(4);
-    for (const db of [boxDb, cloudDb]) {
-      for (const bill of [...pcBills, ...websiteBills]) {
-        const held = await db.collection('bills').findOne({ _id: new mongoose.Types.ObjectId(bill.id) });
-        assert.ok(held, `${bill.billNumber} is on ${db === boxDb ? 'the PC' : 'the website'}`);
-        assert.equal(held.billNumber, bill.billNumber);
-        assert.equal(held.status, 'PAID');
-      }
+    // Every bill on both sides, the same on both. The PC's keep their numbers; a website
+    // bill whose number the PC had used took the next free one in the same series.
+    const final = [];
+    for (const bill of [...pcBills, ...websiteBills]) {
+      const onBox = await boxDb.collection('bills').findOne({ _id: new mongoose.Types.ObjectId(bill.id) });
+      const onCloud = await cloudDb.collection('bills').findOne({ _id: new mongoose.Types.ObjectId(bill.id) });
+      assert.ok(onBox, `${bill.billNumber} is on the PC`);
+      assert.ok(onCloud, `${bill.billNumber} is on the website`);
+      assert.equal(onBox.billNumber, onCloud.billNumber, 'the same number on both');
+      assert.equal(onBox.status, 'PAID');
+      final.push({ issued: bill.billNumber, now: onBox.billNumber, sequence: onBox.billSequence, fromPc: pcBills.includes(bill) });
     }
-    const numbers = [...pcBills, ...websiteBills].map((bill) => bill.billNumber);
-    assert.equal(new Set(numbers).size, numbers.length, 'no number used twice');
+    for (const bill of final.filter((row) => row.fromPc)) assert.equal(bill.now, bill.issued, 'the PC keeps its number');
+    const sequences = final.map((row) => row.sequence).sort((a, b) => a - b);
+    assert.equal(new Set(final.map((row) => row.now)).size, final.length, 'no number used twice');
+    assert.deepEqual(sequences, sequences.map((_, i) => sequences[0] + i), 'the series is gap-free');
+
+    // Each renumbered bill is listed for a person, to reprint; the takeaway orders behind
+    // them were renumbered too, and say so. Nothing else is listed: no counter, nothing
+    // left uncopied.
+    const renumbered = final.filter((row) => row.now !== row.issued);
+    assert.ok(renumbered.length > 0);
     const fresh = await boxDb.collection('syncconflicts').find({}).sort({ _id: 1 }).skip(conflictsBefore).toArray();
-    assert.equal(fresh.length, 0, `nothing to fix by hand: ${JSON.stringify(fresh.map((c) => ({ kind: c.kind, coll: c.coll, fields: c.fields, summary: c.summary ?? c.message })))}`);
+    const listed = JSON.stringify(fresh.map((c) => ({ coll: c.coll, detail: c.detail })));
+    const billNotes = fresh.filter((c) => c.coll === 'bills');
+    assert.equal(billNotes.length, renumbered.length, listed);
+    for (const conflict of billNotes) assert.match(conflict.detail, /Reprint the website's bill/);
+    for (const conflict of fresh.filter((c) => c.coll !== 'bills')) {
+      assert.equal(conflict.coll, 'orders', listed);
+      assert.match(conflict.detail, /^Order \d+ was used on the cafe PC and on the website/, listed);
+    }
     await assertSame();
   });
 });
