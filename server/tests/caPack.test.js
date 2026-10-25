@@ -22,6 +22,7 @@ import { Order } from '../models/Order.js';
 import { ReplicaCursor } from '../models/ReplicaCursor.js';
 import { tickCaSends } from '../services/caPackService.js';
 import { setEmailForTests } from '../services/emailService.js';
+import { setSyncModeForTest } from '../services/sync/mode.js';
 import { resetWriterStateForTest } from '../services/replication/writerState.js';
 import { resetClockForTests, setClockForTests } from '../utils/time.js';
 import { buildGoldenDay, GOLDEN_DATE, ist } from './helpers/goldenDay.js';
@@ -121,6 +122,7 @@ before(async () => {
 afterEach(() => {
   resetClockForTests();
   setRoleForTest(null);
+  setSyncModeForTest(null);
   resetWriterStateForTest();
 });
 
@@ -238,6 +240,24 @@ describe('R20 CA Pack', () => {
     await ReplicaCursor.updateOne({ restaurantId }, { $set: { lastCapturedAt: new Date('2026-10-02T00:00:00Z') } });
     setRoleForTest('MIRROR');
     assert.equal((await pack()).status, 200);
+    setRoleForTest(null);
+    await ReplicaCursor.deleteMany({ restaurantId });
+  });
+
+  it('refuses on the two-way website until the cafe PC has sent the month, and builds once it has', async () => {
+    const restaurantId = golden.restaurant._id;
+    await ReplicaCursor.create({ restaurantId, appliedSeq: 10, lastCapturedAt: new Date('2026-09-20T00:00:00Z') });
+    setRoleForTest('CLOUD');
+    setSyncModeForTest('TWO_WAY');
+    const behind = await pack();
+    assert.equal(behind.status, 422, JSON.stringify(behind.body));
+    assert.match(behind.body.error.message, /not received the whole month/);
+    // A gap in what arrived is as good as behind.
+    await ReplicaCursor.updateOne({ restaurantId }, { $set: { lastCapturedAt: new Date('2026-10-02T00:00:00Z'), gap: { expectedSeq: 11, gotSeq: 13, at: new Date() } } });
+    assert.equal((await pack()).status, 422);
+    await ReplicaCursor.updateOne({ restaurantId }, { $set: { gap: { expectedSeq: null, gotSeq: null, at: null } } });
+    assert.equal((await pack()).status, 200);
+    setSyncModeForTest(null);
     setRoleForTest(null);
     await ReplicaCursor.deleteMany({ restaurantId });
   });

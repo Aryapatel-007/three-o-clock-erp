@@ -277,7 +277,7 @@ describe('a baseline taken again (P63, Render waking from its sleep)', () => {
     await db.collection('orders').updateOne({ _id: changed._id }, { $set: { kitchenNote: 'made here', updatedAt: new Date() } });
 
     await writer.baseline();
-    const baselined = async (doc) => ChangelogEntry.countDocuments({ restaurantId, documentId: doc._id, op: 'baseline' });
+    const baselined = (doc) => ChangelogEntry.countDocuments({ restaurantId, documentId: doc._id, op: 'baseline' });
     assert.equal(await baselined(same), 0, 'both sides hold it: not recorded again');
     assert.equal(await baselined(changed), 1, 'changed here: recorded');
     await writer.close();
