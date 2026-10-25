@@ -932,3 +932,17 @@ Added by P65.
 | **Opening** | An account's balance at the start of the month |
 | **Closing** | An account's balance at the end of the month |
 | **Adjusted** | Adjustments to an account in the month, up or down |
+
+---
+
+## 50. Where a bill prints
+
+Added 2026-10-25.
+
+| Term | Meaning |
+|---|---|
+| **Bills print** | On This device, for the till: where a bill printed from this device comes out |
+| **On this device** | The bill prints on this device's own printer |
+| **At the counter** | The bill goes to the counter's printer, as a captain's does. Automatic on the cafe PC for every device but the till |
+| **Print at counter instead** | On the bill: send it to the counter this once |
+| **Print on this device instead** | On the bill: print it on this device this once |
