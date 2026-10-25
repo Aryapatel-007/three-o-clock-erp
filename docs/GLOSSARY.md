@@ -849,7 +849,8 @@ Added by P63.
 | Term | Meaning |
 |---|---|
 | **Two-way sync** | The cafe PC and the website both take orders and bills, and each gets the other's within seconds while the internet is up |
-| **Website series** | The bill numbers the website uses while two-way sync is on: `2026-27/W00001` |
+| **Website series** | Before 2026-10-22, the bill numbers the website used while two-way sync was on: `2026-27/W00001`. Since then the website continues the PC's series |
+| **Renumbered by sync** | A website bill, order or KOT given the next number because the PC had used its number while the two were apart. A renumbered bill is reprinted for the guest |
 | **Sync conflict** | The same thing changed on the cafe PC and on the website before they could tell each other, or the same table, bill or name taken on both. Listed for the owner and manager |
 | **Kept from** | Which side's version a sync conflict kept: the cafe PC or the website |
 | **Mark as seen** | A person has read a sync conflict and dealt with it |

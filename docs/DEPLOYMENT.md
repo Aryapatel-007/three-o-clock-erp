@@ -934,7 +934,9 @@ Vercel rebuilds the screens from the same push. This repository has merged that
   minute, then move the devices to the website.
 - If the PC is down, move the devices to the website at once. At most the last
   minute of the PC's changes is not on Atlas yet; they come over when it is back.
-- Website bills are numbered `2026-27/W00001` on; Day Close waits for the PC.
+- Website bills continue the PC's series (one series); Day Close waits for the PC. A
+  number both used while apart stays the PC's: the website's bill gets the next
+  number, is listed under **Sync**, and is reprinted for the guest.
 - When the PC is back, start it: within a minute it takes the website's orders
   and bills and sends what it had kept. Each side's newer version wins; nothing
   is deleted; a table, bill or name taken on both is listed under **Sync** for
