@@ -178,10 +178,10 @@ describe('two-way sync between the cafe PC and the website', () => {
     assert.equal(await cloudDb.collection('syncconflicts').countDocuments(), 0);
   });
 
-  it('brings an order opened on the website to the PC, numbered from 900001', async () => {
+  it('brings an order opened on the website to the PC, in the same number run (one series, 2026-10-22)', async () => {
     const opened = await onCloud('POST', '/api/v1/orders', { token: floor.tokens.WAITER, body: { orderType: 'DINE_IN', tableId: floor.table.id } });
     assert.equal(opened.status, 201, JSON.stringify(opened.body));
-    assert.ok(opened.body.data.orderNumber >= 900_001);
+    assert.ok(opened.body.data.orderNumber > 0 && opened.body.data.orderNumber < 900_001, 'no separate website run');
     floor.order = opened.body.data;
     await exchange();
     const onPc = await boxDb.collection('orders').findOne({ _id: new mongoose.Types.ObjectId(floor.order.id) });
