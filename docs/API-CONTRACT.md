@@ -9497,10 +9497,22 @@ On a box or a mirror `/replication/pull` is 404.
 
 ## 2. Numbers on the cloud
 
-While `TWO_WAY` the cloud issues bill numbers from its own series (`2026-27/W00001`,
-or the prefix plus `W`), with `invoiceSeries` `2026-27/W` (or prefix plus `W`) and
-`billSequence` 900,000,000 plus the number; and order, KOT, online order and
-booking numbers from 900001. The box's numbers are unchanged.
+One series (2026-10-22, Arya; made safe 2026-10-25): while `TWO_WAY` the cloud
+issues bill, order, KOT, online order and booking numbers from the same counters
+as the box, so the website continues the PC's series. Bills from before
+2026-10-22 numbered `2026-27/W00001` keep their numbers.
+
+A `counters` document changed on both sides keeps the higher `value`, so a
+counter never goes back and neither side hands out a number again.
+
+Two records holding one number (both sides numbered while apart) are a clash:
+the PC's keeps the number, and the website's takes the next free one in the same
+series, on both sides, with its copies (`kots.orderNumber` and
+`bills.orderNumber` for an order; `accountentries`, `refunds` and
+`terminaltransactions` `billNumber` for a bill), and a `SAME_SLOT` sync conflict
+naming the old and new number. A bill renumbered this way must be reprinted for
+the guest; the conflict says so. An incoming KOT, bill or bill copy carries the
+number its order or bill has here.
 
 ## 3. Day Close
 

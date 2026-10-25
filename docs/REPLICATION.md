@@ -409,8 +409,11 @@ document and kind is brought up to date, not recorded again.
 **Before applying**, the side pumps its own change stream, so a change made a
 moment before is in the changelog and in the base comparison.
 
-**Numbers.** The cloud's series are `W` (section 2 of the prompt); `counterService`
-and `billNumberService` ask `sync/numbering.js`.
+**Numbers.** One series (2026-10-22): the website numbers bills, orders, KOTs,
+online orders and bookings from the same counters as the PC. A counter changed on
+both keeps the higher value; two records with one number keep the PC's, and the
+website's is renumbered with the next free number, its copies with it
+(`sync/numberClashes.js`, API-CONTRACT "P63" section 2).
 
 **What runs where while `TWO_WAY`.** Box: changelog writer, pusher, puller, no
 intake puller, no integration job loop, no reconciliation (two writers diverge
