@@ -27,6 +27,7 @@ import { RETRY, writeWithClashRules } from './clashes.js';
 import { otherNode, recordConflict } from './conflicts.js';
 import { docHash, sameDoc } from './hash.js';
 import { threeWayMerge } from './merge.js';
+import { alignCopies, counterValue } from './numberClashes.js';
 import { syncNode } from './mode.js';
 import { isListed, noteIncoming } from './recentChanges.js';
 import { getSyncDoc, noteApplied, setBase } from './syncDocs.js';
@@ -114,7 +115,10 @@ async function applyOnce(db, restaurantId, entry) {
   // A version this side already had and moved past (a delayed copy, or our own coming back).
   if (local && syncDoc?.knownHashes?.includes(incomingHash)) return APPLY_OUTCOMES.STALE;
 
-  const write = async (doc) => {
+  const write = async (chosen) => {
+    // One series (2026-10-25): a counter never goes back, and a copy carries the number its order or bill has here.
+    let doc = entry.coll === 'counters' ? counterValue(local, chosen) : chosen;
+    doc = await alignCopies(db, entry.coll, doc);
     const written = await writeWithClashRules(db, { restaurantId, coll: entry.coll, doc, incomingDoc: incoming, expected: local });
     if (written === RETRY) return RETRY;
     return written ? 'WRITTEN' : null;
@@ -147,7 +151,8 @@ async function applyOnce(db, restaurantId, entry) {
     await setBase(db, ref, incoming);
     outcome = written ? APPLY_OUTCOMES.MERGED : APPLY_OUTCOMES.NOT_APPLIED;
   }
-  if (conflictFields.length > 0) {
+  // A counter keeps the higher value: nothing for a person to decide.
+  if (conflictFields.length > 0 && entry.coll !== 'counters') {
     const localTime = new Date(local.updatedAt ?? 0).getTime();
     const incomingTime = new Date(incoming.updatedAt ?? 0).getTime();
     let keptFrom = localTime > incomingTime ? syncNode() : otherNode();
