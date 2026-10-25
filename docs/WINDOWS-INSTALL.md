@@ -186,21 +186,31 @@ numbers, which stay valid in their own series.
 
 ### After moving the cafe from the website to the PC
 
+**One icon, one window (2026-10-22).** **Cafe POS** on the desktop starts the
+server if needed and opens the till in its own browser profile with
+`--kiosk-printing` (`box\windows\start-till.ps1`): bills print with no dialog,
+on the PC's default printer. The "CafePOS Printer" task opens the same till
+when someone signs in to Windows, and again within a minute if it is closed.
+The till prints its own bills and every bill a captain sends with **Print at
+counter**, so nobody has to be at the counter.
+
+**The bill printer.** On the PC every device starts with what prints best on
+Z Chaat's Rugtek, measured on the website's counter: Thermal 80 mm, the
+printer's roll, 72 mm wide, 4 mm each side, Normal text, and "Print bills sent
+by captains" on (`useDeviceSettings.js`, once per device; a later choice on This
+device is kept). In Windows the printer's paper is **80(72.1) x 3276 mm**, never
+99999 mm, which Chrome cannot draw. If printing breaks, `box\windows\print-settings.cmd`
+lists every browser profile's saved print settings, clears a paper too long for
+Chrome, resets the printer to its factory settings, or copies one profile's
+settings into the till.
+
 A browser keeps each device's settings and sign-in per address, so every
 device starts empty on the PC's address. Once, on each:
 
-1. **Captains' bills print by themselves.** The **Cafe POS printer** window
-   opens on its own whenever someone signs in to Windows on the PC, and comes
-   back within a minute if it is closed. Sign in there once with a cashier or
-   manager login. It prints every bill a captain sends with **Print at counter**
-   on the PC's default printer, with no dialog and nobody at the counter. Make
-   the Rugtek the PC's default printer, and set Windows to sign in by itself at
-   start-up, or the window waits for someone to sign in to Windows. If a bill
-   is not printed in 30 seconds, the captain's phone says so.
-   **Counter till:** open it with **Cafe POS - Till (prints without asking)**,
-   never the website's launcher, and set the printer, print width and edge
-   margin in **This device**. The till does not need "Print bills sent by
-   captains" on: the printer window does that.
+1. **The till:** sign in once with a cashier or manager login. Make the Rugtek
+   the PC's default printer, and set Windows to sign in by itself at start-up,
+   or the till waits for someone to sign in to Windows. If a captain's bill is
+   not printed in 30 seconds, the captain's phone says so.
 2. **Kitchen tablets:** open the PC's address, sign in, and in **This device**
    choose the station, auto-print of KOTs and sound again.
 3. **Captains' phones:** open the PC's address and sign in. A phone cannot

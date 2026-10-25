@@ -182,6 +182,13 @@ function Set-EnvLine($key, $value) {
 # server refuses: a bare origin never names the default port.
 if (Select-String -Path $EnvFile -Pattern '^CLIENT_ORIGIN=http://localhost:80$' -Quiet) { Set-EnvLine 'CLIENT_ORIGIN' 'http://localhost' }
 Ensure-EnvLine 'SYNC_MODE' 'ONE_WAY'
+# 2026-10-22, Arya: a PC that already sends to the website (its secret is set) takes the
+# website's changes too. One-way only sent, so the PC never had the website's bills or cancels.
+if (Select-String -Path $EnvFile -Pattern '^REPLICATION_SECRET=.+' -Quiet) {
+  if (-not (Select-String -Path $EnvFile -Pattern '^MIRROR_URL=.+' -Quiet)) { Set-EnvLine 'MIRROR_URL' 'https://zchaat-pos-api.onrender.com' }
+  Set-EnvLine 'SYNC_MODE' 'TWO_WAY'
+  Write-Host 'Two-way sync with the website is on: this PC takes the website''s changes as well as sending its own.'
+}
 Ensure-EnvLine 'UPDATE_AUTO' 'on'
 Ensure-EnvLine 'UPDATE_WINDOW' '04:00-05:00'
 Ensure-EnvLine 'UPDATE_REPO' 'riship-17/Cafezza-Offline'
@@ -251,9 +258,9 @@ $updateTrigger = New-ScheduledTaskTrigger -Once -At (Get-Date).Date.AddMinutes(5
 $updateSettings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit (New-TimeSpan -Hours 2) -MultipleInstances IgnoreNew
 Register-ScheduledTask -TaskName $UpdateTask -Action $updateAction -Trigger $updateTrigger -Settings $updateSettings -Principal $system -Force | Out-Null
 
-# The print window (print-agent.ps1): captains' bills print here by themselves. In the
-# signed-in person's own session, since a browser and its printer live there, at sign-in
-# and every minute after, so a window closed by mistake comes back within a minute.
+# The till (print-agent.ps1, start-till.ps1), which also prints captains' bills by itself. In
+# the signed-in person's own session, since a browser and its printer live there, at sign-in
+# and every minute after, so a till closed by mistake comes back within a minute.
 $printerAction = New-ScheduledTaskAction -Execute "$env:SystemRoot\System32\wscript.exe" -Argument "`"$(Join-Path $PSScriptRoot 'print-agent.vbs')`"" -WorkingDirectory $Root
 $printerTrigger = New-ScheduledTaskTrigger -AtLogOn
 $printerTrigger.Repetition = (New-ScheduledTaskTrigger -Once -At (Get-Date) -RepetitionInterval (New-TimeSpan -Minutes 1) -RepetitionDuration (New-TimeSpan -Days 3650)).Repetition
@@ -275,9 +282,7 @@ for ($i = 0; $i -lt 60 -and -not $up; $i++) {
 }
 if (-not $up) { Fail "The server did not start. Read $LogDir\server.log." }
 Write-Host "The server is running at $url"
-# The print window opens now, not only at the next sign-in to Windows.
-Start-ScheduledTask -TaskName $PrinterTask -ErrorAction SilentlyContinue
-# The print window opens now, not only at the next sign-in to Windows.
+# The till opens now, not only at the next sign-in to Windows.
 Start-ScheduledTask -TaskName $PrinterTask -ErrorAction SilentlyContinue
 
 if ($ownerPhone) {
@@ -310,16 +315,24 @@ foreach ($icon in @(@{ Name = 'Cafe POS'; Page = '' }, @{ Name = 'Cafe POS - Con
   $shortcut.Description = 'Opens the cafe system, starting the server if it is not running.'
   $shortcut.Save()
 }
-# The counter's till: this PC's own address, printing with no dialog. The website's
-# launcher (tools\silent-printing) would put the counter on the website, where
-# captains' bills sent to this PC never arrive.
-$till = $shell.CreateShortcut((Join-Path $desktop 'Cafe POS - Till (prints without asking).lnk'))
-$till.TargetPath = Join-Path $PSScriptRoot 'till.cmd'
-$till.WorkingDirectory = $Root
-$till.WindowStyle = 7
-$till.IconLocation = "$env:SystemRoot\System32\SHELL32.dll,16"
-$till.Description = 'The till on this PC, printing bills with no print dialog.'
-$till.Save()
+# 2026-10-22. "Cafe POS" opens the till itself (start-till.ps1), so the icons that
+# opened a till or set up printing are gone: one icon, nothing to choose. The tools
+# stay in box\windows (print-settings.cmd) for whoever looks after the PC.
+foreach ($old in @('Cafe POS - Till (prints without asking)', 'Cafe POS - Printer setup (captains'' bills)', 'Cafe POS - Printer setup (till)', 'Cafe POS - Fix printing')) {
+  foreach ($folder in @($desktop, [Environment]::GetFolderPath('Desktop'))) {
+    Remove-Item -Path (Join-Path $folder "$old.lnk") -Force -ErrorAction SilentlyContinue
+  }
+}
+# The print window of 2026-10-22 morning had its own profile. And the till and its hidden
+# printer window keep the old screens in memory until closed: closed here, so the hidden
+# printer comes back within a minute on the new version (the "CafePOS Printer" task).
+Get-CimInstance Win32_Process -Filter "Name = 'chrome.exe' OR Name = 'msedge.exe'" |
+  Where-Object { $_.CommandLine -like '*Cafe POS Printer*' -or $_.CommandLine -like '*Cafe POS Till*' } |
+  ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
+# 2026-10-22. Chrome keeps its paper size, margins and scale per browser profile, and the till's
+# profile never had them chosen, so it printed with blank paper above the bill. The Chrome on
+# this PC that prints on the bill printer has them right: the till takes the same (print-settings.ps1).
+try { & (Join-Path $PSScriptRoot 'print-settings.ps1') -AutoCopy } catch { Write-Host "Chrome's print settings were not copied: $($_.Exception.Message)" -ForegroundColor Yellow }
 
 $addresses = Get-NetIPAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue | Where-Object { $_.IPAddress -match '^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)' } | Select-Object -ExpandProperty IPAddress
 $portPart = if ($port -eq 80) { '' } else { ":$port" }
@@ -337,7 +350,7 @@ if (Select-String -Path $EnvFile -Pattern '^UPDATE_TOKEN=.+' -Quiet) {
 if (-not (Select-String -Path $EnvFile -Pattern '^RESEND_API_KEY=.+' -Quiet)) {
   Write-Host 'The day-end email is off until RESEND_API_KEY is set in .env (docs\WINDOWS-INSTALL.md section 5c).' -ForegroundColor Yellow
 }
-Write-Host 'At the counter: open the till with "Cafe POS - Till (prints without asking)" on the desktop.'
-Write-Host 'Captains'' bills print by themselves in the "Cafe POS printer" window. Sign in there once with a cashier or manager login.' -ForegroundColor Green
+Write-Host 'The till opens by itself when Windows starts, and from "Cafe POS" on the desktop. It prints with no dialog.'
+Write-Host 'Sign in to the till once with a cashier or manager login: it prints its bills and the captains'' bills.' -ForegroundColor Green
 Read-Host 'Press Enter to close'
 Start-Process $url

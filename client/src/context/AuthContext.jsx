@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 
 import * as authApi from '../api/authApi.js';
 import { setAccessToken, setSessionHandlers } from '../api/client.js';
+import { applyCafePcPrintSetup } from '../features/printing/useDeviceSettings.js';
 
 /**
  * The session.
@@ -115,6 +116,12 @@ export function AuthProvider({ children }) {
   // True until we know whether there is a session to restore. Starting at
   // false would flash the login screen at someone who is already signed in.
   const [isRestoring, setIsRestoring] = useState(true);
+
+  // 2026-10-22. Signed in on the cafe PC's own server: this device prints as the website's counter does.
+  const onCafePc = features.sync?.server === 'BOX';
+  useEffect(() => {
+    if (onCafePc) applyCafePcPrintSetup();
+  }, [onCafePc]);
 
   const clearSession = useCallback(() => {
     setUser(null);

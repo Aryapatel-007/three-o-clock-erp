@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 
 import { fetchLogoDataUrl, LOGO_SLOT_NAMES } from '../api/brand.js';
 import { brandName, EMPTY_BRAND, resolveBrand } from '../features/brand/brand.js';
@@ -84,6 +85,17 @@ function useBrandSync({ user, appearance, restaurantName, saved, updateDevice })
   }, [user, appearance, restaurantName, saved, updateDevice]);
 }
 
+/**
+ * 2026-10-22. The cafe PC's print window, by the titles box/windows/print-agent.ps1
+ * looks for: running (hidden), or sent to sign in first (left on screen). Null elsewhere.
+ */
+function printerWindowTitle() {
+  const { pathname } = window.location;
+  if (pathname.startsWith('/print-station')) return 'Cafe POS printer';
+  if (pathname === '/login' && window.history.state?.usr?.from?.pathname === '/print-station') return 'Cafe POS printer - sign in';
+  return null;
+}
+
 export function ThemeProvider({ children }) {
   const { user, features } = useAuth();
   const [device, updateDevice] = useDeviceSettings();
@@ -139,8 +151,16 @@ export function ThemeProvider({ children }) {
   }, [brand.brandHex, brand.onBrandHex]);
 
   useEffect(() => {
-    setBrowserTab({ title: name, brand });
+    // 2026-10-22. The cafe PC's hidden print window keeps the title box/windows/print-agent.ps1 finds it by.
+    setBrowserTab({ title: printerWindowTitle() ?? name, brand });
   }, [name, brand]);
+
+  // The sign-in screen the print window was sent to: titled so the agent leaves it on screen.
+  const { pathname } = useLocation();
+  useEffect(() => {
+    const title = printerWindowTitle();
+    if (title) document.title = title;
+  }, [pathname]);
 
   const value = useMemo(() => ({ theme, neutral, secondLanguage, brand, name }), [theme, neutral, secondLanguage, brand, name]);
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;

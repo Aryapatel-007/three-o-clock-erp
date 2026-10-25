@@ -28,7 +28,7 @@ export default function CounterNotPrinting({ requestedAt }) {
   if (!late) return null;
   return (
     <p role="status" className="type-caption mt-2 text-alert">
-      Not printed yet. On the cafe PC the "Cafe POS printer" window must be open and signed in; on any other counter computer, the till open with "Print bills sent by captains" on in This device.
+      Not printed yet. On the cafe PC the till must be open and signed in; on any other counter computer, the till open with "Print bills sent by captains" on in This device.
     </p>
   );
 }

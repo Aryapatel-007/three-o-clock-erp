@@ -2589,6 +2589,20 @@ Sets `isVoided`, `voidedAt`, `voidedBy`, `voidReasonCode`, `voidReason`. Returns
 `READY_TO_BILL`, clears `orders.billId`, and **re-occupies the table**, so the
 order can be billed again correctly.
 
+**`closeOrder`** (2026-10-22, optional boolean). `true`: the bill is voided and
+its order cancelled in one transaction, and the table is free, as P59's Guest
+left does: the order's live lines are cancelled, its kitchen lines marked
+prepared (the food was served, so no stock comes back), its kitchen ticket
+lines cancelled, and `ORDER_CANCELLED` is audited with the bill number. The
+order's `cancelReasonCode` is the bill's code when the order list has it
+(`GUEST_LEFT`, `PLATFORM_CANCELLED`, `OTHER`), else `OTHER` with the bill
+reason's label as its note. Refused with 422 when the bill has money on it or is
+On Hold: that money is dealt with first. `false`: the order waits for a new
+bill, as above. Left out: `true` for `GUEST_LEFT`, `false` for every other
+code, as before. The screen always sends it: "Close the table" is its default,
+except for Billed to the wrong table, Items need changing and Discount needs
+changing, which are corrections billed again.
+
 Voiding an `ON_ACCOUNT` bill is allowed and writes a `CHARGE_REVERSED` account
 entry in the same transaction (M16). Voiding a bill of a closed business date
 is refused with 409 `DAY_CLOSED` (M16).
@@ -9501,6 +9515,10 @@ share the day, and only the PC closes it." Reads are unchanged.
 | `GET /sync/status` | OWNER, MANAGER | `{ mode, node (BOX or CLOUD), peerUrl (box only), pushed { shippedSeq, newestSeq, waiting }, pulled { seq, at }, lastError, lastErrorAt, conflictsUnseen }` |
 | `GET /sync/conflicts?seen=true|false&page&limit` | OWNER, MANAGER | paged list, newest first: `{ id, coll, documentId, kind (EDITED_BOTH, SAME_SLOT, DELETED_HERE), title, detail, fields, keptFrom (BOX or CLOUD), detectedOn, detectedAt, seenAt, seenByName, link }` |
 | `POST /sync/conflicts/:conflictId/seen` | OWNER, MANAGER | body `{}`; `data` the conflict with `seenAt` and `seenBy` |
+| `POST /sync/conflicts/:conflictId/keep` | OWNER, MANAGER | 2026-10-22. body `{ version: "LOCAL" \| "INCOMING" \| "RESULT" }`: that version is written here with a new `updatedAt` (RESULT changes nothing), then the conflict is seen. Each conflict lists `versions: [{ key, from }]` |
+| `POST /sync/now` | OWNER, MANAGER | 2026-10-22. body `{}`. On the box a whole round (pull, then push) at once, or a push when one-way; on the cloud its changelog is brought up to date for the box's next pull. `data`: `{ did, failed, status, changes }` |
+| `GET /sync/changes` | OWNER, MANAGER | 2026-10-22. The last 100 changes the other side's sync made here, newest first: `{ id, coll, documentId, title, outcome, from, at, wasNew, canUndo, undoBlocked, undoneAt, link }`. Kept on this side only |
+| `POST /sync/changes/:changeId/undo` | OWNER, MANAGER | 2026-10-22. Puts this side's version from before that change back, with a new `updatedAt`, so the next sync takes it to the other side. Refused (422) for a record the other side made new, or one already undone |
 
 `GET /auth/me` gains `sync: { mode, server, conflictsUnseen }`: `server` is the
 answering server's `DEPLOYMENT_ROLE` (`CLOUD` is the website; the P62 connection

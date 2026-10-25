@@ -92,9 +92,14 @@ export function applyAdvance(billId) {
   return api.post(`/bills/${billId}/apply-advance`, {});
 }
 
-export function voidBill(billId, { reasonCode, note, approval }) {
-  // P28. A cashier's void carries an owner's or manager's PIN.
-  return api.post(`/bills/${billId}/void`, { reasonCode, note: note || null, ...(approval ? { approval } : {}) });
+export function voidBill(billId, { reasonCode, note, approval, closeOrder }) {
+  // P28. A cashier's void carries an owner's or manager's PIN. 2026-10-22: closeOrder frees the table too.
+  return api.post(`/bills/${billId}/void`, {
+    reasonCode,
+    note: note || null,
+    ...(approval ? { approval } : {}),
+    ...(typeof closeOrder === 'boolean' ? { closeOrder } : {}),
+  });
 }
 
 /** width is 32 (58mm) or 48 (80mm). The server lays it out; the client only prints it. */

@@ -27,7 +27,8 @@ const PRINT_LOCK = 'captain-bill-printer';
  * the moment between printing and recording never prints it twice. A bill
  * asked for again later is a new request and prints again, as a Duplicate.
  */
-export default function CaptainBillPrinter({ always = false, onPrinted } = {}) {
+// `paper`: the paper this window always prints with, over This device (the cafe PC's printer window).
+export default function CaptainBillPrinter({ always = false, onPrinted, paper = null } = {}) {
   const { user } = useAuth();
   const { brand } = useTheme();
   const [device, updateDevice] = useDeviceSettings();
@@ -63,6 +64,7 @@ export default function CaptainBillPrinter({ always = false, onPrinted } = {}) {
             printer: device.printer,
             logoDataUrl: brand.logos?.LIGHT_GROUND?.dataUrl ?? null,
             forRequestAt: bill.printRequestedAt,
+            paper,
           });
         } catch {
           // Left in the queue: the next poll tries again.
@@ -86,7 +88,7 @@ export default function CaptainBillPrinter({ always = false, onPrinted } = {}) {
         queryClient.invalidateQueries({ queryKey: ['print-queue'] });
       }
     })();
-  }, [enabled, queue.isSuccess, queue.data, device.printedBillRequests, device.printer, brand, updateDevice, queryClient, onPrinted]);
+  }, [enabled, queue.isSuccess, queue.data, device.printedBillRequests, device.printer, brand, updateDevice, queryClient, onPrinted, paper]);
 
   return null;
 }
