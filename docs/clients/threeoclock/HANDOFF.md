@@ -159,11 +159,18 @@ Every `TO CONFIRM` in `setup/threeoclock.json` and
 
 ## 7. Open tasks
 
-1. **Tables.** `setup:restaurant` refuses `setup/threeoclock.json`: it lists two
-   table groups (Indoor 10, Outdoor 8) and this code takes one
-   (`file.tables: expected object, received array`). Either the setup script
-   learns several groups, or the file becomes one group. Decide, then fix.
-2. **Atlas, Render, Vercel** for Three O'Clock: section 4. Not started.
+1. ~~**Tables.**~~ Done 2026-10-26: `setup:restaurant` takes a list of
+   table groups again, as the old Three O'Clock repository did (one group still
+   works, so Z Chaat's file is unchanged). Tested in `setupScripts.test.js`.
+2. **Atlas, Render, Vercel** for Three O'Clock: section 4. Atlas: Arya made
+   cluster `cluster0.eugepku` (organisation Restuarent, project 3-o-clock), and
+   its string is in Rishi's Mac's `.env` with the database `restaurant-erp`. On
+   2026-10-26 Atlas refused it, `bad auth : authentication failed` for the user
+   `aryapatel7899_db_user`: the network is fine, the password is not. Reset that
+   user's password in Atlas (Database Access, Edit, Edit Password), put it in
+   `.env`, then `db:indexes` (4.1 step 6). Render and Vercel not started.
+   That `.env` is otherwise still the old cafe server's (`NODE_ENV=production`,
+   https on 8443): fine for scripts, not for `npm run dev`.
 3. **The `dakaar` repository** still has Z Chaat's addresses: its cafe-PC
    installer would sync to Z Chaat's live server and its `vercel.json` points
    at Z Chaat's API. Arya's session asked whether to clear them; not answered.
