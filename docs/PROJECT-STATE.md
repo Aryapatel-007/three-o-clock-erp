@@ -652,6 +652,8 @@ The restart (`7ef98d9`) kept Three O'Clock's files as they were on 16 October, b
 
 Rishi's four unpushed commits on the old history (the menu, the logins note, and the old P57 cafe server on the Wi-Fi with mkcert, which the box of P62 replaces) are kept on the local branch `backup/three-oclock-before-restart-2026-10-26`, not pushed.
 
+`docs/clients/threeoclock/HANDOFF.md` is the handoff Arya's session of 2026-10-26 began and did not push: how to pull on any laptop, where secrets go and what to share in a chat, the Atlas, Render and Vercel steps for Three O'Clock, the details to get from the cafe, and every open task. `certs/` is git-ignored.
+
 Still open, from Arya's entry: `setup/threeoclock.json` lists two table groups (Indoor 10, Outdoor 8) and this repository's `setup:restaurant` takes one, so it refuses the file (`file.tables: expected object, received array`).
 
 ### 2026-10-26 Arya with Claude Code, Three O'Clock started again from Z Chaat's code; the product named Dakaar

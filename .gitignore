@@ -67,3 +67,6 @@ backups/
 
 # P62. Built Windows packages (bash box/windows/make-package.sh).
 /release/
+
+# Certificates made on a laptop for the old cafe server (mkcert); hold a private key
+certs/
