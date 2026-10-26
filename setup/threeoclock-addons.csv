@@ -1,291 +1,291 @@
-# Three O'Clock's toppings, from the cold beverages card, 16 October 2026: offered on every iced drink.
-# The card's "Oatmilk/Almond Milk" and "Vanilla/Caramel/Hazelnut Syrup" are one line each there, split here so the bar sees which.
+# Three O'Clock's toppings, from the Topping / Add On box on the cold beverages page of threeoclockgandhinagar.com/menu, 18 October 2026: offered on every iced drink on those two pages.
+# The menu's "Oatmilk/Almond Milk" and "Vanilla/Caramel/Hazelnut Syrup" are one line each there, split here so the bar sees which. TO CONFIRM which drinks really take which topping.
 item,addon,price,available
-Iced Vietnamese Black Coffee,Black Pearl,50.00,yes
-Iced Vietnamese Black Coffee,Grass Jelly,50.00,yes
-Iced Vietnamese Black Coffee,Cheese Foam,80.00,yes
-Iced Vietnamese Black Coffee,Extra Espresso,50.00,yes
-Iced Vietnamese Black Coffee,Oat Milk,60.00,yes
-Iced Vietnamese Black Coffee,Almond Milk,60.00,yes
-Iced Vietnamese Black Coffee,Vanilla Syrup,50.00,yes
-Iced Vietnamese Black Coffee,Caramel Syrup,50.00,yes
-Iced Vietnamese Black Coffee,Hazelnut Syrup,50.00,yes
-Iced Vietnamese Coffee With Milk,Black Pearl,50.00,yes
-Iced Vietnamese Coffee With Milk,Grass Jelly,50.00,yes
-Iced Vietnamese Coffee With Milk,Cheese Foam,80.00,yes
-Iced Vietnamese Coffee With Milk,Extra Espresso,50.00,yes
-Iced Vietnamese Coffee With Milk,Oat Milk,60.00,yes
-Iced Vietnamese Coffee With Milk,Almond Milk,60.00,yes
-Iced Vietnamese Coffee With Milk,Vanilla Syrup,50.00,yes
-Iced Vietnamese Coffee With Milk,Caramel Syrup,50.00,yes
-Iced Vietnamese Coffee With Milk,Hazelnut Syrup,50.00,yes
-Vietnamese Salted Coffee,Black Pearl,50.00,yes
-Vietnamese Salted Coffee,Grass Jelly,50.00,yes
-Vietnamese Salted Coffee,Cheese Foam,80.00,yes
-Vietnamese Salted Coffee,Extra Espresso,50.00,yes
-Vietnamese Salted Coffee,Oat Milk,60.00,yes
-Vietnamese Salted Coffee,Almond Milk,60.00,yes
-Vietnamese Salted Coffee,Vanilla Syrup,50.00,yes
-Vietnamese Salted Coffee,Caramel Syrup,50.00,yes
-Vietnamese Salted Coffee,Hazelnut Syrup,50.00,yes
-Vietnamese Coconut Coffee Frappe,Black Pearl,50.00,yes
-Vietnamese Coconut Coffee Frappe,Grass Jelly,50.00,yes
-Vietnamese Coconut Coffee Frappe,Cheese Foam,80.00,yes
-Vietnamese Coconut Coffee Frappe,Extra Espresso,50.00,yes
-Vietnamese Coconut Coffee Frappe,Oat Milk,60.00,yes
-Vietnamese Coconut Coffee Frappe,Almond Milk,60.00,yes
-Vietnamese Coconut Coffee Frappe,Vanilla Syrup,50.00,yes
-Vietnamese Coconut Coffee Frappe,Caramel Syrup,50.00,yes
-Vietnamese Coconut Coffee Frappe,Hazelnut Syrup,50.00,yes
-Classic Iced Coffee,Black Pearl,50.00,yes
-Classic Iced Coffee,Grass Jelly,50.00,yes
-Classic Iced Coffee,Cheese Foam,80.00,yes
-Classic Iced Coffee,Extra Espresso,50.00,yes
-Classic Iced Coffee,Oat Milk,60.00,yes
-Classic Iced Coffee,Almond Milk,60.00,yes
-Classic Iced Coffee,Vanilla Syrup,50.00,yes
-Classic Iced Coffee,Caramel Syrup,50.00,yes
-Classic Iced Coffee,Hazelnut Syrup,50.00,yes
-Iced Americano,Black Pearl,50.00,yes
-Iced Americano,Grass Jelly,50.00,yes
-Iced Americano,Cheese Foam,80.00,yes
-Iced Americano,Extra Espresso,50.00,yes
-Iced Americano,Oat Milk,60.00,yes
-Iced Americano,Almond Milk,60.00,yes
-Iced Americano,Vanilla Syrup,50.00,yes
-Iced Americano,Caramel Syrup,50.00,yes
-Iced Americano,Hazelnut Syrup,50.00,yes
-Iced Cappuccino,Black Pearl,50.00,yes
-Iced Cappuccino,Grass Jelly,50.00,yes
-Iced Cappuccino,Cheese Foam,80.00,yes
-Iced Cappuccino,Extra Espresso,50.00,yes
-Iced Cappuccino,Oat Milk,60.00,yes
-Iced Cappuccino,Almond Milk,60.00,yes
-Iced Cappuccino,Vanilla Syrup,50.00,yes
-Iced Cappuccino,Caramel Syrup,50.00,yes
-Iced Cappuccino,Hazelnut Syrup,50.00,yes
-Iced Latte,Black Pearl,50.00,yes
-Iced Latte,Grass Jelly,50.00,yes
-Iced Latte,Cheese Foam,80.00,yes
-Iced Latte,Extra Espresso,50.00,yes
-Iced Latte,Oat Milk,60.00,yes
-Iced Latte,Almond Milk,60.00,yes
-Iced Latte,Vanilla Syrup,50.00,yes
-Iced Latte,Caramel Syrup,50.00,yes
-Iced Latte,Hazelnut Syrup,50.00,yes
-Salted Latte Frappe,Black Pearl,50.00,yes
-Salted Latte Frappe,Grass Jelly,50.00,yes
-Salted Latte Frappe,Cheese Foam,80.00,yes
-Salted Latte Frappe,Extra Espresso,50.00,yes
-Salted Latte Frappe,Oat Milk,60.00,yes
-Salted Latte Frappe,Almond Milk,60.00,yes
-Salted Latte Frappe,Vanilla Syrup,50.00,yes
-Salted Latte Frappe,Caramel Syrup,50.00,yes
-Salted Latte Frappe,Hazelnut Syrup,50.00,yes
-Caramel Latte,Black Pearl,50.00,yes
-Caramel Latte,Grass Jelly,50.00,yes
-Caramel Latte,Cheese Foam,80.00,yes
-Caramel Latte,Extra Espresso,50.00,yes
-Caramel Latte,Oat Milk,60.00,yes
-Caramel Latte,Almond Milk,60.00,yes
-Caramel Latte,Vanilla Syrup,50.00,yes
-Caramel Latte,Caramel Syrup,50.00,yes
-Caramel Latte,Hazelnut Syrup,50.00,yes
-Boba Cheese Latte,Black Pearl,50.00,yes
-Boba Cheese Latte,Grass Jelly,50.00,yes
-Boba Cheese Latte,Cheese Foam,80.00,yes
-Boba Cheese Latte,Extra Espresso,50.00,yes
-Boba Cheese Latte,Oat Milk,60.00,yes
-Boba Cheese Latte,Almond Milk,60.00,yes
-Boba Cheese Latte,Vanilla Syrup,50.00,yes
-Boba Cheese Latte,Caramel Syrup,50.00,yes
-Boba Cheese Latte,Hazelnut Syrup,50.00,yes
-Hazelnut Coffee Frappe,Black Pearl,50.00,yes
-Hazelnut Coffee Frappe,Grass Jelly,50.00,yes
-Hazelnut Coffee Frappe,Cheese Foam,80.00,yes
-Hazelnut Coffee Frappe,Extra Espresso,50.00,yes
-Hazelnut Coffee Frappe,Oat Milk,60.00,yes
-Hazelnut Coffee Frappe,Almond Milk,60.00,yes
-Hazelnut Coffee Frappe,Vanilla Syrup,50.00,yes
-Hazelnut Coffee Frappe,Caramel Syrup,50.00,yes
-Hazelnut Coffee Frappe,Hazelnut Syrup,50.00,yes
-Salted Plum Orange Tea,Black Pearl,50.00,yes
-Salted Plum Orange Tea,Grass Jelly,50.00,yes
-Salted Plum Orange Tea,Cheese Foam,80.00,yes
-Salted Plum Orange Tea,Extra Espresso,50.00,yes
-Salted Plum Orange Tea,Oat Milk,60.00,yes
-Salted Plum Orange Tea,Almond Milk,60.00,yes
-Salted Plum Orange Tea,Vanilla Syrup,50.00,yes
-Salted Plum Orange Tea,Caramel Syrup,50.00,yes
-Salted Plum Orange Tea,Hazelnut Syrup,50.00,yes
-Tangerine Tea,Black Pearl,50.00,yes
-Tangerine Tea,Grass Jelly,50.00,yes
-Tangerine Tea,Cheese Foam,80.00,yes
-Tangerine Tea,Extra Espresso,50.00,yes
-Tangerine Tea,Oat Milk,60.00,yes
-Tangerine Tea,Almond Milk,60.00,yes
-Tangerine Tea,Vanilla Syrup,50.00,yes
-Tangerine Tea,Caramel Syrup,50.00,yes
-Tangerine Tea,Hazelnut Syrup,50.00,yes
-Mango Passion Tea,Black Pearl,50.00,yes
-Mango Passion Tea,Grass Jelly,50.00,yes
-Mango Passion Tea,Cheese Foam,80.00,yes
-Mango Passion Tea,Extra Espresso,50.00,yes
-Mango Passion Tea,Oat Milk,60.00,yes
-Mango Passion Tea,Almond Milk,60.00,yes
-Mango Passion Tea,Vanilla Syrup,50.00,yes
-Mango Passion Tea,Caramel Syrup,50.00,yes
-Mango Passion Tea,Hazelnut Syrup,50.00,yes
-Raspberry Tea,Black Pearl,50.00,yes
-Raspberry Tea,Grass Jelly,50.00,yes
-Raspberry Tea,Cheese Foam,80.00,yes
-Raspberry Tea,Extra Espresso,50.00,yes
-Raspberry Tea,Oat Milk,60.00,yes
-Raspberry Tea,Almond Milk,60.00,yes
-Raspberry Tea,Vanilla Syrup,50.00,yes
-Raspberry Tea,Caramel Syrup,50.00,yes
-Raspberry Tea,Hazelnut Syrup,50.00,yes
-Lemongrass Peach Tea,Black Pearl,50.00,yes
-Lemongrass Peach Tea,Grass Jelly,50.00,yes
-Lemongrass Peach Tea,Cheese Foam,80.00,yes
-Lemongrass Peach Tea,Extra Espresso,50.00,yes
-Lemongrass Peach Tea,Oat Milk,60.00,yes
-Lemongrass Peach Tea,Almond Milk,60.00,yes
-Lemongrass Peach Tea,Vanilla Syrup,50.00,yes
-Lemongrass Peach Tea,Caramel Syrup,50.00,yes
-Lemongrass Peach Tea,Hazelnut Syrup,50.00,yes
-Oolong Pandan Tea,Black Pearl,50.00,yes
-Oolong Pandan Tea,Grass Jelly,50.00,yes
-Oolong Pandan Tea,Cheese Foam,80.00,yes
-Oolong Pandan Tea,Extra Espresso,50.00,yes
-Oolong Pandan Tea,Oat Milk,60.00,yes
-Oolong Pandan Tea,Almond Milk,60.00,yes
-Oolong Pandan Tea,Vanilla Syrup,50.00,yes
-Oolong Pandan Tea,Caramel Syrup,50.00,yes
-Oolong Pandan Tea,Hazelnut Syrup,50.00,yes
-Oolong Tea With Chia Seeds,Black Pearl,50.00,yes
-Oolong Tea With Chia Seeds,Grass Jelly,50.00,yes
-Oolong Tea With Chia Seeds,Cheese Foam,80.00,yes
-Oolong Tea With Chia Seeds,Extra Espresso,50.00,yes
-Oolong Tea With Chia Seeds,Oat Milk,60.00,yes
-Oolong Tea With Chia Seeds,Almond Milk,60.00,yes
-Oolong Tea With Chia Seeds,Vanilla Syrup,50.00,yes
-Oolong Tea With Chia Seeds,Caramel Syrup,50.00,yes
-Oolong Tea With Chia Seeds,Hazelnut Syrup,50.00,yes
-Lemon Green Tea,Black Pearl,50.00,yes
-Lemon Green Tea,Grass Jelly,50.00,yes
-Lemon Green Tea,Cheese Foam,80.00,yes
-Lemon Green Tea,Extra Espresso,50.00,yes
-Lemon Green Tea,Oat Milk,60.00,yes
-Lemon Green Tea,Almond Milk,60.00,yes
-Lemon Green Tea,Vanilla Syrup,50.00,yes
-Lemon Green Tea,Caramel Syrup,50.00,yes
-Lemon Green Tea,Hazelnut Syrup,50.00,yes
-Tropical Cloud 9 Frappe,Black Pearl,50.00,yes
-Tropical Cloud 9 Frappe,Grass Jelly,50.00,yes
-Tropical Cloud 9 Frappe,Cheese Foam,80.00,yes
-Tropical Cloud 9 Frappe,Extra Espresso,50.00,yes
-Tropical Cloud 9 Frappe,Oat Milk,60.00,yes
-Tropical Cloud 9 Frappe,Almond Milk,60.00,yes
-Tropical Cloud 9 Frappe,Vanilla Syrup,50.00,yes
-Tropical Cloud 9 Frappe,Caramel Syrup,50.00,yes
-Tropical Cloud 9 Frappe,Hazelnut Syrup,50.00,yes
-Oolong Tea & Cheese Foam,Black Pearl,50.00,yes
-Oolong Tea & Cheese Foam,Grass Jelly,50.00,yes
-Oolong Tea & Cheese Foam,Cheese Foam,80.00,yes
-Oolong Tea & Cheese Foam,Extra Espresso,50.00,yes
-Oolong Tea & Cheese Foam,Oat Milk,60.00,yes
-Oolong Tea & Cheese Foam,Almond Milk,60.00,yes
-Oolong Tea & Cheese Foam,Vanilla Syrup,50.00,yes
-Oolong Tea & Cheese Foam,Caramel Syrup,50.00,yes
-Oolong Tea & Cheese Foam,Hazelnut Syrup,50.00,yes
-Black Currant & Cheese Foam,Black Pearl,50.00,yes
-Black Currant & Cheese Foam,Grass Jelly,50.00,yes
-Black Currant & Cheese Foam,Cheese Foam,80.00,yes
-Black Currant & Cheese Foam,Extra Espresso,50.00,yes
-Black Currant & Cheese Foam,Oat Milk,60.00,yes
-Black Currant & Cheese Foam,Almond Milk,60.00,yes
-Black Currant & Cheese Foam,Vanilla Syrup,50.00,yes
-Black Currant & Cheese Foam,Caramel Syrup,50.00,yes
-Black Currant & Cheese Foam,Hazelnut Syrup,50.00,yes
-Iced Jasmine Oolong Milk Tea,Black Pearl,50.00,yes
-Iced Jasmine Oolong Milk Tea,Grass Jelly,50.00,yes
-Iced Jasmine Oolong Milk Tea,Cheese Foam,80.00,yes
-Iced Jasmine Oolong Milk Tea,Extra Espresso,50.00,yes
-Iced Jasmine Oolong Milk Tea,Oat Milk,60.00,yes
-Iced Jasmine Oolong Milk Tea,Almond Milk,60.00,yes
-Iced Jasmine Oolong Milk Tea,Vanilla Syrup,50.00,yes
-Iced Jasmine Oolong Milk Tea,Caramel Syrup,50.00,yes
-Iced Jasmine Oolong Milk Tea,Hazelnut Syrup,50.00,yes
-Iced Full Leaf Milk Tea,Black Pearl,50.00,yes
-Iced Full Leaf Milk Tea,Grass Jelly,50.00,yes
-Iced Full Leaf Milk Tea,Cheese Foam,80.00,yes
-Iced Full Leaf Milk Tea,Extra Espresso,50.00,yes
-Iced Full Leaf Milk Tea,Oat Milk,60.00,yes
-Iced Full Leaf Milk Tea,Almond Milk,60.00,yes
-Iced Full Leaf Milk Tea,Vanilla Syrup,50.00,yes
-Iced Full Leaf Milk Tea,Caramel Syrup,50.00,yes
-Iced Full Leaf Milk Tea,Hazelnut Syrup,50.00,yes
-Iced Oolong Milk Tea,Black Pearl,50.00,yes
-Iced Oolong Milk Tea,Grass Jelly,50.00,yes
-Iced Oolong Milk Tea,Cheese Foam,80.00,yes
-Iced Oolong Milk Tea,Extra Espresso,50.00,yes
-Iced Oolong Milk Tea,Oat Milk,60.00,yes
-Iced Oolong Milk Tea,Almond Milk,60.00,yes
-Iced Oolong Milk Tea,Vanilla Syrup,50.00,yes
-Iced Oolong Milk Tea,Caramel Syrup,50.00,yes
-Iced Oolong Milk Tea,Hazelnut Syrup,50.00,yes
-Taro Milk Tea,Black Pearl,50.00,yes
-Taro Milk Tea,Grass Jelly,50.00,yes
-Taro Milk Tea,Cheese Foam,80.00,yes
-Taro Milk Tea,Extra Espresso,50.00,yes
-Taro Milk Tea,Oat Milk,60.00,yes
-Taro Milk Tea,Almond Milk,60.00,yes
-Taro Milk Tea,Vanilla Syrup,50.00,yes
-Taro Milk Tea,Caramel Syrup,50.00,yes
-Taro Milk Tea,Hazelnut Syrup,50.00,yes
-Iced Matcha Latte,Black Pearl,50.00,yes
-Iced Matcha Latte,Grass Jelly,50.00,yes
-Iced Matcha Latte,Cheese Foam,80.00,yes
-Iced Matcha Latte,Extra Espresso,50.00,yes
-Iced Matcha Latte,Oat Milk,60.00,yes
-Iced Matcha Latte,Almond Milk,60.00,yes
-Iced Matcha Latte,Vanilla Syrup,50.00,yes
-Iced Matcha Latte,Caramel Syrup,50.00,yes
-Iced Matcha Latte,Hazelnut Syrup,50.00,yes
-Matcha Choco,Black Pearl,50.00,yes
-Matcha Choco,Grass Jelly,50.00,yes
-Matcha Choco,Cheese Foam,80.00,yes
-Matcha Choco,Extra Espresso,50.00,yes
-Matcha Choco,Oat Milk,60.00,yes
-Matcha Choco,Almond Milk,60.00,yes
-Matcha Choco,Vanilla Syrup,50.00,yes
-Matcha Choco,Caramel Syrup,50.00,yes
-Matcha Choco,Hazelnut Syrup,50.00,yes
-Matcha Frappe,Black Pearl,50.00,yes
-Matcha Frappe,Grass Jelly,50.00,yes
-Matcha Frappe,Cheese Foam,80.00,yes
-Matcha Frappe,Extra Espresso,50.00,yes
-Matcha Frappe,Oat Milk,60.00,yes
-Matcha Frappe,Almond Milk,60.00,yes
-Matcha Frappe,Vanilla Syrup,50.00,yes
-Matcha Frappe,Caramel Syrup,50.00,yes
-Matcha Frappe,Hazelnut Syrup,50.00,yes
-Vanilla Oatmilk Matcha,Black Pearl,50.00,yes
-Vanilla Oatmilk Matcha,Grass Jelly,50.00,yes
-Vanilla Oatmilk Matcha,Cheese Foam,80.00,yes
-Vanilla Oatmilk Matcha,Extra Espresso,50.00,yes
-Vanilla Oatmilk Matcha,Oat Milk,60.00,yes
-Vanilla Oatmilk Matcha,Almond Milk,60.00,yes
-Vanilla Oatmilk Matcha,Vanilla Syrup,50.00,yes
-Vanilla Oatmilk Matcha,Caramel Syrup,50.00,yes
-Vanilla Oatmilk Matcha,Hazelnut Syrup,50.00,yes
-Iced Signature Chocolate,Black Pearl,50.00,yes
-Iced Signature Chocolate,Grass Jelly,50.00,yes
-Iced Signature Chocolate,Cheese Foam,80.00,yes
-Iced Signature Chocolate,Extra Espresso,50.00,yes
-Iced Signature Chocolate,Oat Milk,60.00,yes
-Iced Signature Chocolate,Almond Milk,60.00,yes
-Iced Signature Chocolate,Vanilla Syrup,50.00,yes
-Iced Signature Chocolate,Caramel Syrup,50.00,yes
-Iced Signature Chocolate,Hazelnut Syrup,50.00,yes
+Iced Vietnamese Black Coffee,Black Pearl,60.00,yes
+Iced Vietnamese Black Coffee,Grass Jelly,60.00,yes
+Iced Vietnamese Black Coffee,Cheese Foam,90.00,yes
+Iced Vietnamese Black Coffee,Extra Espresso,60.00,yes
+Iced Vietnamese Black Coffee,Oat Milk,70.00,yes
+Iced Vietnamese Black Coffee,Almond Milk,70.00,yes
+Iced Vietnamese Black Coffee,Vanilla Syrup,60.00,yes
+Iced Vietnamese Black Coffee,Caramel Syrup,60.00,yes
+Iced Vietnamese Black Coffee,Hazelnut Syrup,60.00,yes
+Iced Vietnamese Coffee With Milk,Black Pearl,60.00,yes
+Iced Vietnamese Coffee With Milk,Grass Jelly,60.00,yes
+Iced Vietnamese Coffee With Milk,Cheese Foam,90.00,yes
+Iced Vietnamese Coffee With Milk,Extra Espresso,60.00,yes
+Iced Vietnamese Coffee With Milk,Oat Milk,70.00,yes
+Iced Vietnamese Coffee With Milk,Almond Milk,70.00,yes
+Iced Vietnamese Coffee With Milk,Vanilla Syrup,60.00,yes
+Iced Vietnamese Coffee With Milk,Caramel Syrup,60.00,yes
+Iced Vietnamese Coffee With Milk,Hazelnut Syrup,60.00,yes
+Vietnamese Salted Coffee,Black Pearl,60.00,yes
+Vietnamese Salted Coffee,Grass Jelly,60.00,yes
+Vietnamese Salted Coffee,Cheese Foam,90.00,yes
+Vietnamese Salted Coffee,Extra Espresso,60.00,yes
+Vietnamese Salted Coffee,Oat Milk,70.00,yes
+Vietnamese Salted Coffee,Almond Milk,70.00,yes
+Vietnamese Salted Coffee,Vanilla Syrup,60.00,yes
+Vietnamese Salted Coffee,Caramel Syrup,60.00,yes
+Vietnamese Salted Coffee,Hazelnut Syrup,60.00,yes
+Vietnamese Coconut Coffee Frappe,Black Pearl,60.00,yes
+Vietnamese Coconut Coffee Frappe,Grass Jelly,60.00,yes
+Vietnamese Coconut Coffee Frappe,Cheese Foam,90.00,yes
+Vietnamese Coconut Coffee Frappe,Extra Espresso,60.00,yes
+Vietnamese Coconut Coffee Frappe,Oat Milk,70.00,yes
+Vietnamese Coconut Coffee Frappe,Almond Milk,70.00,yes
+Vietnamese Coconut Coffee Frappe,Vanilla Syrup,60.00,yes
+Vietnamese Coconut Coffee Frappe,Caramel Syrup,60.00,yes
+Vietnamese Coconut Coffee Frappe,Hazelnut Syrup,60.00,yes
+Black Classic Coffee,Black Pearl,60.00,yes
+Black Classic Coffee,Grass Jelly,60.00,yes
+Black Classic Coffee,Cheese Foam,90.00,yes
+Black Classic Coffee,Extra Espresso,60.00,yes
+Black Classic Coffee,Oat Milk,70.00,yes
+Black Classic Coffee,Almond Milk,70.00,yes
+Black Classic Coffee,Vanilla Syrup,60.00,yes
+Black Classic Coffee,Caramel Syrup,60.00,yes
+Black Classic Coffee,Hazelnut Syrup,60.00,yes
+Iced Americano,Black Pearl,60.00,yes
+Iced Americano,Grass Jelly,60.00,yes
+Iced Americano,Cheese Foam,90.00,yes
+Iced Americano,Extra Espresso,60.00,yes
+Iced Americano,Oat Milk,70.00,yes
+Iced Americano,Almond Milk,70.00,yes
+Iced Americano,Vanilla Syrup,60.00,yes
+Iced Americano,Caramel Syrup,60.00,yes
+Iced Americano,Hazelnut Syrup,60.00,yes
+Iced Cappuccino,Black Pearl,60.00,yes
+Iced Cappuccino,Grass Jelly,60.00,yes
+Iced Cappuccino,Cheese Foam,90.00,yes
+Iced Cappuccino,Extra Espresso,60.00,yes
+Iced Cappuccino,Oat Milk,70.00,yes
+Iced Cappuccino,Almond Milk,70.00,yes
+Iced Cappuccino,Vanilla Syrup,60.00,yes
+Iced Cappuccino,Caramel Syrup,60.00,yes
+Iced Cappuccino,Hazelnut Syrup,60.00,yes
+Iced Latte,Black Pearl,60.00,yes
+Iced Latte,Grass Jelly,60.00,yes
+Iced Latte,Cheese Foam,90.00,yes
+Iced Latte,Extra Espresso,60.00,yes
+Iced Latte,Oat Milk,70.00,yes
+Iced Latte,Almond Milk,70.00,yes
+Iced Latte,Vanilla Syrup,60.00,yes
+Iced Latte,Caramel Syrup,60.00,yes
+Iced Latte,Hazelnut Syrup,60.00,yes
+Salted Latte Frappe,Black Pearl,60.00,yes
+Salted Latte Frappe,Grass Jelly,60.00,yes
+Salted Latte Frappe,Cheese Foam,90.00,yes
+Salted Latte Frappe,Extra Espresso,60.00,yes
+Salted Latte Frappe,Oat Milk,70.00,yes
+Salted Latte Frappe,Almond Milk,70.00,yes
+Salted Latte Frappe,Vanilla Syrup,60.00,yes
+Salted Latte Frappe,Caramel Syrup,60.00,yes
+Salted Latte Frappe,Hazelnut Syrup,60.00,yes
+Caramel Latte,Black Pearl,60.00,yes
+Caramel Latte,Grass Jelly,60.00,yes
+Caramel Latte,Cheese Foam,90.00,yes
+Caramel Latte,Extra Espresso,60.00,yes
+Caramel Latte,Oat Milk,70.00,yes
+Caramel Latte,Almond Milk,70.00,yes
+Caramel Latte,Vanilla Syrup,60.00,yes
+Caramel Latte,Caramel Syrup,60.00,yes
+Caramel Latte,Hazelnut Syrup,60.00,yes
+Boba Cheese Latte,Black Pearl,60.00,yes
+Boba Cheese Latte,Grass Jelly,60.00,yes
+Boba Cheese Latte,Cheese Foam,90.00,yes
+Boba Cheese Latte,Extra Espresso,60.00,yes
+Boba Cheese Latte,Oat Milk,70.00,yes
+Boba Cheese Latte,Almond Milk,70.00,yes
+Boba Cheese Latte,Vanilla Syrup,60.00,yes
+Boba Cheese Latte,Caramel Syrup,60.00,yes
+Boba Cheese Latte,Hazelnut Syrup,60.00,yes
+Hazelnut Coffee Frappe,Black Pearl,60.00,yes
+Hazelnut Coffee Frappe,Grass Jelly,60.00,yes
+Hazelnut Coffee Frappe,Cheese Foam,90.00,yes
+Hazelnut Coffee Frappe,Extra Espresso,60.00,yes
+Hazelnut Coffee Frappe,Oat Milk,70.00,yes
+Hazelnut Coffee Frappe,Almond Milk,70.00,yes
+Hazelnut Coffee Frappe,Vanilla Syrup,60.00,yes
+Hazelnut Coffee Frappe,Caramel Syrup,60.00,yes
+Hazelnut Coffee Frappe,Hazelnut Syrup,60.00,yes
+Iced Matcha Latte,Black Pearl,60.00,yes
+Iced Matcha Latte,Grass Jelly,60.00,yes
+Iced Matcha Latte,Cheese Foam,90.00,yes
+Iced Matcha Latte,Extra Espresso,60.00,yes
+Iced Matcha Latte,Oat Milk,70.00,yes
+Iced Matcha Latte,Almond Milk,70.00,yes
+Iced Matcha Latte,Vanilla Syrup,60.00,yes
+Iced Matcha Latte,Caramel Syrup,60.00,yes
+Iced Matcha Latte,Hazelnut Syrup,60.00,yes
+Matcha Choco,Black Pearl,60.00,yes
+Matcha Choco,Grass Jelly,60.00,yes
+Matcha Choco,Cheese Foam,90.00,yes
+Matcha Choco,Extra Espresso,60.00,yes
+Matcha Choco,Oat Milk,70.00,yes
+Matcha Choco,Almond Milk,70.00,yes
+Matcha Choco,Vanilla Syrup,60.00,yes
+Matcha Choco,Caramel Syrup,60.00,yes
+Matcha Choco,Hazelnut Syrup,60.00,yes
+Matcha Frappe,Black Pearl,60.00,yes
+Matcha Frappe,Grass Jelly,60.00,yes
+Matcha Frappe,Cheese Foam,90.00,yes
+Matcha Frappe,Extra Espresso,60.00,yes
+Matcha Frappe,Oat Milk,70.00,yes
+Matcha Frappe,Almond Milk,70.00,yes
+Matcha Frappe,Vanilla Syrup,60.00,yes
+Matcha Frappe,Caramel Syrup,60.00,yes
+Matcha Frappe,Hazelnut Syrup,60.00,yes
+Iced Signature Chocolate,Black Pearl,60.00,yes
+Iced Signature Chocolate,Grass Jelly,60.00,yes
+Iced Signature Chocolate,Cheese Foam,90.00,yes
+Iced Signature Chocolate,Extra Espresso,60.00,yes
+Iced Signature Chocolate,Oat Milk,70.00,yes
+Iced Signature Chocolate,Almond Milk,70.00,yes
+Iced Signature Chocolate,Vanilla Syrup,60.00,yes
+Iced Signature Chocolate,Caramel Syrup,60.00,yes
+Iced Signature Chocolate,Hazelnut Syrup,60.00,yes
+Vanilla Oatmilk Matcha,Black Pearl,60.00,yes
+Vanilla Oatmilk Matcha,Grass Jelly,60.00,yes
+Vanilla Oatmilk Matcha,Cheese Foam,90.00,yes
+Vanilla Oatmilk Matcha,Extra Espresso,60.00,yes
+Vanilla Oatmilk Matcha,Oat Milk,70.00,yes
+Vanilla Oatmilk Matcha,Almond Milk,70.00,yes
+Vanilla Oatmilk Matcha,Vanilla Syrup,60.00,yes
+Vanilla Oatmilk Matcha,Caramel Syrup,60.00,yes
+Vanilla Oatmilk Matcha,Hazelnut Syrup,60.00,yes
+Salted Plum Orange Tea,Black Pearl,60.00,yes
+Salted Plum Orange Tea,Grass Jelly,60.00,yes
+Salted Plum Orange Tea,Cheese Foam,90.00,yes
+Salted Plum Orange Tea,Extra Espresso,60.00,yes
+Salted Plum Orange Tea,Oat Milk,70.00,yes
+Salted Plum Orange Tea,Almond Milk,70.00,yes
+Salted Plum Orange Tea,Vanilla Syrup,60.00,yes
+Salted Plum Orange Tea,Caramel Syrup,60.00,yes
+Salted Plum Orange Tea,Hazelnut Syrup,60.00,yes
+Tangerine Tea,Black Pearl,60.00,yes
+Tangerine Tea,Grass Jelly,60.00,yes
+Tangerine Tea,Cheese Foam,90.00,yes
+Tangerine Tea,Extra Espresso,60.00,yes
+Tangerine Tea,Oat Milk,70.00,yes
+Tangerine Tea,Almond Milk,70.00,yes
+Tangerine Tea,Vanilla Syrup,60.00,yes
+Tangerine Tea,Caramel Syrup,60.00,yes
+Tangerine Tea,Hazelnut Syrup,60.00,yes
+Mango Passion Tea,Black Pearl,60.00,yes
+Mango Passion Tea,Grass Jelly,60.00,yes
+Mango Passion Tea,Cheese Foam,90.00,yes
+Mango Passion Tea,Extra Espresso,60.00,yes
+Mango Passion Tea,Oat Milk,70.00,yes
+Mango Passion Tea,Almond Milk,70.00,yes
+Mango Passion Tea,Vanilla Syrup,60.00,yes
+Mango Passion Tea,Caramel Syrup,60.00,yes
+Mango Passion Tea,Hazelnut Syrup,60.00,yes
+Raspberry Tea,Black Pearl,60.00,yes
+Raspberry Tea,Grass Jelly,60.00,yes
+Raspberry Tea,Cheese Foam,90.00,yes
+Raspberry Tea,Extra Espresso,60.00,yes
+Raspberry Tea,Oat Milk,70.00,yes
+Raspberry Tea,Almond Milk,70.00,yes
+Raspberry Tea,Vanilla Syrup,60.00,yes
+Raspberry Tea,Caramel Syrup,60.00,yes
+Raspberry Tea,Hazelnut Syrup,60.00,yes
+Lemongrass Peach Tea,Black Pearl,60.00,yes
+Lemongrass Peach Tea,Grass Jelly,60.00,yes
+Lemongrass Peach Tea,Cheese Foam,90.00,yes
+Lemongrass Peach Tea,Extra Espresso,60.00,yes
+Lemongrass Peach Tea,Oat Milk,70.00,yes
+Lemongrass Peach Tea,Almond Milk,70.00,yes
+Lemongrass Peach Tea,Vanilla Syrup,60.00,yes
+Lemongrass Peach Tea,Caramel Syrup,60.00,yes
+Lemongrass Peach Tea,Hazelnut Syrup,60.00,yes
+Iced Jasmine Oolong Milk Tea,Black Pearl,60.00,yes
+Iced Jasmine Oolong Milk Tea,Grass Jelly,60.00,yes
+Iced Jasmine Oolong Milk Tea,Cheese Foam,90.00,yes
+Iced Jasmine Oolong Milk Tea,Extra Espresso,60.00,yes
+Iced Jasmine Oolong Milk Tea,Oat Milk,70.00,yes
+Iced Jasmine Oolong Milk Tea,Almond Milk,70.00,yes
+Iced Jasmine Oolong Milk Tea,Vanilla Syrup,60.00,yes
+Iced Jasmine Oolong Milk Tea,Caramel Syrup,60.00,yes
+Iced Jasmine Oolong Milk Tea,Hazelnut Syrup,60.00,yes
+Iced Full Leaf Milk Tea,Black Pearl,60.00,yes
+Iced Full Leaf Milk Tea,Grass Jelly,60.00,yes
+Iced Full Leaf Milk Tea,Cheese Foam,90.00,yes
+Iced Full Leaf Milk Tea,Extra Espresso,60.00,yes
+Iced Full Leaf Milk Tea,Oat Milk,70.00,yes
+Iced Full Leaf Milk Tea,Almond Milk,70.00,yes
+Iced Full Leaf Milk Tea,Vanilla Syrup,60.00,yes
+Iced Full Leaf Milk Tea,Caramel Syrup,60.00,yes
+Iced Full Leaf Milk Tea,Hazelnut Syrup,60.00,yes
+Iced Oolong Milk Tea,Black Pearl,60.00,yes
+Iced Oolong Milk Tea,Grass Jelly,60.00,yes
+Iced Oolong Milk Tea,Cheese Foam,90.00,yes
+Iced Oolong Milk Tea,Extra Espresso,60.00,yes
+Iced Oolong Milk Tea,Oat Milk,70.00,yes
+Iced Oolong Milk Tea,Almond Milk,70.00,yes
+Iced Oolong Milk Tea,Vanilla Syrup,60.00,yes
+Iced Oolong Milk Tea,Caramel Syrup,60.00,yes
+Iced Oolong Milk Tea,Hazelnut Syrup,60.00,yes
+Taro Milk Tea,Black Pearl,60.00,yes
+Taro Milk Tea,Grass Jelly,60.00,yes
+Taro Milk Tea,Cheese Foam,90.00,yes
+Taro Milk Tea,Extra Espresso,60.00,yes
+Taro Milk Tea,Oat Milk,70.00,yes
+Taro Milk Tea,Almond Milk,70.00,yes
+Taro Milk Tea,Vanilla Syrup,60.00,yes
+Taro Milk Tea,Caramel Syrup,60.00,yes
+Taro Milk Tea,Hazelnut Syrup,60.00,yes
+Oolong Tea & Cheese Foam,Black Pearl,60.00,yes
+Oolong Tea & Cheese Foam,Grass Jelly,60.00,yes
+Oolong Tea & Cheese Foam,Cheese Foam,90.00,yes
+Oolong Tea & Cheese Foam,Extra Espresso,60.00,yes
+Oolong Tea & Cheese Foam,Oat Milk,70.00,yes
+Oolong Tea & Cheese Foam,Almond Milk,70.00,yes
+Oolong Tea & Cheese Foam,Vanilla Syrup,60.00,yes
+Oolong Tea & Cheese Foam,Caramel Syrup,60.00,yes
+Oolong Tea & Cheese Foam,Hazelnut Syrup,60.00,yes
+Black Currant & Cheese Foam,Black Pearl,60.00,yes
+Black Currant & Cheese Foam,Grass Jelly,60.00,yes
+Black Currant & Cheese Foam,Cheese Foam,90.00,yes
+Black Currant & Cheese Foam,Extra Espresso,60.00,yes
+Black Currant & Cheese Foam,Oat Milk,70.00,yes
+Black Currant & Cheese Foam,Almond Milk,70.00,yes
+Black Currant & Cheese Foam,Vanilla Syrup,60.00,yes
+Black Currant & Cheese Foam,Caramel Syrup,60.00,yes
+Black Currant & Cheese Foam,Hazelnut Syrup,60.00,yes
+Oolong Pandan Tea,Black Pearl,60.00,yes
+Oolong Pandan Tea,Grass Jelly,60.00,yes
+Oolong Pandan Tea,Cheese Foam,90.00,yes
+Oolong Pandan Tea,Extra Espresso,60.00,yes
+Oolong Pandan Tea,Oat Milk,70.00,yes
+Oolong Pandan Tea,Almond Milk,70.00,yes
+Oolong Pandan Tea,Vanilla Syrup,60.00,yes
+Oolong Pandan Tea,Caramel Syrup,60.00,yes
+Oolong Pandan Tea,Hazelnut Syrup,60.00,yes
+Oolong Tea With Chia Seeds,Black Pearl,60.00,yes
+Oolong Tea With Chia Seeds,Grass Jelly,60.00,yes
+Oolong Tea With Chia Seeds,Cheese Foam,90.00,yes
+Oolong Tea With Chia Seeds,Extra Espresso,60.00,yes
+Oolong Tea With Chia Seeds,Oat Milk,70.00,yes
+Oolong Tea With Chia Seeds,Almond Milk,70.00,yes
+Oolong Tea With Chia Seeds,Vanilla Syrup,60.00,yes
+Oolong Tea With Chia Seeds,Caramel Syrup,60.00,yes
+Oolong Tea With Chia Seeds,Hazelnut Syrup,60.00,yes
+Lemon Green Tea,Black Pearl,60.00,yes
+Lemon Green Tea,Grass Jelly,60.00,yes
+Lemon Green Tea,Cheese Foam,90.00,yes
+Lemon Green Tea,Extra Espresso,60.00,yes
+Lemon Green Tea,Oat Milk,70.00,yes
+Lemon Green Tea,Almond Milk,70.00,yes
+Lemon Green Tea,Vanilla Syrup,60.00,yes
+Lemon Green Tea,Caramel Syrup,60.00,yes
+Lemon Green Tea,Hazelnut Syrup,60.00,yes
+Tropical Cloud 9 Frappe,Black Pearl,60.00,yes
+Tropical Cloud 9 Frappe,Grass Jelly,60.00,yes
+Tropical Cloud 9 Frappe,Cheese Foam,90.00,yes
+Tropical Cloud 9 Frappe,Extra Espresso,60.00,yes
+Tropical Cloud 9 Frappe,Oat Milk,70.00,yes
+Tropical Cloud 9 Frappe,Almond Milk,70.00,yes
+Tropical Cloud 9 Frappe,Vanilla Syrup,60.00,yes
+Tropical Cloud 9 Frappe,Caramel Syrup,60.00,yes
+Tropical Cloud 9 Frappe,Hazelnut Syrup,60.00,yes

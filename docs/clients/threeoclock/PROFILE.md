@@ -7,6 +7,10 @@ It was read on 16 October 2026 from public sources only:
 - the four menu cards on its Zomato and District listings (every item and price);
 - the photos on those listings.
 
+On 18 October 2026 the menu was read again from the cafe's own site,
+threeoclockgandhinagar.com/menu (a 12-page PDF). That menu is newer than the
+Zomato cards, and replaces them: see section 7.
+
 Nothing here has been confirmed by the owner yet. `TO CONFIRM` means we have
 not seen the answer. Build with the stated default, and make the value a setting
 so the answer can change without code. Nothing in the code names Three O'Clock:
@@ -35,7 +39,7 @@ posted on Zomato and are not ours to publish.
 | Line under the name | "Vietnamese Coffee & Cafe", our wording. `TO CONFIRM`. | `settings.receipt.headerLine2` |
 | Footer | "Thank you! Open till 3 AM.", our wording. `TO CONFIRM`. | `settings.receipt.footerText` |
 | Address | 226/2, Koba, near Khodiyar Pan Parlour, PDPU Road, Raysan, Gandhinagar, Gujarat | `restaurants.address` |
-| Pincode | `TO CONFIRM`. The site says 382700, which does not look like a Gandhinagar pincode; Raysan is usually 382007. | `restaurants.address.pincode` |
+| Pincode | `TO CONFIRM`. The site and the menu say 382700, which does not look like a Gandhinagar pincode; Raysan is usually 382007. | `restaurants.address.pincode` |
 | Phone | +91 98989 47333, from the site and District | `restaurants.phone` |
 | Instagram | @threeoclock_gandhinagar | |
 | Legal name | `TO CONFIRM`: the franchisee's company | `restaurants.legalName` |
@@ -89,32 +93,56 @@ Table setup, and each is placed on the plan in More, Table setup, Arrange tables
 
 ## 7. Menu
 
-`setup/threeoclock-menu.csv`: 93 items in 24 categories, every one vegetarian.
+`setup/threeoclock-menu.csv`: 139 items in 33 categories, every one vegetarian,
+read on 18 October 2026 from the menu on the cafe's own site
+(threeoclockgandhinagar.com/menu, the PDF behind it). It replaced the
+16 October file read from the Zomato and District cards, which was older:
+
+- Most prices are higher, by ₹10 to ₹40 (Hot Latte ₹220 to ₹230, Caesar Salad
+  ₹350 to ₹370, White Sauce Pasta ₹360 to ₹395).
+- New on the site: Wraps, Hunger Pack Meals (rice), Blueberry Cheesecake, the
+  Signature Collection (12 drinks at ₹350), and the Specials page: Neapolitan
+  Pizza, Chef Specials, Shakes, Refreshers, Cold Brew, Cakes & Bakes.
+- Gone from the site: Vietnamese Cheesecake, Blueberry Muffin, Double
+  Chocolate Muffin. They are not in the file.
+- The iced "Classic Iced Coffee" is "Black Classic Coffee" on the site.
+- "Fresh & Fit Salads" and "Signature Pastas" are "Salads" and "Pastas".
+
+How the file is written:
 
 - **Sizes.** Cold drinks come in Small 354ml, Medium 473ml and Large 650ml.
   An item sold in more than one size has them as sizes; an item sold in one
   size names it in its description.
-- **Hot and iced.** The cards sell some drinks both hot and iced under the same
+- **Hot and iced.** The menu sells some drinks both hot and iced under the same
   name, like Americano. A name is unique here, so those carry "Hot" or "Iced".
-- **Notes.** "Contains milk", "contains nuts", "contains oats" and
-  "best-seller" from the cards' marks are in the descriptions. The calories on
-  the cards are not.
-- **Toppings.** `setup/threeoclock-addons.csv` puts the toppings card on every
-  iced drink: Black Pearl, Grass Jelly, Extra Espresso ₹50; Oat Milk, Almond
-  Milk ₹60; Vanilla, Caramel or Hazelnut Syrup ₹50; Cheese Foam ₹80. The card
-  joins the milks and the syrups on one line each; they are split here so the
-  bar sees which. `TO CONFIRM` which drinks really take which topping.
-- **Read from a small image.** The fourth card (puffs, pizzas, appetisers) is
-  small. "Veggies Finges" is entered as Veggie Fingers, and the three pizzas
-  have "Pizza" added to their names. `TO CONFIRM` these prices.
+- **Notes.** "Contains milk", "contains nuts", "contains oats", "contains
+  mushroom" and "best-seller" from the menu's marks are in the descriptions,
+  with the weight and a short form of the menu's own description. The calories
+  are not.
+- **Toppings.** `setup/threeoclock-addons.csv` puts the menu's Topping / Add On
+  box on every iced drink on the two cold beverages pages: Extra Espresso,
+  Black Pearl, Grass Jelly ₹60; Vanilla, Caramel or Hazelnut Syrup ₹60; Oat
+  Milk, Almond Milk ₹70; Cheese Foam ₹90. The menu joins the milks and the
+  syrups on one line each; they are split here so the bar sees which.
+  `TO CONFIRM` which drinks really take which topping.
+- **Names changed from the menu.** "Veggies Fingers" is Veggie Fingers; the
+  three Hot Pizzas have "Pizza" added; the Refreshers' "Black Currant" is
+  "Black Currant Refresher", so a bill never confuses it with the shake or the
+  cheese foam tea.
+- **Thin entries.** The Specials page gives only a name and a price for Chef
+  Specials, Shakes, Refreshers, Cold Brew and Cakes & Bakes, so those have no
+  description. The Tofu Sandwich's description on the menu is a copy of the
+  mushroom croissant's, so it has only its weight.
+- The menu says "Jain options are also available": that is a note to the
+  kitchen on the line, not a dish.
 
 ## 8. Kitchen stations
 
 | Station | Categories |
 |---|---|
-| Coffee Bar | Every hot and iced drink |
-| Bakery Counter | Freshly Baked, Tea Cakes, Delicate Desserts, Puffs & Pies (from the display counter) |
-| Kitchen | Everything else: sandwiches, toasts, pastas, salads, nachos, fries, pizzas, appetisers |
+| Coffee Bar | Every hot and iced drink, the Signature Collection, Shakes, Refreshers, Cold Brew |
+| Bakery Counter | Freshly Baked, Tea Cakes, Delicate Desserts, Puffs & Pies, Cakes & Bakes (from the display counter) |
+| Kitchen | Everything else: sandwiches, toasts, salads, pastas, both pizza menus, fries, nachos, appetisers, Chef Specials, wraps, Hunger Pack Meals |
 
 No station prints tickets until the owner says which have printers.
 
@@ -138,7 +166,7 @@ No station prints tickets until the owner says which have printers.
 5. The packaging charge for takeaway.
 6. Invoice prefix and starting number, on cutover day.
 7. Tables: how many, names, seats, sections.
-8. Every price on the fourth card, and which toppings go on which drinks.
+8. Which toppings go on which drinks, and what is in the Specials page's dishes that have no description.
 9. Staff: names, phones and roles. No login is made without a phone.
 10. Delivery and dine-out platforms, their commissions, and Tally ledger codes.
 11. Receipt header and footer lines.

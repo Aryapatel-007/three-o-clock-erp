@@ -69,10 +69,15 @@
     "Cheese Foam Tea": "Coffee Bar",
     "Iced Milk Tea": "Coffee Bar",
     "Chococha": "Coffee Bar",
+    "Signature Collection": "Coffee Bar",
+    "Shakes": "Coffee Bar",
+    "Refreshers": "Coffee Bar",
+    "Cold Brew": "Coffee Bar",
     "Freshly Baked": "Bakery Counter",
     "Tea Cakes": "Bakery Counter",
     "Delicate Desserts": "Bakery Counter",
-    "Puffs & Pies": "Bakery Counter"
+    "Puffs & Pies": "Bakery Counter",
+    "Cakes & Bakes": "Bakery Counter"
   },
   "defaultStation": "Kitchen",
   "tables": [
