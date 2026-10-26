@@ -8,7 +8,7 @@
 # in System Settings, Printers & Scanners, Default printer.
 
 TILL_ADDRESS="https://three-o-clock-erp.vercel.app"
-PROFILE="$HOME/Library/Application Support/Dakaar Website Till"
+PROFILE="$HOME/Library/Application Support/ThreeOClock Website Till"
 
 open -na "Google Chrome" --args \
   --user-data-dir="$PROFILE" \

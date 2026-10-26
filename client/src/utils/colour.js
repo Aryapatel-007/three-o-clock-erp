@@ -69,6 +69,12 @@ export const ACCENT_PRESETS = Object.freeze({
 /** The example shown in the custom colour field. It passes every rule. */
 export const EXAMPLE_ACCENT = '#2D5DA8';
 
+/**
+ * Three O'Clock's brand pair, as `setup/threeoclock.json` sets it: the sign-in
+ * screen's colours on a device that has never signed in (features/brand/brand.js).
+ */
+export const DEFAULT_BRAND_COLOURS = Object.freeze({ brandHex: '#1A1A1A', onBrandHex: '#E2C08D' });
+
 /** The examples shown in the brand colour fields, P22. A readable pair. */
 export const EXAMPLE_BRAND = '#4A2E2A';
 export const EXAMPLE_ON_BRAND = '#F2D7BC';

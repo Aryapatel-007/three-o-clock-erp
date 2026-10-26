@@ -1,4 +1,4 @@
-# Dakaar
+# Three O'Clock
 
 
 ## Three O'Clock: the website and the cafe PC in one repository (P62, P63)
@@ -11,7 +11,7 @@ the internet, with Atlas as a read-only cloud mirror, backup, and the intake
 for online orders and partner webhooks.
 
 - How it works: [`docs/REPLICATION.md`](docs/REPLICATION.md)
-- **Windows cafe PC:** `bash box/windows/make-package.sh` makes `release/Dakaar.zip`; on the PC, extract to `C:\Dakaar` and double-click **Install Dakaar**. [`docs/WINDOWS-INSTALL.md`](docs/WINDOWS-INSTALL.md)
+- **Windows cafe PC:** `bash box/windows/make-package.sh` makes `release/ThreeOClock.zip`; on the PC, extract to `C:\ThreeOClock` and double-click **Install ThreeOClock**. [`docs/WINDOWS-INSTALL.md`](docs/WINDOWS-INSTALL.md)
 - Ubuntu mini PC: `sudo LAN_IP=192.168.1.10 bash box/install-ubuntu.sh`, then [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) sections 17 and 18
 - **Staff: connecting a tablet, which WiFi, which link:** [`docs/STAFF-SETUP.md`](docs/STAFF-SETUP.md), or open `/connect` on the system
 - When something is wrong: [`docs/RUNBOOK.md`](docs/RUNBOOK.md)

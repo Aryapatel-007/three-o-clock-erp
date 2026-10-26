@@ -172,7 +172,7 @@ describe('copying the menu and floor from the live database', () => {
     await writeBundle({ targetDb, bundle: back, targetPhone: '9444444444', apply: true, log: quiet });
     const dish = await targetDb.collection('menuitems').findOne({ restaurantId: target.restaurantId, name: 'Sev Puri' });
     assert.equal(dish.priceInPaise, 7000);
-    await assert.rejects(writeBundle({ targetDb, bundle: { kind: 'something' }, targetPhone: '9444444444', apply: true, log: quiet }), /not a Dakaar setup/);
+    await assert.rejects(writeBundle({ targetDb, bundle: { kind: 'something' }, targetPhone: '9444444444', apply: true, log: quiet }), /not a Three O'Clock setup/);
   });
 
   it('keeps the settings a trial must not inherit out of the copy', () => {

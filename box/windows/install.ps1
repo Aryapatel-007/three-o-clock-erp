@@ -1,6 +1,6 @@
-# Dakaar: one-time setup on a Windows 10 or 11 PC. P62, docs/WINDOWS-INSTALL.md.
+# Three O'Clock: one-time setup on a Windows 10 or 11 PC. P62, docs/WINDOWS-INSTALL.md.
 #
-# Run by double-clicking "Install Dakaar.bat" in the Dakaar folder. It asks
+# Run by double-clicking "Install ThreeOClock.bat" in the ThreeOClock folder. It asks
 # for Administrator once, then:
 #   1. installs Node.js, MongoDB and the MongoDB tools with winget (needs internet, once)
 #   2. makes MongoDB a single-node replica set, reachable from this PC only
@@ -9,11 +9,11 @@
 #   5. starts the server when Windows starts, before anyone logs in, and restarts
 #      it if it stops; takes a snapshot of the database every hour
 #   6. lets tablets on the WiFi reach it (Windows Firewall)
-#   7. puts "Dakaar" and "Dakaar - Connect a device" on the desktop
+#   7. puts "Three O'Clock" and "Three O'Clock - Connect a device" on the desktop
 #   8. installs new versions by itself at night (box\windows\update.mjs)
 #
 # Safe to run again: every step checks first. Running it again after copying a
-# newer Dakaar folder over this one updates the app by hand; step 8 does it
+# newer Three O'Clock folder over this one updates the app by hand; step 8 does it
 # without anyone, from signed GitHub releases.
 # Written in plain ASCII for Windows PowerShell 5.1.
 
@@ -29,16 +29,16 @@ $Root = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 $DataDir = Join-Path $Root 'data'
 $LogDir = Join-Path $DataDir 'logs'
 $EnvFile = Join-Path $Root '.env'
-$TaskName = 'Dakaar Server'
-$SnapshotTask = 'Dakaar Snapshot'
-$UpdateTask = 'Dakaar Update'
-$PrinterTask = 'Dakaar Printer'
+$TaskName = 'ThreeOClock Server'
+$SnapshotTask = 'ThreeOClock Snapshot'
+$UpdateTask = 'ThreeOClock Update'
+$PrinterTask = 'ThreeOClock Printer'
 
 function Say($text) { Write-Host ''; Write-Host "== $text" -ForegroundColor Cyan }
 function Fail($text) {
   Write-Host ''
   Write-Host "STOPPED: $text" -ForegroundColor Red
-  Write-Host 'Nothing is lost. Fix this and double-click "Install Dakaar" again.'
+  Write-Host 'Nothing is lost. Fix this and double-click "Install ThreeOClock" again.'
   Read-Host 'Press Enter to close'
   exit 1
 }
@@ -58,18 +58,18 @@ function Winget-Install($id, $label) {
 
 $principal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
 if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
-  Fail 'Run this as Administrator: double-click "Install Dakaar.bat", and say Yes when Windows asks.'
+  Fail 'Run this as Administrator: double-click "Install ThreeOClock.bat", and say Yes when Windows asks.'
 }
 # The server runs from this folder for good, so it must not be one that WhatsApp, a
 # browser's downloads or Windows' clean-up can empty.
 if ($Root -match '\\AppData\\|\\Temp\\|\\Downloads(\\|$)|\\OneDrive') {
-  Fail "This folder is a download or app folder, which can be emptied at any time:`n  $Root`nMove the Dakaar folder (the one with Install Dakaar in it) to C:\Dakaar, then double-click Install Dakaar there."
+  Fail "This folder is a download or app folder, which can be emptied at any time:`n  $Root`nMove the ThreeOClock folder (the one with Install ThreeOClock in it) to C:\ThreeOClock, then double-click Install ThreeOClock there."
 }
-if (-not (Test-Path (Join-Path $Root 'server\server.js'))) { Fail "This script must stay inside the Dakaar folder. Looked in $Root." }
-if (-not (Test-Path (Join-Path $Root 'client\dist\index.html'))) { Fail 'The screens are missing (client\dist). Use the Dakaar.zip made by box/windows/make-package.sh.' }
+if (-not (Test-Path (Join-Path $Root 'server\server.js'))) { Fail "This script must stay inside the ThreeOClock folder. Looked in $Root." }
+if (-not (Test-Path (Join-Path $Root 'client\dist\index.html'))) { Fail 'The screens are missing (client\dist). Use the ThreeOClock.zip made by box/windows/make-package.sh.' }
 New-Item -ItemType Directory -Force -Path $DataDir, $LogDir | Out-Null
 
-Write-Host 'Dakaar setup' -ForegroundColor Green
+Write-Host 'Three O''Clock setup' -ForegroundColor Green
 Write-Host "Folder: $Root"
 
 # ---------------------------------------------------------------------------
@@ -198,7 +198,7 @@ Ensure-EnvLine 'UPDATE_TOKEN' ''
 # The day-end email (P44). Empty: Day Close works and sends nothing. The key is Render's own
 # RESEND_API_KEY, put in by a person; it is a secret and never in this script.
 Ensure-EnvLine 'RESEND_API_KEY' ''
-Ensure-EnvLine 'DAY_END_EMAIL_FROM' 'Dakaar <onboarding@resend.dev>'
+Ensure-EnvLine 'DAY_END_EMAIL_FROM' 'Three O''Clock <onboarding@resend.dev>'
 # The version this folder holds, so the server and the updater both know it.
 $versionFile = Join-Path $Root 'VERSION.txt'
 if (Test-Path $versionFile) { Set-EnvLine 'RELEASE_VERSION' ((Get-Content -Path $versionFile -Raw).Trim()) }
@@ -297,8 +297,8 @@ if ($ownerPhone) {
 # ---------------------------------------------------------------------------
 Say '6. Let tablets on the WiFi reach it'
 # Any profile: a new WiFi is often marked Public by Windows, and the tablets must still get in.
-Get-NetFirewallRule -DisplayName 'Dakaar' -ErrorAction SilentlyContinue | Remove-NetFirewallRule
-New-NetFirewallRule -DisplayName 'Dakaar' -Direction Inbound -Protocol TCP -LocalPort $port -Action Allow -Profile Any | Out-Null
+Get-NetFirewallRule -DisplayName 'ThreeOClock' -ErrorAction SilentlyContinue | Remove-NetFirewallRule
+New-NetFirewallRule -DisplayName 'ThreeOClock' -Direction Inbound -Protocol TCP -LocalPort $port -Action Allow -Profile Any | Out-Null
 Write-Host "Port $port is open to devices on the network."
 
 # ---------------------------------------------------------------------------
@@ -306,7 +306,7 @@ Say '7. Desktop icons'
 $desktop = [Environment]::GetFolderPath('CommonDesktopDirectory')
 $shell = New-Object -ComObject WScript.Shell
 $opener = Join-Path $PSScriptRoot 'open.vbs'
-foreach ($icon in @(@{ Name = 'Dakaar'; Page = '' }, @{ Name = 'Dakaar - Connect a device'; Page = 'connect' })) {
+foreach ($icon in @(@{ Name = 'Three O''Clock'; Page = '' }, @{ Name = 'Three O''Clock - Connect a device'; Page = 'connect' })) {
   $shortcut = $shell.CreateShortcut((Join-Path $desktop "$($icon.Name).lnk"))
   $shortcut.TargetPath = "$env:SystemRoot\System32\wscript.exe"
   $shortcut.Arguments = "`"$opener`" $($icon.Page)"
@@ -315,19 +315,19 @@ foreach ($icon in @(@{ Name = 'Dakaar'; Page = '' }, @{ Name = 'Dakaar - Connect
   $shortcut.Description = 'Opens the cafe system, starting the server if it is not running.'
   $shortcut.Save()
 }
-# 2026-10-22. "Dakaar" opens the till itself (start-till.ps1), so the icons that
+# 2026-10-22. "Three O'Clock" opens the till itself (start-till.ps1), so the icons that
 # opened a till or set up printing are gone: one icon, nothing to choose. The tools
 # stay in box\windows (print-settings.cmd) for whoever looks after the PC.
-foreach ($old in @('Dakaar - Till (prints without asking)', 'Dakaar - Printer setup (captains'' bills)', 'Dakaar - Printer setup (till)', 'Dakaar - Fix printing')) {
+foreach ($old in @('Three O''Clock - Till (prints without asking)', 'Three O''Clock - Printer setup (captains'' bills)', 'Three O''Clock - Printer setup (till)', 'Three O''Clock - Fix printing')) {
   foreach ($folder in @($desktop, [Environment]::GetFolderPath('Desktop'))) {
     Remove-Item -Path (Join-Path $folder "$old.lnk") -Force -ErrorAction SilentlyContinue
   }
 }
 # The print window of 2026-10-22 morning had its own profile. And the till and its hidden
 # printer window keep the old screens in memory until closed: closed here, so the hidden
-# printer comes back within a minute on the new version (the "Dakaar Printer" task).
+# printer comes back within a minute on the new version (the "ThreeOClock Printer" task).
 Get-CimInstance Win32_Process -Filter "Name = 'chrome.exe' OR Name = 'msedge.exe'" |
-  Where-Object { $_.CommandLine -like '*Dakaar Printer*' -or $_.CommandLine -like '*Dakaar Till*' } |
+  Where-Object { $_.CommandLine -like '*ThreeOClock Printer*' -or $_.CommandLine -like '*ThreeOClock Till*' } |
   ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
 # 2026-10-22. Chrome keeps its paper size, margins and scale per browser profile, and the till's
 # profile never had them chosen, so it printed with blank paper above the bill. The Chrome on
@@ -338,9 +338,9 @@ $addresses = Get-NetIPAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue 
 $portPart = if ($port -eq 80) { '' } else { ":$port" }
 Write-Host ''
 Write-Host 'All done.' -ForegroundColor Green
-Write-Host 'On this PC: double-click "Dakaar" on the desktop.'
+Write-Host 'On this PC: double-click "Three O''Clock" on the desktop.'
 foreach ($address in $addresses) { Write-Host "On tablets and phones on the same WiFi: http://$address$portPart" -ForegroundColor Green }
-Write-Host 'Print the card with QR codes: "Dakaar - Connect a device" on the desktop.'
+Write-Host 'Print the card with QR codes: "Three O''Clock - Connect a device" on the desktop.'
 Write-Host 'The server starts by itself whenever this PC is switched on.'
 if (Select-String -Path $EnvFile -Pattern '^UPDATE_TOKEN=.+' -Quiet) {
   Write-Host 'New versions install by themselves between 4 and 5 AM (UPDATE_WINDOW in .env).'
@@ -350,7 +350,7 @@ if (Select-String -Path $EnvFile -Pattern '^UPDATE_TOKEN=.+' -Quiet) {
 if (-not (Select-String -Path $EnvFile -Pattern '^RESEND_API_KEY=.+' -Quiet)) {
   Write-Host 'The day-end email is off until RESEND_API_KEY is set in .env (docs\WINDOWS-INSTALL.md section 5c).' -ForegroundColor Yellow
 }
-Write-Host 'The till opens by itself when Windows starts, and from "Dakaar" on the desktop. It prints with no dialog.'
+Write-Host 'The till opens by itself when Windows starts, and from "Three O''Clock" on the desktop. It prints with no dialog.'
 Write-Host 'Sign in to the till once with a cashier or manager login: it prints its bills and the captains'' bills.' -ForegroundColor Green
 Read-Host 'Press Enter to close'
 Start-Process $url

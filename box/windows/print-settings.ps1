@@ -1,4 +1,4 @@
-# Dakaar: see and copy Chrome's print settings. 2026-10-22.
+# Three O'Clock: see and copy Chrome's print settings. 2026-10-22.
 #
 # Chrome keeps its print settings (printer, paper size, margins, scale) per
 # browser profile, in the profile's Preferences file, and prints silently
@@ -8,7 +8,7 @@
 #   1. lists every Chrome and Edge profile on this PC with the settings it prints
 #      with, and the bill printer's own default, and saves that list on the Desktop;
 #   2. copies one profile's settings (the one that prints the bill right) into
-#      both Dakaar windows;
+#      both Three O'Clock windows;
 #   3. clears saved settings whose paper is longer than Chrome can print
 #      (like 80(72.1) x 99999 mm, which makes "Print preview failed");
 #   4. resets the bill printer to its driver's factory settings, by removing it
@@ -18,7 +18,7 @@
 
 #   5. -AutoCopy (the installer, 2026-10-22): copies, with no questions, the settings of
 #      the profile that prints on the bill printer with a sane paper (everyday Chrome
-#      first) into both Dakaar windows, so the till prints as that Chrome does.
+#      first) into both Three O'Clock windows, so the till prints as that Chrome does.
 param([switch]$ReportOnly, [string]$ResetPrinter, [switch]$AutoCopy)
 
 $ErrorActionPreference = 'Stop'
@@ -47,8 +47,8 @@ $Local = $env:LOCALAPPDATA
 $LongestMm = 5000
 $StickyPattern = '"print_preview_sticky_settings":\{[^{}]*?"appState":"((?:[^"\\]|\\.)*)"[^{}]*\}'
 $Targets = @(
-  @{ Label = 'Dakaar - Till (this PC)'; Dir = Join-Path $Local 'Dakaar Till' },
-  @{ Label = 'Dakaar printer window (captains'' bills)'; Dir = Join-Path $Local 'Dakaar Printer' }
+  @{ Label = 'Three O''Clock - Till (this PC)'; Dir = Join-Path $Local 'ThreeOClock Till' },
+  @{ Label = 'Three O''Clock printer window (captains'' bills)'; Dir = Join-Path $Local 'ThreeOClock Printer' }
 )
 
 function Read-Sticky($file) {
@@ -127,7 +127,7 @@ foreach ($browser in @(
     [void]$profiles.Add(@{ Label = "Everyday $($browser.Name), profile $($_.Name)"; File = Join-Path $_.FullName 'Preferences'; Everyday = $true; Exe = $browser.Exe })
   }
 }
-[void]$profiles.Add(@{ Label = 'Website till launcher (Dakaar Website Till)'; Dir = Join-Path $Local 'Dakaar Website Till'; File = Join-Path $Local 'Dakaar Website Till\Default\Preferences' })
+[void]$profiles.Add(@{ Label = 'Website till launcher (ThreeOClock Website Till)'; Dir = Join-Path $Local 'ThreeOClock Website Till'; File = Join-Path $Local 'ThreeOClock Website Till\Default\Preferences' })
 foreach ($target in $Targets) {
   [void]$profiles.Add(@{ Label = $target.Label; Dir = $target.Dir; File = Join-Path $target.Dir 'Default\Preferences'; Target = $true })
 }
@@ -180,7 +180,7 @@ Write-Host '  F        fix printing: clear every BROKEN setting above, then rese
 Write-Host '           printer to its factory settings (Chrome closes; Windows asks for permission)'
 Write-Host '  C        only clear every BROKEN setting above (Chrome closes while it is done)'
 Write-Host '  R        only reset the bill printer to its factory settings'
-Write-Host '  a number copy that profile''s settings into both Dakaar windows'
+Write-Host '  a number copy that profile''s settings into both Three O''Clock windows'
 Write-Host '           (choose the one the website counter prints correctly with)'
 Write-Host '  Enter    do nothing'
 $answer = (Read-Host 'Your choice').Trim()
@@ -207,7 +207,7 @@ if ($answer -ieq 'R' -or $answer -ieq 'F') {
   $source = $profiles[[int]$answer - 1]
   if (-not $source) { Write-Host 'No profile has that number.' -ForegroundColor Yellow; exit 1 }
   if (-not $source.Sticky) { Write-Host "$($source.Label) has no saved print settings to copy." -ForegroundColor Yellow; exit 1 }
-  if ($source.Sticky.Broken) { Write-Host "$($source.Label) has the BROKEN paper size; it would break the Dakaar windows too." -ForegroundColor Yellow; exit 1 }
+  if ($source.Sticky.Broken) { Write-Host "$($source.Label) has the BROKEN paper size; it would break the Three O'Clock windows too." -ForegroundColor Yellow; exit 1 }
   foreach ($target in ($profiles | Where-Object { $_.Target })) {
     if ($target.File -eq $source.File) { continue }
     Stop-Profile $target

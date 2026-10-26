@@ -1,4 +1,4 @@
-# Dakaar
+# Three O'Clock
 
 MERN stack. REST API. Multi-tenant SaaS for restaurants in Ahmedabad.
 Two developers: Arya and Rishi. One person owns one module fully.

@@ -139,7 +139,7 @@ test('the cafe PC print window prints a captain bill by itself, with no till ope
   // The print window, as print-agent.ps1 opens it; its device switch was never touched.
   const printer = await signIn(browser, { name: 'Counter', phone: golden.phones.Counter, password: golden.password, device: 'computer' });
   await printer.page.goto('/print-station');
-  await expect(printer.page.getByRole('heading', { name: 'Dakaar printer' })).toBeVisible();
+  await expect(printer.page.getByRole('heading', { name: "Three O'Clock printer" })).toBeVisible();
 
   const captain = await signIn(browser, { name: 'Khuman Singh', phone: golden.phones['Khuman Singh'], password: golden.password, device: 'phone' });
   const station = await signIn(browser, { name: 'Manager', phone: golden.phones.Manager, password: golden.password, device: 'tablet' });

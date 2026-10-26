@@ -91,8 +91,8 @@ function useBrandSync({ user, appearance, restaurantName, saved, updateDevice })
  */
 function printerWindowTitle() {
   const { pathname } = window.location;
-  if (pathname.startsWith('/print-station')) return 'Dakaar printer';
-  if (pathname === '/login' && window.history.state?.usr?.from?.pathname === '/print-station') return 'Dakaar printer - sign in';
+  if (pathname.startsWith('/print-station')) return "Three O'Clock printer";
+  if (pathname === '/login' && window.history.state?.usr?.from?.pathname === '/print-station') return "Three O'Clock printer - sign in";
   return null;
 }
 

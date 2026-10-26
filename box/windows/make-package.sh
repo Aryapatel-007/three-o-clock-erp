@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Builds Dakaar.zip for a Windows cafe PC. P62, docs/WINDOWS-INSTALL.md.
+# Builds ThreeOClock.zip for a Windows cafe PC. P62, docs/WINDOWS-INSTALL.md.
 #
 #   bash box/windows/make-package.sh                        the zip, to hand over
 #   bash box/windows/make-package.sh --publish              and a signed GitHub release,
@@ -9,8 +9,8 @@
 #
 # Run on a developer machine. Takes the committed code (git archive: never .env,
 # never box-data, never anything uncommitted), adds the built screens, and puts
-# "Install Dakaar.bat" at the top so the person at the cafe sees it first.
-# The result is release/Dakaar.zip. No secrets are inside it: the installer
+# "Install ThreeOClock.bat" at the top so the person at the cafe sees it first.
+# The result is release/ThreeOClock.zip. No secrets are inside it: the installer
 # makes the cafe's own on the cafe PC.
 set -euo pipefail
 PUBLISH=0
@@ -24,7 +24,7 @@ while [[ $# -gt 0 ]]; do
 done
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 OUT="$ROOT/release"
-STAGE="$OUT/Dakaar"
+STAGE="$OUT/ThreeOClock"
 cd "$ROOT"
 
 if [[ -n "$(git status --porcelain -- server client box setup package.json package-lock.json)" ]]; then
@@ -34,25 +34,25 @@ fi
 echo "Building the screens..."
 (cd client && npx vite build >/dev/null)
 
-rm -rf "$STAGE" "$OUT/Dakaar.zip"
+rm -rf "$STAGE" "$OUT/ThreeOClock.zip"
 mkdir -p "$STAGE"
 git archive --format=tar HEAD | tar -x -C "$STAGE"
 rm -rf "$STAGE/e2e" "$STAGE/docs/archive" "$STAGE/setup/archive" "$STAGE/.github"
 mkdir -p "$STAGE/client/dist"
 cp -R client/dist/. "$STAGE/client/dist/"
-cp "box/windows/Install Dakaar.bat" "$STAGE/Install Dakaar.bat"
+cp "box/windows/Install ThreeOClock.bat" "$STAGE/Install ThreeOClock.bat"
 cp "box/windows/Load cafe data.bat" "$STAGE/Load cafe data.bat"
 cat > "$STAGE/READ ME FIRST.txt" <<'TXT'
-CAFE POS - SETUP ON THIS PC (once)
+THREE O'CLOCK - SETUP ON THIS PC (once)
 
-1. This folder should be C:\Dakaar  (move it there if it is somewhere else).
+1. This folder should be C:\ThreeOClock  (move it there if it is somewhere else).
 2. The PC must be on the internet for the first setup only.
-3. Double-click "Install Dakaar" and click Yes when Windows asks.
+3. Double-click "Install ThreeOClock" and click Yes when Windows asks.
 4. Answer the questions: cafe name, owner name, owner mobile, owner password.
-5. When it says "All done", use the "Dakaar" icon on the desktop.
+5. When it says "All done", use the "Three O'Clock" icon on the desktop.
 
 Tablets and phones: join the same WiFi as this PC, then open the address the
-installer showed, or open "Dakaar - Connect a device" and scan the QR codes.
+installer showed, or open "Three O'Clock - Connect a device" and scan the QR codes.
 
 Full guide: docs\WINDOWS-INSTALL.md and docs\STAFF-SETUP.md
 TXT
@@ -60,9 +60,9 @@ COMMIT="$(git rev-parse --short HEAD)"
 BUILT_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 printf '%s\n' "$COMMIT" > "$STAGE/VERSION.txt"
 printf '{ "commit": "%s", "builtAt": "%s" }\n' "$COMMIT" "$BUILT_AT" > "$STAGE/VERSION.json"
-(cd "$OUT" && zip -qr Dakaar.zip Dakaar)
+(cd "$OUT" && zip -qr ThreeOClock.zip ThreeOClock)
 rm -rf "$STAGE"
-echo "Made $OUT/Dakaar.zip ($(du -h "$OUT/Dakaar.zip" | cut -f1)), version $(git rev-parse --short HEAD)."
+echo "Made $OUT/ThreeOClock.zip ($(du -h "$OUT/ThreeOClock.zip" | cut -f1)), version $(git rev-parse --short HEAD)."
 
 [[ "$PUBLISH" == 1 ]] || exit 0
 
@@ -82,12 +82,12 @@ PREVIOUS_TAG="$(gh release list -R "$REPO" -L 1 --json tagName -q '.[0].tagName'
 if [[ -z "$MANUAL" && -n "$PREVIOUS_TAG" ]]; then
   git fetch --quiet origin "refs/tags/$PREVIOUS_TAG:refs/tags/$PREVIOUS_TAG" 2>/dev/null || true
   if ! git diff --quiet "$PREVIOUS_TAG" HEAD -- box/windows/install.ps1 2>/dev/null; then
-    MANUAL="The installer changed since $PREVIOUS_TAG: copy the new Dakaar.zip over C:\\Dakaar and run Install Dakaar by hand."
+    MANUAL="The installer changed since $PREVIOUS_TAG: copy the new ThreeOClock.zip over C:\\ThreeOClock and run Install ThreeOClock by hand."
     echo "Note: $MANUAL"
   fi
 fi
 
-SIGN_ARGS=("$OUT/Dakaar.zip" "$OUT/manifest.json" --commit "$COMMIT" --built-at "$BUILT_AT")
+SIGN_ARGS=("$OUT/ThreeOClock.zip" "$OUT/manifest.json" --commit "$COMMIT" --built-at "$BUILT_AT")
 [[ -n "$MANUAL" ]] && SIGN_ARGS+=(--manual "$MANUAL")
 node box/windows/release.mjs sign "${SIGN_ARGS[@]}"
 
@@ -95,6 +95,6 @@ TAG="cafepos-$(date -u +%Y%m%d-%H%M)-$COMMIT"
 NOTES="$(git log -1 --format=%s)"
 [[ -n "$PREVIOUS_TAG" ]] && NOTES="$(git log --format='- %s' "$PREVIOUS_TAG..HEAD" 2>/dev/null || echo "$NOTES")"
 [[ -n "$MANUAL" ]] && NOTES="Not installed by the cafe PCs by themselves: $MANUAL"$'\n\n'"$NOTES"
-gh release create "$TAG" "$OUT/Dakaar.zip" "$OUT/manifest.json" -R "$REPO" \
-  --target "$(git rev-parse HEAD)" --title "Dakaar $COMMIT" --notes "$NOTES"
+gh release create "$TAG" "$OUT/ThreeOClock.zip" "$OUT/manifest.json" -R "$REPO" \
+  --target "$(git rev-parse HEAD)" --title "Three O'Clock $COMMIT" --notes "$NOTES"
 echo "Published $TAG to $REPO. Cafe PCs with UPDATE_AUTO=on install it in their next update window."

@@ -2,7 +2,7 @@
 # Starts after MongoDB on every boot, and again by itself if it ever stops:
 # the box returns to service after a power cut with nobody touching it.
 [Unit]
-Description=Dakaar server (the till, kitchen and owner screens)
+Description=Three O'Clock server (the till, kitchen and owner screens)
 After=network-online.target mongod.service
 Wants=network-online.target
 Requires=mongod.service

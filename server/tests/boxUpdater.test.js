@@ -65,7 +65,7 @@ describe('updater settings', () => {
 });
 
 describe('the signed manifest', () => {
-  const payload = { commit: NEW.commit, builtAt: NEW.builtAt, asset: 'Dakaar.zip', size: 3, sha256: 'a'.repeat(64) };
+  const payload = { commit: NEW.commit, builtAt: NEW.builtAt, asset: 'ThreeOClock.zip', size: 3, sha256: 'a'.repeat(64) };
 
   it('is accepted with the right key and refused with another', () => {
     const text = signManifest(payload, KEY.privatePem);
@@ -94,7 +94,7 @@ describe('the signed manifest', () => {
   });
 });
 
-/** A Dakaar folder of one version. */
+/** A ThreeOClock folder of one version. */
 async function writeVersion(dir, version) {
   await fs.mkdir(path.join(dir, 'server'), { recursive: true });
   await fs.mkdir(path.join(dir, 'client', 'dist'), { recursive: true });
@@ -124,7 +124,7 @@ describe('updating the cafe PC', () => {
       if (url.endsWith('/releases/latest')) {
         return Promise.resolve(Response.json({
           tag_name: 'cafepos-test',
-          assets: [{ name: 'manifest.json', url: 'https://api/asset/1' }, { name: 'Dakaar.zip', url: 'https://api/asset/2' }],
+          assets: [{ name: 'manifest.json', url: 'https://api/asset/1' }, { name: 'ThreeOClock.zip', url: 'https://api/asset/2' }],
         }));
       }
       if (url === 'https://api/asset/1') return Promise.resolve(new Response(manifestText));
@@ -135,7 +135,7 @@ describe('updating the cafe PC', () => {
 
   /** Fake Windows: "extract" copies the release folder, the health check is a switch. */
   const steps = () => ({
-    extract: async (zipFile, dir) => { calls.push('extract'); await fs.cp(releaseDir, path.join(dir, 'Dakaar'), { recursive: true }); },
+    extract: async (zipFile, dir) => { calls.push('extract'); await fs.cp(releaseDir, path.join(dir, 'ThreeOClock'), { recursive: true }); },
     snapshot: () => { calls.push('snapshot'); return Promise.resolve(); },
     stopServer: () => { calls.push('stop'); return Promise.resolve(); },
     startServer: () => { calls.push('start'); return Promise.resolve(); },
@@ -155,14 +155,14 @@ describe('updating the cafe PC', () => {
 
   beforeEach(async () => {
     tmp = await fs.mkdtemp(path.join(os.tmpdir(), 'cafepos-update-'));
-    root = path.join(tmp, 'Dakaar');
-    releaseDir = path.join(tmp, 'release', 'Dakaar');
+    root = path.join(tmp, 'ThreeOClock');
+    releaseDir = path.join(tmp, 'release', 'ThreeOClock');
     await writeVersion(root, OLD);
     await writeVersion(releaseDir, NEW);
     await fs.mkdir(path.join(root, 'data', 'snapshots'), { recursive: true });
     await fs.writeFile(path.join(root, 'data', 'snapshots', 'keep.gz'), 'orders');
     await fs.writeFile(path.join(root, '.env'), 'PORT=80\nUPDATE_REPO=owner/repo\nUPDATE_TOKEN=t\nUPDATE_WINDOW=04:00-05:00\nRELEASE_VERSION=aaa1111\n');
-    zip = path.join(tmp, 'Dakaar.zip');
+    zip = path.join(tmp, 'ThreeOClock.zip');
     await fs.writeFile(zip, 'pretend zip bytes');
     calls = [];
     fetched = [];
@@ -245,7 +245,7 @@ describe('updating the cafe PC', () => {
   });
 
   it('leaves a release marked manual, and an older one, for a person', async () => {
-    const manual = await updateCommand({ command: 'run', root, now: atHour(4, 30), fetchImpl: await publish({ manual: 'Run Install Dakaar.' }), steps: steps(), print: () => {} });
+    const manual = await updateCommand({ command: 'run', root, now: atHour(4, 30), fetchImpl: await publish({ manual: 'Run Install ThreeOClock.' }), steps: steps(), print: () => {} });
     assert.deepEqual(manual, { skipped: 'manual release' });
     const older = await updateCommand({ command: 'now', root, fetchImpl: await publish({ version: { commit: 'ccc0000', builtAt: '2026-10-01T00:00:00Z' } }), steps: steps(), print: () => {} });
     assert.deepEqual(older, { skipped: 'up to date' });

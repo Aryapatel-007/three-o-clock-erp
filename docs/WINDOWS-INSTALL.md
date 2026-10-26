@@ -1,4 +1,4 @@
-# Installing Dakaar on the cafe's Windows PC
+# Installing Three O'Clock on the cafe's Windows PC
 
 P62. For a Windows 10 or 11 PC that will be the cafe's server: the till, and
 the computer every tablet and kitchen screen talks to over the WiFi. For a
@@ -12,17 +12,17 @@ dedicated Ubuntu mini PC, use `docs/DEPLOYMENT.md` section 17 instead.
 bash box/windows/make-package.sh
 ```
 
-It makes `release/Dakaar.zip` from the last commit: the code, the built
+It makes `release/ThreeOClock.zip` from the last commit: the code, the built
 screens and the installer. No passwords or keys are inside it. Copy it to a pen
 drive, or send it to yourself.
 
 ## 2. Install (on the cafe PC, once)
 
-1. Copy `Dakaar.zip` to the PC and **extract it to `C:\`**, so you have
-   `C:\Dakaar`.
+1. Copy `ThreeOClock.zip` to the PC and **extract it to `C:\`**, so you have
+   `C:\ThreeOClock`.
 2. The PC must be **on the internet** for this first setup (it downloads
    Node.js, MongoDB and the app's packages, about 400 MB).
-3. Double-click **`Install Dakaar`** in `C:\Dakaar`. Click **Yes** when
+3. Double-click **`Install ThreeOClock`** in `C:\ThreeOClock`. Click **Yes** when
    Windows asks for permission.
 4. Answer four questions: cafe name, owner name, owner mobile number, owner
    password. Use letters and numbers in the password, no quote marks.
@@ -35,28 +35,28 @@ Takes about 10 minutes. It is safe to run again if anything stops halfway.
 
 ## 3. Every day
 
-- **On the cafe PC:** double-click **Dakaar** on the desktop. If the server
+- **On the cafe PC:** double-click **Three O'Clock** on the desktop. If the server
   is not running yet it starts it, then it opens the screens.
 - **The server starts by itself** whenever the PC is switched on, before anyone
   logs in, and restarts itself if it ever stops. Tablets work even if nobody
   clicks the icon.
 - **Tablets and phones:** join the same WiFi as the PC and open the address.
-  **Dakaar - Connect a device** on the desktop opens the card with the QR
+  **Three O'Clock - Connect a device** on the desktop opens the card with the QR
   codes; print it for the counter (`docs/STAFF-SETUP.md`).
 
 ## 4. What it set up
 
 | What | Where |
 |---|---|
-| The app and its settings | `C:\Dakaar`, settings in `C:\Dakaar\.env` (private: it holds the keys) |
+| The app and its settings | `C:\ThreeOClock`, settings in `C:\ThreeOClock\.env` (private: it holds the keys) |
 | MongoDB | Windows service "MongoDB", single-node replica set `rs0`, on this PC only (127.0.0.1) |
-| The server | Task Scheduler, "Dakaar Server": at start-up, as SYSTEM, restarts every minute if it stops |
-| Hourly snapshots | Task Scheduler, "Dakaar Snapshot": `C:\Dakaar\data\snapshots` (24 hourly, 31 daily, 12 monthly) |
-| Updates | Task Scheduler, "Dakaar Update": every 15 minutes, acting only from 4 to 5 AM (section 6) |
-| The database files | MongoDB's own data folder, by default `C:\Program Files\MongoDB\Server\<version>\data`. Not inside `C:\Dakaar` |
-| Logs | `C:\Dakaar\data\logs\server.log` and `snapshot.log` |
-| Firewall | Rule "Dakaar": the app's port (80, or 8080 if 80 was taken) open to the network |
-| Desktop | "Dakaar" and "Dakaar - Connect a device", for every user |
+| The server | Task Scheduler, "ThreeOClock Server": at start-up, as SYSTEM, restarts every minute if it stops |
+| Hourly snapshots | Task Scheduler, "ThreeOClock Snapshot": `C:\ThreeOClock\data\snapshots` (24 hourly, 31 daily, 12 monthly) |
+| Updates | Task Scheduler, "ThreeOClock Update": every 15 minutes, acting only from 4 to 5 AM (section 6) |
+| The database files | MongoDB's own data folder, by default `C:\Program Files\MongoDB\Server\<version>\data`. Not inside `C:\ThreeOClock` |
+| Logs | `C:\ThreeOClock\data\logs\server.log` and `snapshot.log` |
+| Firewall | Rule "Three O'Clock": the app's port (80, or 8080 if 80 was taken) open to the network |
+| Desktop | "Three O'Clock" and "Three O'Clock - Connect a device", for every user |
 
 ## 5. Keep the PC a good server
 
@@ -98,8 +98,8 @@ comes off. Put a GSTIN in only when the PC goes live for real.
    screen). With it, the file holds password and PIN hashes: move it by pen
    drive, not chat, and delete it from both computers once copied. The live
    database's address never goes onto the PC.
-3. **On the cafe PC**, copy the file to `C:\Dakaar`, then in an Administrator
-   PowerShell inside `C:\Dakaar`, with the owner phone you gave the installer:
+3. **On the cafe PC**, copy the file to `C:\ThreeOClock`, then in an Administrator
+   PowerShell inside `C:\ThreeOClock`, with the owner phone you gave the installer:
 
    ```
    npm run copy:menu -- --from-file zchaat-setup.json --target-phone 9XXXXXXXXX
@@ -132,8 +132,8 @@ just before handing over, and stop using the cloud's address after it.
    cloud's sign-in sessions and its backup bookkeeping. The file holds password
    hashes and guests' phone numbers: move it by **pen drive**, and delete it
    from both computers once loaded.
-2. **On the cafe PC**, after **Install Dakaar** (any cafe name and owner: the
-   copy replaces them), put the file in `C:\Dakaar` and double-click
+2. **On the cafe PC**, after **Install ThreeOClock** (any cafe name and owner: the
+   copy replaces them), put the file in `C:\ThreeOClock` and double-click
    **Load cafe data**. Type `LOAD` when asked. It stops the server, keeps a
    snapshot of what was there (`data\snapshots\before-load-*.archive.gz`),
    loads the copy, checks every document went in, builds the indexes and starts
@@ -142,7 +142,7 @@ just before handing over, and stop using the cloud's address after it.
 3. Everyone signs in with the **phone and password they use on the cloud**.
 
 To load a newer copy later (a re-take just before handover), run steps 1 and 2
-again: the newest `.archive.gz` in `C:\Dakaar` is the one loaded.
+again: the newest `.archive.gz` in `C:\ThreeOClock` is the one loaded.
 
 ## 5c. Two-way sync: the PC and the website both take bills (P63)
 
@@ -170,10 +170,10 @@ section 5b first):
 1. Pick a secret, the same on both: `openssl rand -base64 48`.
 2. **Website server** (Render): set `SYNC_MODE=TWO_WAY` and
    `REPLICATION_SECRET=<the secret>`, then deploy. `docs/DEPLOYMENT.md` section 19.
-3. **Cafe PC**: in `C:\Dakaar\.env` (Notepad as Administrator) set
+3. **Cafe PC**: in `C:\ThreeOClock\.env` (Notepad as Administrator) set
    `SYNC_MODE=TWO_WAY`, `MIRROR_URL=https://<the website server's address>` (no
    slash at the end) and `REPLICATION_SECRET=<the secret>`. Restart the server:
-   double-click **Install Dakaar** again, or restart the PC.
+   double-click **Install ThreeOClock** again, or restart the PC.
 4. Owner on the PC: **Sync** in the menu says "In step" within a minute.
 
 The PC syncs every `SYNC_EVERY_SECONDS` (60) inside `SYNC_HOURS` (08:30-02:30
@@ -186,10 +186,10 @@ numbers, which stay valid in their own series.
 
 ### After moving the cafe from the website to the PC
 
-**One icon, one window (2026-10-22).** **Dakaar** on the desktop starts the
+**One icon, one window (2026-10-22).** **Three O'Clock** on the desktop starts the
 server if needed and opens the till in its own browser profile with
 `--kiosk-printing` (`box\windows\start-till.ps1`): bills print with no dialog,
-on the PC's default printer. The "Dakaar Printer" task opens the same till
+on the PC's default printer. The "ThreeOClock Printer" task opens the same till
 when someone signs in to Windows, and again within a minute if it is closed.
 The till prints its own bills and every bill a captain sends with **Print at
 counter**, so nobody has to be at the counter.
@@ -216,7 +216,7 @@ device starts empty on the PC's address. Once, on each:
 3. **Captains' phones:** open the PC's address and sign in. A phone cannot
    print to the bill printer itself; **Print at counter** is how a captain prints.
 4. **Day-end email:** copy `RESEND_API_KEY` from Render's Environment into
-   `C:\Dakaar\.env` by hand, then restart the server. Without it Day Close
+   `C:\ThreeOClock\.env` by hand, then restart the server. Without it Day Close
    works and sends no email. It needs the internet at closing.
 5. **Guests' online link:** keep giving the website's link (`.../r/<address>`).
    The PC's Settings show its own address, which opens only inside the cafe.
@@ -240,10 +240,10 @@ New versions install themselves at night. Nobody at the cafe does anything.
 ### How it works
 
 1. A developer commits and pushes, then publishes a release:
-   `bash box/windows/make-package.sh --publish`. That builds `Dakaar.zip`,
+   `bash box/windows/make-package.sh --publish`. That builds `ThreeOClock.zip`,
    signs a `manifest.json` (version, build time, the zip's checksum) with the
    release key, and puts both on a GitHub release of `riship-17/Cafezza-Offline`.
-2. On the cafe PC, the **Dakaar Update** task runs every 15 minutes. It does
+2. On the cafe PC, the **ThreeOClock Update** task runs every 15 minutes. It does
    anything only inside `UPDATE_WINDOW` (4 to 5 AM by default, the PC's own
    clock), and only when GitHub has a newer version than the one running.
 3. It downloads the manifest and refuses it unless it is signed by the key in
@@ -260,17 +260,17 @@ New versions install themselves at night. Nobody at the cafe does anything.
    changes are additive, so the old version reads it.
 
 `.env` and `data` (the snapshots, the logs, the network notes) never move. The
-database is MongoDB's own and is not in `C:\Dakaar` at all.
+database is MongoDB's own and is not in `C:\ThreeOClock` at all.
 
 ### Setting it up
 
 - **The token.** The repository is private, so the PC needs a read-only
   GitHub token: a fine-grained token for `riship-17/Cafezza-Offline` only, with
-  Contents: Read-only. Put it in `C:\Dakaar\.env` by hand, as
+  Contents: Read-only. Put it in `C:\ThreeOClock\.env` by hand, as
   `UPDATE_TOKEN=github_pat_...` (Notepad, run as Administrator). Until then,
   updates are off and the nightly task does nothing.
 - **The release key.** Made once with `node box/windows/release.mjs keygen`.
-  The private half is `~/.dakaar/three-o-clock-release-signing-key.pem` on the developer's
+  The private half is `~/.three-o-clock/three-o-clock-release-signing-key.pem` on the developer's
   computer. Back it up; a developer without it cannot publish. If it is lost, a
   new key needs every cafe PC updated once by hand (below).
 - **Settings in `.env`:** `UPDATE_AUTO=off` stops it; `UPDATE_WINDOW=03:30-04:30`
@@ -284,10 +284,10 @@ the installer. Add `--manual "the reason"` for anything else the PC cannot do by
 itself, like a one-off data migration (`npm run migrate:...`). The PCs see a
 manual release, write why in `data\logs\update.log`, and leave it for a person.
 
-By hand: copy the new `Dakaar.zip` over `C:\Dakaar` outside service, and
-double-click **Install Dakaar**. Your `.env` and `data` are not in the zip.
+By hand: copy the new `ThreeOClock.zip` over `C:\ThreeOClock` outside service, and
+double-click **Install ThreeOClock**. Your `.env` and `data` are not in the zip.
 
-### Commands, in an Administrator PowerShell inside `C:\Dakaar`
+### Commands, in an Administrator PowerShell inside `C:\ThreeOClock`
 
 ```
 node box\windows\update.mjs check      is there a newer version? changes nothing
@@ -301,12 +301,12 @@ last attempt.
 ## 7. When something is wrong
 
 - **The icon says the server did not start:** wait a minute after switching on
-  and try again. Then open `C:\Dakaar\data\logs\server.log`; the last lines say
-  why. "not a replica set": run Install Dakaar again.
+  and try again. Then open `C:\ThreeOClock\data\logs\server.log`; the last lines say
+  why. "not a replica set": run Install ThreeOClock again.
 - **Tablets cannot open the address, the PC can:** the tablet is on another
-  WiFi, or the address changed. Open "Dakaar - Connect a device" on the PC
+  WiFi, or the address changed. Open "Three O'Clock - Connect a device" on the PC
   for the current address.
 - **"Saving paused: server clock is wrong":** set the PC's clock right
   (Settings, Time, Sync now). `docs/RUNBOOK.md` section 4.
 - Everything else: `docs/RUNBOOK.md`. Its commands are the same on Windows,
-  run in PowerShell inside `C:\Dakaar` (for example `npm run replication -- status`).
+  run in PowerShell inside `C:\ThreeOClock` (for example `npm run replication -- status`).

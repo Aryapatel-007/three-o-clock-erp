@@ -1,4 +1,4 @@
-# Dakaar: set up printing for the till or the print window, once. 2026-10-22.
+# Three O'Clock: set up printing for the till or the print window, once. 2026-10-22.
 #
 # Both windows print with no dialog (--kiosk-printing), each in its own browser
 # profile. Chrome keeps its print settings (paper size, margins, scale) per
@@ -13,7 +13,7 @@ param([ValidateSet('Printer', 'Till')][string]$Window = 'Printer')
 
 $ErrorActionPreference = 'SilentlyContinue'
 $Root = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
-$ProfileDir = if ($Window -eq 'Till') { Join-Path $env:LOCALAPPDATA 'Dakaar Till' } else { Join-Path $env:LOCALAPPDATA 'Dakaar Printer' }
+$ProfileDir = if ($Window -eq 'Till') { Join-Path $env:LOCALAPPDATA 'ThreeOClock Till' } else { Join-Path $env:LOCALAPPDATA 'ThreeOClock Printer' }
 
 $port = 80
 $line = Select-String -Path (Join-Path $Root '.env') -Pattern '^PORT=(\d+)' | Select-Object -First 1
@@ -22,7 +22,7 @@ $portPart = if ($port -eq 80) { '' } else { ":$port" }
 $page = "http://localhost$portPart/device"
 
 # A window already open in this profile keeps its no-dialog flag, so close it first.
-# The "Dakaar Printer" task opens the print window again within a minute of this one closing.
+# The "ThreeOClock Printer" task opens the print window again within a minute of this one closing.
 Get-CimInstance Win32_Process -Filter "Name = 'chrome.exe' OR Name = 'msedge.exe'" |
   Where-Object { $_.CommandLine -like "*$ProfileDir*" } |
   ForEach-Object { Stop-Process -Id $_.ProcessId -Force }

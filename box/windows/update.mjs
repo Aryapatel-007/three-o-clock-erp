@@ -1,15 +1,15 @@
 /**
- * Dakaar updater for the cafe's Windows PC. P62, docs/WINDOWS-INSTALL.md section 6.
+ * Three O'Clock updater for the cafe's Windows PC. P62, docs/WINDOWS-INSTALL.md section 6.
  *
  *   node box\windows\update.mjs check      is there a newer version? changes nothing
- *   node box\windows\update.mjs run        what the "Dakaar Update" task runs every
+ *   node box\windows\update.mjs run        what the "ThreeOClock Update" task runs every
  *                                          15 minutes: acts only inside UPDATE_WINDOW
  *                                          and only while UPDATE_AUTO is on
  *   node box\windows\update.mjs now        apply the newest version now (outside service)
  *   node box\windows\update.mjs rollback   put the version before the last update back
  *
  * A version is a GitHub release made by `bash box/windows/make-package.sh --publish`:
- * Dakaar.zip and manifest.json, the manifest signed with the release key. This PC
+ * ThreeOClock.zip and manifest.json, the manifest signed with the release key. This PC
  * trusts only a manifest signed by the key in box\windows\release-public-key.pem of
  * the version it is running, so a GitHub account alone cannot push code onto it.
  *
@@ -33,7 +33,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 /** What stays where it is when one version replaces another. */
 export const KEEP = new Set(['data', '.env']);
-export const SERVER_TASK = 'Dakaar Server';
+export const SERVER_TASK = 'ThreeOClock Server';
 const DEFAULT_WINDOW = '04:00-05:00';
 const HEALTH_TIMEOUT_MS = 120_000;
 const LOCK_STALE_MS = 3 * 60 * 60 * 1000;
@@ -493,12 +493,12 @@ export async function updateCommand({ command, root, now = new Date(), fetchImpl
     await fs.rm(staging, { recursive: true, force: true });
     await fs.mkdir(staging, { recursive: true });
     await steps.extract(zip, staging);
-    const newRoot = path.join(staging, 'Dakaar');
+    const newRoot = path.join(staging, 'ThreeOClock');
     const unpacked = await readInstalled(newRoot);
     if (unpacked.commit !== payload.commit
       || !(await exists(path.join(newRoot, 'server', 'server.js')))
       || !(await exists(path.join(newRoot, 'client', 'dist', 'index.html')))) {
-      throw new Error('The package is not a complete Dakaar of the signed version. Not installing it.');
+      throw new Error('The package is not a complete ThreeOClock folder of the signed version. Not installing it.');
     }
 
     const result = await applyVersion({ root, newRoot, release: payload.commit, oldRelease: installed.commit, steps, log });

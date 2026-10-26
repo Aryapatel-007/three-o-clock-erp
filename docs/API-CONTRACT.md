@@ -8528,7 +8528,7 @@ refused. OWNER through `PATCH /settings`, audited as `SETTINGS_CHANGED`.
 ## 5. Environment
 
 `RESEND_API_KEY` (optional; without it nothing is emailed), `DAY_END_EMAIL_FROM`
-(default `Dakaar <onboarding@resend.dev>`), `RESEND_API_BASE` (default
+(default `Three O'Clock <onboarding@resend.dev>`), `RESEND_API_BASE` (default
 `https://api.resend.com`; tests point it at a fake).
 
 ## Error codes

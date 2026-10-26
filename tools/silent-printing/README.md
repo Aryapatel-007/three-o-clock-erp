@@ -12,7 +12,7 @@ These two files start the till that way, in a Chrome window of its own:
 | Mac | `Open the till (Mac).command` |
 | Windows | `Open the till (Windows).cmd` |
 
-The till window uses its own Chrome profile (`Dakaar Website Till`). So:
+The till window uses its own Chrome profile (`ThreeOClock Website Till`). So:
 
 - Silent printing applies only to the till window. Everyday Chrome, with its
   own tabs and printing, is untouched and can stay open beside it.
@@ -41,7 +41,7 @@ use the file.
 
 ## Captains' bills at the counter
 
-On the cafe PC, open the till with the PC's own desktop icon, **Dakaar -
+On the cafe PC, open the till with the PC's own desktop icon, **Three O'Clock -
 Till (prints without asking)**. `Open the till (Windows).cmd` run on the cafe PC
 opens the PC too; anywhere else it opens the website, where captains' bills
 sent to the PC never arrive.

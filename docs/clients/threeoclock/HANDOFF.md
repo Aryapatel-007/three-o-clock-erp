@@ -12,7 +12,7 @@ carrying on. Update it as tasks close.
 - This repository, `Aryapatel-007/three-o-clock-erp` (private), was started
   again on 2026-10-26 from Z Chaat's code: one codebase for the website
   (`DEPLOYMENT_ROLE=CLOUD`) and the cafe PC (`BOX`), with two-way sync. The
-  product is named **Dakaar**.
+  product is named **Three O'Clock**.
 - Three O'Clock's menu is the 18 October one from the cafe's own site:
   139 dishes, 33 categories (`setup/threeoclock-menu.csv`).
 - Nothing reaches Z Chaat: every address in this repository names
@@ -58,7 +58,7 @@ any password or PIN.
 |---|---|
 | Atlas `MONGO_URI` | Render's dashboard, Environment. On a laptop, only in the terminal for one command, like `MONGO_URI="..." npm run db:indexes` |
 | JWT secrets, `PAYMENT_SECRETS_KEY`, `INTEGRATION_SECRETS_KEY` | Render generates them (`render.yaml`, `generateValue`). Copy the two encryption keys to the cafe PC's `.env` later, for two-way sync |
-| `REPLICATION_SECRET` | Made with `openssl rand -base64 48`; the same value in Render and the PC's `C:\Dakaar\.env` |
+| `REPLICATION_SECRET` | Made with `openssl rand -base64 48`; the same value in Render and the PC's `C:\ThreeOClock\.env` |
 | The owner's password | Typed at the terminal when a script asks |
 
 **Safe to share with Claude in a chat**, and all that is needed:
@@ -139,12 +139,12 @@ owner's password is typed by you at the terminal.
 
 ## 5. The cafe PC
 
-Later, once the website works: install Dakaar on the cafe's PC
+Later, once the website works: install Three O'Clock on the cafe's PC
 (`docs/WINDOWS-INSTALL.md`), load the data, and switch on two-way sync
 (DEPLOYMENT.md section 19.3). The installer already points the PC at
 `https://three-o-clock-erp-api.onrender.com`. Updates come from this
 repository's releases, signed with the key on Arya's computer
-(`~/.dakaar/three-o-clock-release-signing-key.pem`), so Arya publishes them.
+(`~/.three-o-clock/three-o-clock-release-signing-key.pem`), so Arya publishes them.
 
 ## 6. Details to get from Three O'Clock
 
@@ -206,8 +206,12 @@ Every `TO CONFIRM` in `setup/threeoclock.json` and
    changes; Arya's session meant to ask about them.
 5. **Backups:** the Sunday practice-restore workflow fails until this
    repository has its backup secrets (DEPLOYMENT.md section 8.6).
-6. **Keep awake:** `.github/workflows/keep-awake.yml` and the outside pingers,
-   once Render exists (DEPLOYMENT.md section 14), unless the PC's sync keeps it awake.
+6. **Keep awake:** done 2026-10-26 with `.github/workflows/keep-awake.yml`,
+   every 10 minutes, 8:30 AM to 3:20 AM India time. GitHub can delay a
+   scheduled run, so for a firmer pinger add a cron-job.org job calling
+   `https://three-o-clock-erp-api.onrender.com/api/v1/wake` every 10 minutes in
+   the same window (DEPLOYMENT.md section 14). GitHub switches the schedule off
+   after 60 days with no commits.
 7. The old local database on Rishi's Mac (`127.0.0.1:27017`) holds a test
    "Three O'Clock Cafe" from 18 October with seven logins and a test bill;
    it is not the cloud and can be left or dropped.

@@ -25,7 +25,7 @@ export default function PrintStationPage() {
   // 2026-10-22. box/windows/print-agent.ps1 finds this window by its title and hides it.
   useEffect(() => {
     const before = document.title;
-    document.title = 'Dakaar printer';
+    document.title = "Three O'Clock printer";
     return () => {
       document.title = before;
     };
@@ -40,7 +40,7 @@ export default function PrintStationPage() {
       <CaptainBillPrinter always onPrinted={onPrinted} paper={CAFE_PC_PAPER} />
       <div className="mx-auto grid max-w-xl gap-4">
         <BrandLogo height={40} />
-        <h1 className="type-title">Dakaar printer</h1>
+        <h1 className="type-title">Three O'Clock printer</h1>
         <p className="type-body">
           Captains&apos; bills print here by themselves, on this computer&apos;s default printer. Leave this window open; it
           starts again by itself with Windows.

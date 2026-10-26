@@ -11,8 +11,12 @@
  * who walks in.
  */
 
+import { ACCENT_PRESETS, DEFAULT_BRAND_COLOURS, nightVariant } from '../../utils/colour.js';
+import logoOnDark from '../../assets/brand/threeoclock-logo-dark-ground.png';
+import logoOnLight from '../../assets/brand/threeoclock-logo-light-ground.png';
+
 /** The product's own name, for a device that has never seen a restaurant. */
-export const PRODUCT_NAME = 'Dakaar';
+export const PRODUCT_NAME = "Three O'Clock";
 
 export const EMPTY_BRAND = Object.freeze({
   wordmark: null,
@@ -25,11 +29,30 @@ export const EMPTY_BRAND = Object.freeze({
 });
 
 /**
+ * 2026-10-26, at Rishi's word: this repository is Three O'Clock's own, so a
+ * device that has never signed in shows Three O'Clock's logo, name and colours
+ * (setup/threeoclock.json) rather than a blank product look. The logos are
+ * files built into the screens, so they need no sign-in to fetch.
+ */
+export const DEFAULT_BRAND = Object.freeze({
+  wordmark: PRODUCT_NAME,
+  accent: ACCENT_PRESETS.ESPRESSO,
+  accentNight: nightVariant(ACCENT_PRESETS.ESPRESSO),
+  neutralTone: 'WARM',
+  ...DEFAULT_BRAND_COLOURS,
+  logos: {
+    LIGHT_GROUND: { hash: null, dataUrl: logoOnLight },
+    DARK_GROUND: { hash: null, dataUrl: logoOnDark },
+  },
+});
+
+/**
  * The brand to draw: the signed-in restaurant's live appearance with this
- * device's saved logo images, or, before sign-in, what this device saved last.
+ * device's saved logo images, or, before sign-in, what this device saved last,
+ * or Three O'Clock's own on a device that has saved nothing.
  */
 export function resolveBrand({ appearance, restaurantName, saved }) {
-  const stored = { ...EMPTY_BRAND, ...(saved ?? {}) };
+  const stored = saved ? { ...EMPTY_BRAND, ...saved } : DEFAULT_BRAND;
   if (!appearance) return stored;
 
   const logos = {};

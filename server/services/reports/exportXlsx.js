@@ -65,7 +65,7 @@ function writeTable(sheet, columns, rows, totals) {
 /** The workbook as a Buffer. */
 export async function buildWorkbook(envelope) {
   const workbook = new ExcelJS.Workbook();
-  workbook.creator = 'Dakaar';
+  workbook.creator = "Three O'Clock";
   workbook.created = new Date(envelope.generatedAt);
 
   const failed = envelope.checks.filter((check) => !check.passed && check.severity === 'ERROR');
