@@ -97,8 +97,11 @@ section 14 says what the free plan costs in waiting.
 ### 4.2 Render
 
 1. Sign in to the new workspace for Three O'Clock (not Z Chaat's).
-2. Account settings, GitHub: give Render access to
-   `Aryapatel-007/three-o-clock-erp`. It is private, so this step is needed.
+2. Connect GitHub and give Render access to `Aryapatel-007/three-o-clock-erp`.
+   It is private and on **Arya's** GitHub account, so Render's GitHub app has
+   to be installed on Arya's account (Rishi has push, not admin, and cannot do
+   it): either Arya signs in to Render with her GitHub, or she approves the
+   install request Render sends when Rishi picks her account.
 3. **New, Blueprint**, choose `Aryapatel-007/three-o-clock-erp`, branch `main`.
    Render reads `render.yaml` and creates `three-o-clock-erp-api` (free,
    Singapore, Docker).
@@ -174,7 +177,17 @@ Every `TO CONFIRM` in `setup/threeoclock.json` and
    Outdoor 8), 3 stations, Cash, Card and UPI, both logos, the settings,
    33 categories and 139 dishes; a second plan of each finds nothing to do.
    Not sent, still TO CONFIRM: legal name, GSTIN, FSSAI, pincode, accounts,
-   staff. No bill made. **Render and Vercel: not started** (section 4.2, 4.3).
+   staff. No bill made.
+   **Vercel: done 2026-10-26** from Rishi's Mac: project `three-o-clock-erp`
+   in Rishi's team (`rishis-projects-56712387`), live at
+   https://three-o-clock-erp.vercel.app, a production build. It was deployed
+   from a clean `git archive` of `main` so no `.env` was uploaded; it is not
+   connected to GitHub yet, so a push does not deploy it. To deploy again:
+   `git archive HEAD | tar -x -C <empty folder>`, then in that folder
+   `vercel link --yes --project three-o-clock-erp --scope rishis-projects-56712387`
+   and `vercel deploy --prod --yes`. Never `vercel deploy` from the working
+   folder: the CLI does not read `.gitignore` and would upload `.env`.
+   `/api` answers 404 until Render exists. **Render: not started** (4.2).
    That `.env` is otherwise still the old cafe server's (`NODE_ENV=production`,
    https on 8443): fine for scripts, not for `npm run dev`.
 3. **The `dakaar` repository** still has Z Chaat's addresses: its cafe-PC
