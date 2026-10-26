@@ -162,13 +162,19 @@ Every `TO CONFIRM` in `setup/threeoclock.json` and
 1. ~~**Tables.**~~ Done 2026-10-26: `setup:restaurant` takes a list of
    table groups again, as the old Three O'Clock repository did (one group still
    works, so Z Chaat's file is unchanged). Tested in `setupScripts.test.js`.
-2. **Atlas, Render, Vercel** for Three O'Clock: section 4. Atlas: Arya made
-   cluster `cluster0.eugepku` (organisation Restuarent, project 3-o-clock), and
-   its string is in Rishi's Mac's `.env` with the database `restaurant-erp`. On
-   2026-10-26 Atlas refused it, `bad auth : authentication failed` for the user
-   `aryapatel7899_db_user`: the network is fine, the password is not. Reset that
-   user's password in Atlas (Database Access, Edit, Edit Password), put it in
-   `.env`, then `db:indexes` (4.1 step 6). Render and Vercel not started.
+2. **Atlas: done 2026-10-26.** Cluster `cluster0.eugepku` (organisation
+   Restuarent, project 3-o-clock, `6adf5f88eff64c0f9514a0d7`), database
+   `restaurant-erp`, user `aryapatel7899_db_user`; the string is in Rishi's
+   Mac's `.env`. Indexes built (52 collections, 246). "Three O'Clock Cafe"
+   provisioned with its owner on **9000004001** (a placeholder phone, as on
+   18 October; a phone cannot be changed in the app, so if the real owner's
+   number is wanted, change it before staff use the system). The owner's
+   password was chosen by Rishi and shared in a chat: change it before go-live.
+   `setup/threeoclock.json` and the menu applied: 18 tables (Indoor 10,
+   Outdoor 8), 3 stations, Cash, Card and UPI, both logos, the settings,
+   33 categories and 139 dishes; a second plan of each finds nothing to do.
+   Not sent, still TO CONFIRM: legal name, GSTIN, FSSAI, pincode, accounts,
+   staff. No bill made. **Render and Vercel: not started** (section 4.2, 4.3).
    That `.env` is otherwise still the old cafe server's (`NODE_ENV=production`,
    https on 8443): fine for scripts, not for `npm run dev`.
 3. **The `dakaar` repository** still has Z Chaat's addresses: its cafe-PC
