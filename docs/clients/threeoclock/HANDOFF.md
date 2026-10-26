@@ -146,6 +146,17 @@ Later, once the website works: install Three O'Clock on the cafe's PC
 repository's releases, signed with the key on Arya's computer
 (`~/.three-o-clock/three-o-clock-release-signing-key.pem`), so Arya publishes them.
 
+## 5a. The cafe Wi-Fi, for now
+
+From 2026-10-26, until the cafe's own router is set up: the Wi-Fi is **RISHI**,
+and the machine serving the cafe on it is Rishi's Mac, whose Wi-Fi MAC
+address is `8a:eb:c7:64:34:71` (a private address macOS uses for that network;
+keep "Private Wi-Fi Address" on Fixed for RISHI so it does not change). To give
+it a fixed IP, reserve an address for that MAC in the router. Nothing in the
+code or the release zip holds a Wi-Fi name or MAC: the cafe PC uses whatever
+Wi-Fi Windows is on, and the name staff join is saved after install on the
+Network page (owner or manager), as RISHI.
+
 ## 6. Details to get from Three O'Clock
 
 Every `TO CONFIRM` in `setup/threeoclock.json` and
@@ -206,12 +217,13 @@ Every `TO CONFIRM` in `setup/threeoclock.json` and
    changes; Arya's session meant to ask about them.
 5. **Backups:** the Sunday practice-restore workflow fails until this
    repository has its backup secrets (DEPLOYMENT.md section 8.6).
-6. **Keep awake:** done 2026-10-26 with `.github/workflows/keep-awake.yml`,
-   every 10 minutes, 8:30 AM to 3:20 AM India time. GitHub can delay a
-   scheduled run, so for a firmer pinger add a cron-job.org job calling
-   `https://three-o-clock-erp-api.onrender.com/api/v1/wake` every 10 minutes in
-   the same window (DEPLOYMENT.md section 14). GitHub switches the schedule off
-   after 60 days with no commits.
+6. **Keep awake: UptimeRobot**, Rishi's choice on 2026-10-26 (not the GitHub
+   Actions pinger, which stays by hand only). One HTTP(s) monitor on
+   `https://three-o-clock-erp-api.onrender.com/api/v1/wake`, every 5 minutes.
+   That address needs no database and has its own limit of 60 a minute. Pinged
+   all day it uses about 744 of Render's 750 free hours a month, so this must
+   be the only free service in that Render workspace. UptimeRobot's free plan
+   is for non-commercial use; a paid plan or cron-job.org if that matters.
 7. The old local database on Rishi's Mac (`127.0.0.1:27017`) holds a test
    "Three O'Clock Cafe" from 18 October with seven logins and a test bill;
    it is not the cloud and can be left or dropped.
