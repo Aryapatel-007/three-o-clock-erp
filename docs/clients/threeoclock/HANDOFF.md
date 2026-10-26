@@ -187,7 +187,16 @@ Every `TO CONFIRM` in `setup/threeoclock.json` and
    `vercel link --yes --project three-o-clock-erp --scope rishis-projects-56712387`
    and `vercel deploy --prod --yes`. Never `vercel deploy` from the working
    folder: the CLI does not read `.gitignore` and would upload `.env`.
-   `/api` answers 404 until Render exists. **Render: not started** (4.2).
+   **Render: live 2026-10-26**, `https://three-o-clock-erp-api.onrender.com`,
+   set up by Rishi (the repository is public from 2026-10-26, so no GitHub
+   app on Arya's account was needed). `PAYMENT_SECRETS_KEY` removed on purpose:
+   no online payment yet; the server treats it as optional and only refuses to
+   connect Razorpay. If it is added later, the cafe PC needs the same value for
+   two-way sync. Checked through https://three-o-clock-erp.vercel.app: health
+   with the database connected, release `49f92e6`; the owner signs in, the
+   refresh cookie works, 18 tables, 3 stations, 33 categories; in a browser at
+   phone width the floor shows Indoor and Outdoor, stays signed in after a
+   reload, no page errors. No bill made.
    That `.env` is otherwise still the old cafe server's (`NODE_ENV=production`,
    https on 8443): fine for scripts, not for `npm run dev`.
 3. **The `dakaar` repository** still has Z Chaat's addresses: its cafe-PC
