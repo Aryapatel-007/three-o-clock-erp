@@ -27,13 +27,18 @@ import { describeTrustProxy } from './config/trustProxy.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { notFound } from './middleware/notFound.js';
 import { generalLimiter } from './middleware/rateLimit.js';
+import { writerGate } from './middleware/writerGate.js';
+import { isBox } from './config/deployment.js';
 import { LOGO_UPLOAD_PATH } from './routes/brandRoutes.js';
 import { PHOTO_UPLOAD_PATH } from './routes/paymentRoutes.js';
 import hookRoutes, { HOOKS_PATH } from './routes/hookRoutes.js';
 import tallyBridgeRoutes, { TALLY_BRIDGE_PATH } from './routes/tallyBridgeRoutes.js';
 import routes from './routes/index.js';
+import replicationRoutes, { REPLICATION_ROUTES_PATH } from './routes/replicationRoutes.js';
+import { startReplication, stopReplication } from './services/replication/runtime.js';
 import { startBackups, stopBackups } from './services/backup/backupService.js';
 import { startJobLoop } from './services/integrations/jobRunner.js';
+import { startCaSends, stopCaSends } from './services/caPackService.js';
 import { attachLiveChannel, closeLiveChannel } from './services/live/socketServer.js';
 import { recordServerStart } from './services/serverStartService.js';
 import { describeKey, findMissingIndexes } from './services/indexService.js';
@@ -92,6 +97,17 @@ function serveClient(app, clientDist) {
 }
 
 /**
+ * P62. Helmet as before, except on the cafe box, which staff reach over the
+ * LAN as plain http://192.168.x.x: there `upgrade-insecure-requests` would send
+ * every script and font to an https:// that does not exist, and the page would
+ * come up blank. HSTS is ignored over http anyway and is left out with it.
+ */
+export function helmetOptions() {
+  if (!isBox()) return {};
+  return { contentSecurityPolicy: { directives: { upgradeInsecureRequests: null } }, strictTransportSecurity: false };
+}
+
+/**
  * A price, a name and a few ids. Nothing this API accepts is large, and a
  * generous limit is free capacity for someone else.
  */
@@ -121,7 +137,7 @@ export function createApp({ serveClient: shouldServeClient = config.isProduction
   // skip the login limit. Production must set it; see config/env.js.
   app.set('trust proxy', config.TRUST_PROXY);
 
-  app.use(helmet());
+  app.use(helmet(helmetOptions()));
 
   /**
    * P31. Compresses responses, before every route, the partners' webhooks and
@@ -140,6 +156,13 @@ export function createApp({ serveClient: shouldServeClient = config.isProduction
 
   // credentials is on for the refresh token cookie that arrives in M0 part B.
   app.use(cors({ origin: config.CLIENT_ORIGIN, credentials: true }));
+
+  // P62. Who may write here, decided before any route: the read-only cloud
+  // mirror, a box that stood down, a box whose clock went back. Before the
+  // webhooks too, so nothing reaches a handler that this machine may not run.
+  app.use(writerGate);
+  // P62. The box's signed replication calls, with their own EJSON body, on a mirror only.
+  app.use(`${API_PREFIX}${REPLICATION_ROUTES_PATH}`, replicationRoutes);
 
   // P25 Part G. Partners' webhooks keep their raw bytes for the signature, so
   // they are mounted before the JSON parser, with their own limiter, and end
@@ -255,8 +278,12 @@ export async function startServer() {
   const app = createApp();
   // P25 Part G. One loop per process; version 1 runs one instance.
   if (!config.isTest) startJobLoop();
+  // P65. The CA's month, checked every hour wherever the job loop runs.
+  if (!config.isTest) startCaSends();
 
-  const server = app.listen(config.PORT, () => {
+  // 2026-10-17. Bound to 0.0.0.0 by name: Render's port scan looks there, and
+  // with Node's default (::) a deploy timed out though the server was answering.
+  const server = app.listen(config.PORT, '0.0.0.0', () => {
     logger.info(
       { port: config.PORT, environment: config.NODE_ENV, api: API_PREFIX },
       'Server listening.',
@@ -266,6 +293,8 @@ export async function startServer() {
     recordServerStart().catch((error) => logger.warn({ err: error }, 'Could not record this server start.'));
     // P54. Backups, when BACKUP_ENABLED is on. A failure is logged and shown to the owner, never thrown.
     startBackups().catch((error) => logger.warn({ err: error }, 'Backups could not start.'));
+    // P62. The writer state everywhere; on the box, the changelog, the shipper and intake.
+    startReplication().catch((error) => logger.error({ err: error }, 'Replication could not start.'));
   });
 
   // P33. The live channel rides the same HTTP server, ahead of Express, so no
@@ -276,9 +305,12 @@ export async function startServer() {
   // through a database call.
   installShutdownHandlers(async () => {
     closeLiveChannel(live);
+    stopCaSends();
     await closeHttpServer(server);
     // P54. What the change diary has waiting goes up before the database closes.
     await stopBackups().catch((error) => logger.warn({ err: error }, 'Backups did not stop cleanly.'));
+    // P62. What the change stream has waiting goes into the changelog before the database closes.
+    await stopReplication().catch((error) => logger.warn({ err: error }, 'Replication did not stop cleanly.'));
   });
 
   return server;

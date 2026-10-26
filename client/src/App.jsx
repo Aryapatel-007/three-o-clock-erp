@@ -1,4 +1,6 @@
 import { lazy, Suspense } from 'react';
+
+import { loadScreen } from './utils/loadScreen.js';
 import { Navigate, Route, Routes } from 'react-router-dom';
 
 import { ScreenLoading } from './components/AppShell.jsx';
@@ -15,8 +17,9 @@ import KitchenDisplayPage from './features/kitchen/KitchenDisplayPage.jsx';
 import FloorViewPage from './features/orders/FloorViewPage.jsx';
 import OrderScreenPage from './features/orders/OrderScreenPage.jsx';
 import TakeawayOrderPage from './features/orders/TakeawayOrderPage.jsx';
-import CounterSalePage from './features/orders/CounterSalePage.jsx';
 import RequireOnline from './features/online/RequireOnline.jsx';
+// P62. Kept in the main chunk: a device that has lost the server must still be able to open it.
+import ConnectPage from './features/network/ConnectPage.jsx';
 import { ROLES } from './features/users/roles.js';
 
 /**
@@ -24,7 +27,8 @@ import { ROLES } from './features/users/roles.js';
  * The service screens above stay in the main chunk: a captain or a cashier never waits for
  * one mid-rush. AppShell's Suspense draws the screen's still shape while a chunk arrives.
  */
-const lazyScreen = (load, name) => lazy(() => load().then((group) => ({ default: group[name] })));
+// loadScreen reloads once when a screen's file is gone after a deploy, rather than a blank page.
+const lazyScreen = (load, name) => lazy(() => loadScreen(load).then((group) => ({ default: group[name] })));
 const reportsGroup = () => import('./routes/reports.js');
 const settlementGroup = () => import('./routes/settlement.js');
 const settingsGroup = () => import('./routes/settings.js');
@@ -52,10 +56,15 @@ const PayoutsPage = lazyScreen(settlementGroup, 'PayoutsPage');
 const TableArrangePage = lazyScreen(settingsGroup, 'TableArrangePage');
 const TableManagementPage = lazyScreen(settingsGroup, 'TableManagementPage');
 const DeviceSettingsPage = lazyScreen(settingsGroup, 'DeviceSettingsPage');
+const PrintStationPage = lazyScreen(settingsGroup, 'PrintStationPage');
 const AppearancePage = lazyScreen(settingsGroup, 'AppearancePage');
+const InvoiceLayoutPage = lazyScreen(settingsGroup, 'InvoiceLayoutPage');
+const CaReportsPage = lazyScreen(settingsGroup, 'CaReportsPage');
 const SettingsPage = lazyScreen(settingsGroup, 'SettingsPage');
 const StationsPage = lazyScreen(settingsGroup, 'StationsPage');
 const IntegrationsPage = lazyScreen(integrationsGroup, 'IntegrationsPage');
+const NetworkPage = lazyScreen(settingsGroup, 'NetworkPage');
+const SyncPage = lazyScreen(settingsGroup, 'SyncPage');
 const ItemMappingPage = lazyScreen(integrationsGroup, 'ItemMappingPage');
 const TallyPage = lazyScreen(integrationsGroup, 'TallyPage');
 const AvailabilityBoardPage = lazyScreen(menuGroup, 'AvailabilityBoardPage');
@@ -137,7 +146,7 @@ const SETTINGS_ROLES = [ROLES.OWNER];
  * P23. The guest's page, in its own chunk. Since P32 the back-office screens
  * are in chunks of their own too, so a guest no longer downloads them.
  */
-const PublicSite = lazy(() => import('./features/public/PublicSite.jsx'));
+const PublicSite = lazy(() => loadScreen(() => import('./features/public/PublicSite.jsx')));
 
 /**
  * Routes.
@@ -288,18 +297,6 @@ export default function App() {
         }
       />
 
-      {/* Counter Sale: a takeaway ordered, billed and paid in one go. */}
-      <Route
-        path="/orders/counter"
-        element={
-          <ProtectedRoute>
-            <RequireRole roles={BILLING_ROLES}>
-              <CounterSalePage />
-            </RequireRole>
-          </ProtectedRoute>
-        }
-      />
-
       {/* P06. Zomato and Swiggy orders typed in at the counter. */}
       <Route
         path="/orders/delivery"
@@ -381,12 +378,12 @@ export default function App() {
       />
       <Route path="/cash" element={<Navigate to="/cash-book" replace />} />
 
-      {/* P44. Day End: the day in three steps, and the day-end message. */}
+      {/* P44, P61. Day End: close the day on one screen; the cashier too. */}
       <Route
         path="/day-end"
         element={
           <ProtectedRoute>
-            <RequireRole roles={REPORT_ROLES}>
+            <RequireRole roles={[ROLES.OWNER, ROLES.MANAGER, ROLES.CASHIER]}>
               <DayEndPage />
             </RequireRole>
           </ProtectedRoute>
@@ -590,6 +587,30 @@ export default function App() {
         }
       />
 
+      {/* P64. The invoice layout, owner only; the server's settings rule enforces it. */}
+      <Route
+        path="/settings/invoice-layout"
+        element={
+          <ProtectedRoute>
+            <RequireRole roles={SETTINGS_ROLES}>
+              <InvoiceLayoutPage />
+            </RequireRole>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* P65. The CA's month, owner only; the server enforces it. */}
+      <Route
+        path="/settings/ca-reports"
+        element={
+          <ProtectedRoute>
+            <RequireRole roles={SETTINGS_ROLES}>
+              <CaReportsPage />
+            </RequireRole>
+          </ProtectedRoute>
+        }
+      />
+
       {/* P27. Customers: OWNER and MANAGER; the server enforces it. */}
       <Route
         path="/customers"
@@ -703,6 +724,47 @@ export default function App() {
           </ProtectedRoute>
         }
       />
+
+      {/* P62. The cafe server's WiFi, the devices on it and the cloud copy. */}
+      <Route
+        path="/network"
+        element={
+          <ProtectedRoute>
+            <RequireRole roles={['OWNER', 'MANAGER']}>
+              <NetworkPage />
+            </RequireRole>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* P63. Two-way sync: how far in step, and the conflicts to check. */}
+      <Route
+        path="/sync"
+        element={
+          <ProtectedRoute>
+            <RequireRole roles={['OWNER', 'MANAGER']}>
+              <SyncPage />
+            </RequireRole>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* 2026-10-22. The cafe PC's print window: captains' bills print here by themselves. */}
+      <Route
+        path="/print-station"
+        element={
+          <ProtectedRoute bare>
+            <RequireRole roles={['OWNER', 'MANAGER', 'CASHIER']}>
+              <Suspense fallback={<ScreenLoading />}>
+                <PrintStationPage />
+              </Suspense>
+            </RequireRole>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* P62. Connecting a device: no sign-in, no app frame, printable. */}
+      <Route path="/connect" element={<ConnectPage />} />
 
       {/* P23. The guest's page. No sign-in, no app frame. */}
       <Route

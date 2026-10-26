@@ -4,6 +4,14 @@ How the system runs for Caffeza, and how to keep it running.
 Decision: the Node server runs in the cloud, next to a separate Atlas cluster for Caffeza.
 Prompt P12 does the code side of this. Everything else here is done by hand, once, and then kept up.
 
+> **P62 (2026-10-21), in this repository (Cafezza-Offline):** the server can
+> also run on a box inside the cafe, the only writer, with Atlas as a
+> read-only mirror. Sections 1 to 16 describe the cloud deployment, which
+> stays the default (`DEPLOYMENT_ROLE=CLOUD`) and the tested fallback.
+> **Section 17 is the box, section 18 is the mirror.** The design is
+> `docs/REPLICATION.md`; operations are `docs/RUNBOOK.md`; the staff guide is
+> `docs/STAFF-SETUP.md`.
+
 ---
 
 ## 1. The shape
@@ -163,13 +171,13 @@ If it is not, the prompt must include its own rollback steps.
 5. The Caffeza setup and menu import from P11, each as a dry run first, read in full, then with `--apply`. See `setup/README.md`.
 
    ```
-   npm run setup:restaurant -- --config setup/threeoclock.json --owner-phone <owner phone>
-   npm run setup:restaurant -- --config setup/threeoclock.json --owner-phone <owner phone> --apply
-   npm run import:menu -- --file setup/threeoclock-menu.csv --addons setup/threeoclock-addons.csv --config setup/threeoclock.json --owner-phone <owner phone>
-   npm run import:menu -- --file setup/threeoclock-menu.csv --addons setup/threeoclock-addons.csv --config setup/threeoclock.json --owner-phone <owner phone> --apply
+   npm run setup:restaurant -- --config setup/zchaat.json --owner-phone <owner phone>
+   npm run setup:restaurant -- --config setup/zchaat.json --owner-phone <owner phone> --apply
+   npm run import:menu -- --file setup/zchaat-menu.csv --config setup/zchaat.json --owner-phone <owner phone>
+   npm run import:menu -- --file setup/zchaat-menu.csv --config setup/zchaat.json --owner-phone <owner phone> --apply
    ```
 
-   Each asks for the owner's password at the terminal. New staff passwords are printed once; hand them over privately. Fill in every `TO CONFIRM` value in `setup/threeoclock.json` before the production run.
+   Each asks for the owner's password at the terminal. New staff passwords are printed once; hand them over privately. Fill in every `TO CONFIRM` value in `setup/zchaat.json` before the production run.
 6. Settings: GSTIN, FSSAI number, receipt header lines, business day start.
 7. The owner checks every menu item and price on staging before the same import runs on production.
 8. On cutover day only: set the invoice prefix and starting number. See `docs/GO-LIVE.md`.
@@ -268,6 +276,17 @@ database: the server refuses to start while `backupruns`' indexes are missing.
 
 Then, in Settings, Server, Backups: within a few minutes, "Backed up just
 now. Full copy at ...".
+
+If the card says backups are failing, its last error is Backblaze's own:
+
+| Error | What it means | What to do |
+|---|---|---|
+| `Signature validation failed` | Backblaze knows the key ID, but the secret does not belong to it | Type `BACKUP_S3_SECRET` again, the key's applicationKey, shown only once when the key was made; if it is lost, make a new write-only key and type both |
+| `The key '...' is not valid` | No such key ID on that endpoint | Check `BACKUP_S3_KEY_ID` is the server key's keyID, and that `BACKUP_S3_ENDPOINT` is the bucket's own endpoint |
+| `Access Denied` | The key cannot write to this bucket | Check the key is for this bucket, with Write access |
+
+A failed full copy is tried again after 2 minutes, then 10, 30, and every
+hour, so after a fix, Save and deploy for a copy at once.
 
 ### 8.6 GitHub: the weekly practice restore
 
@@ -614,6 +633,7 @@ Found by P30 on 2026-10-10, by reading the cluster's own node tags.
 | Part | Region |
 |---|---|
 | Render service `zchaat-pos-api` | Singapore |
+| Atlas cluster `cluster0.onbbqdp` (live since 2026-10-17) | AWS Singapore (`ap-southeast-1`) |
 | Atlas `cluster0.dkcsfcz` | AWS `ap-south-1`, Mumbai |
 
 Every query crosses Singapore to Mumbai and back. `authenticate` makes two
@@ -661,7 +681,7 @@ and before anyone opens a screen:
 
 A second copy of the app where staff practise, at
 `https://zchaat-pos-test.onrender.com`, with its own database,
-`restaurant-erp-test` on the same Atlas cluster. Nothing there touches a real
+`restaurant-erp-test` on the same Atlas cluster as the live one (Singapore, `cluster0.onbbqdp`, since 2026-10-17). Nothing there touches a real
 bill or a real invoice number. One Render service serves both the screens and
 the API: the Dockerfile builds the client and the server serves it, so there is
 no second Vercel project.
@@ -688,3 +708,243 @@ the free plan: the first screen after a sleep waits about a minute.
 tickets, customers, audit lines and counters (scoped to the TEST restaurant),
 never the live one's.
 
+
+
+---
+
+## 17. The cafe box (P62)
+
+The server and MongoDB on a small computer in the cafe. Every till, tablet
+and kitchen screen reaches it over the cafe's WiFi in 1 to 3 ms. The internet
+going down stops nothing but online orders and the platforms.
+
+```
+ Tills · captain tablets · kitchen screens · printers ── cafe WiFi (5 GHz) ── router ── UPS
+                                                              │
+                                                    cafe box (cable, fixed IP) ── UPS
+                                                    Node + MongoDB rs0
+                                                              │ outbound only
+                                                    4G / broadband ── cloud mirror (section 18)
+```
+
+### 17.1 The hardware
+
+| Part | What | Why |
+|---|---|---|
+| Box | Mini PC, Intel N100 or better, 16 GB RAM | MongoDB and Node for one cafe use under 2 GB; the rest is headroom and disk cache |
+| Disk | 512 GB NVMe, **plus a second NVMe mirrored** (Linux software RAID 1, set at OS install) | a dead disk at 9:40pm loses nothing |
+| UPS | Line-interactive, about 1 kVA, powering **the box, the router, and the KOT and bill printers** | a box on battery behind a dead router is a box no tablet can reach. Sized for 15 minutes of service and a clean shutdown (install `apcupsd` or `nut` and let it shut the box down) |
+| Router | Dual band; tills and kitchen screens on 5 GHz | 2.4 GHz is crowded in a market street |
+| Internet | Broadband plus a 4G line for the shipper, intake and owner access, never in the till's path | the till never waits on either |
+
+The prices are not written here. P62 section 15 question 9: the budget is
+confirmed before anything is ordered.
+
+### 17.2 Installing
+
+On a fresh Ubuntu 24.04 LTS Server, with this repository cloned:
+
+```
+sudo LAN_IP=192.168.1.10 bash box/install-ubuntu.sh
+```
+
+It installs Node 22, MongoDB Community 8.0 as a **single-node replica set with
+authentication, bound to the box and the LAN only**, avahi (the name
+`cafe-server.local`), chrony (NTP), and the app as `cafe-pos.service` on
+port 80, started on every boot. It makes five database logins and prints where
+their passwords are (`/root/cafe-pos-credentials.txt`): copy them to the
+owner's password manager. It is safe to run again.
+
+Then build the restaurant as on the cloud: `npm run setup:restaurant`, or copy
+the live data across (section 17.5).
+
+### 17.3 The network
+
+- **The box on a cable** to the router, recommended. Then the router's WiFi can
+  change name or password without the box noticing.
+- **A fixed address:** a DHCP reservation for the box's MAC address on the
+  router (usually under LAN, DHCP, Address reservation). The setup card prints
+  it; it must never change.
+- **A name that needs no internet:** `cafe-server.local` by mDNS (avahi). Most
+  phones, iPads and computers resolve it; some older Android tablets do not,
+  which is why the card leads with the number. A router with local DNS can also
+  answer `cafe-server` itself.
+- **Nothing inbound.** The box makes outbound connections only; no port is
+  forwarded on the router, ever. MongoDB is never reachable from the internet.
+- The address on the setup card and in the "Cannot reach server" banner is
+  worked out from the network the box is on now, so it follows the box to
+  another WiFi with nothing to edit. `BOX_PUBLIC_URL` and `BOX_LOCAL_NAME_URL`
+  in `/opt/cafe-pos/.env` pin it instead, for a box with a reserved address.
+- To let the owner change the box's WiFi from the dashboard: copy
+  `box/polkit/50-cafe-wifi.rules` to `/etc/polkit-1/rules.d/` and set
+  `BOX_WIFI_CONTROL=on` (`docs/STAFF-SETUP.md` section 5).
+
+### 17.4 The clock
+
+NTP (chrony) whenever online; the hardware clock in UTC; the clock battery
+checked at install (`sudo hwclock --show` after a power-off of a minute must
+still be right). The server refuses writes while its clock is behind its newest
+record (`docs/RUNBOOK.md` section 4). Tested by `tests/writerGate.test.js`.
+
+### 17.5 Moving from the cloud to the box
+
+Only after Z Chaat is live and settled (P62 section 1b), at a quiet hour:
+
+1. Take a P54 copy, then stop billing on the cloud.
+2. `mongodump` the cloud database and `mongorestore` it into the box, as in
+   `docs/RUNBOOK.md` section 7 step 1.
+3. Start the box (`DEPLOYMENT_ROLE=BOX`). Its first start takes the changelog
+   baseline: every document, captured once.
+4. Point every device at the box's address. Sessions start again.
+5. Set up the mirror (section 18) and fill `MIRROR_URL` and `REPLICATION_SECRET`.
+   The baseline ships, and the copy matches within minutes.
+6. Keep the cloud deployment as it is, read-only by habit, for a fortnight: it
+   is the tested fallback, one address away.
+
+### 17.6 Acceptance on the real box
+
+From P62 section 11, the ones code cannot run:
+
+1. **Pull the plug** mid-service with an open order and a KOT in flight. On
+   power, the box comes back by itself; no corruption, no lost acknowledged
+   write, service resumes with nobody typing anything.
+2. **Cut the WAN for an hour** of simulated trading. The till is unaffected,
+   the top bar says "N waiting to upload", and the shipper catches up with no
+   duplicates and no gaps (`npm run replication -- status`).
+3. **Speed:** p95 under 80 ms tap to painted for add an item, fire a KOT,
+   create a bill, load the floor, load the ordering screen, on the cafe's own
+   tablets over its WiFi. Recorded in `docs/PERFORMANCE-BASELINE.md`.
+4. `bash box/check-box.sh` is all OK.
+
+### 17.7 Every update
+
+```
+cd ~/Cafezza-Offline && git pull
+sudo LAN_IP=192.168.1.10 bash box/install-ubuntu.sh   # rebuilds, keeps .env and the database
+```
+
+Outside service hours: the server restarts for about 10 seconds.
+
+---
+
+## 18. The cloud mirror (P62)
+
+The same codebase on any container host, with `DEPLOYMENT_ROLE=MIRROR`, on an
+Atlas cluster of its own. It holds a copy of the box's data for the owner's
+dashboard from outside the cafe and for off-site safety, and it is where the
+internet's requests (online orders, Razorpay, Swiggy, Zomato, Pine Labs) wait
+for the box. It is read-only, enforced, until a person promotes it.
+
+1. An Atlas cluster. M0 (512 MB, free) holds a small cafe for months but has
+   no backups of its own; **M10** has point-in-time restore and enough storage
+   for the copy. P62 section 15 question 8 is the owner's decision.
+2. Deploy as section 13 (the container), with:
+
+   | Variable | Value |
+   |---|---|
+   | `DEPLOYMENT_ROLE` | `MIRROR` |
+   | `MONGO_URI` | the mirror's Atlas cluster |
+   | `REPLICATION_SECRET` | `openssl rand -base64 48`; the **same** value goes in the box's `.env` |
+   | `PAYMENT_SECRETS_KEY`, `INTEGRATION_SECRETS_KEY` | the **same** values as the box, so it can verify webhooks with the sealed keys the copy holds |
+   | `BACKUP_ENABLED` | `off`: the box runs P54 |
+   | everything else | as section 4 |
+
+3. `npm run db:indexes` against the mirror's database.
+4. On the box, set `MIRROR_URL=https://<the mirror's address>` and the same
+   `REPLICATION_SECRET`, and restart it. Within a minute
+   `npm run replication -- status` on the box shows nothing waiting.
+5. Point the public page's address (`/r/<slug>`) and every partner webhook at
+   the mirror's address: they must reach something on the internet, and the box
+   is not.
+6. The owner's dashboard from outside the cafe is the mirror's address; it
+   shows "figures as of" with the time of the last change it has.
+
+The keep-awake pingers of section 14 are not needed for a mirror on a host that
+does not sleep. On Render's free plan they are: a sleeping mirror takes no
+online orders.
+
+## 19. Two-way sync on the cloud (P63)
+
+Rishi's plan, 2026-10-21: the cafe PC is the till; the live website
+(`zchaat-pos-api` on Render, `zchaat-pos` on Vercel, the same Atlas database) is
+the fallback when the PC has a problem. The PC keeps Atlas up to date; the
+website is used only when needed, and whatever either side did while apart is
+brought together when the PC is back (`docs/REPLICATION.md` section 13,
+`docs/WINDOWS-INSTALL.md` section 5c).
+
+| Where | Variable | Value |
+|---|---|---|
+| Render | `DEPLOYMENT_ROLE` | leave unset (`CLOUD`) |
+| Render | `SYNC_MODE` | `TWO_WAY` |
+| Render | `REPLICATION_SECRET` | the same value as the PC's |
+| PC | `DEPLOYMENT_ROLE` | `BOX` |
+| PC | `SYNC_MODE` | `TWO_WAY` |
+| PC | `MIRROR_URL` | the Render service's own address, like `https://zchaat-pos-api.onrender.com` |
+| PC | `REPLICATION_SECRET` | the same value as Render's |
+| PC | `SYNC_EVERY_SECONDS` | `60` (the default) |
+| PC | `SYNC_HOURS` | the cafe's hours with a margin, like `08:30-02:30` (the default) |
+
+### 19.1 Staying inside the free plans
+
+- **Render, 750 hours a month for every free service on the account.** Render
+  sleeps after 15 minutes without a request. The PC syncs every minute only
+  inside `SYNC_HOURS`; outside them it calls only when it has changes waiting,
+  at most every 15 minutes. With `08:30-02:30` that is about 18 hours a day,
+  about 560 hours a month, the same as the keep-awake pingers of section 14.
+  Narrow `SYNC_HOURS` to the real opening hours to use less (10:00-01:00 is
+  about 465). Keep the pingers' window no wider than `SYNC_HOURS`, or switch
+  them off: the PC now keeps the website awake while the cafe is open.
+- **Atlas M0, 512 MB.** Z Chaat's whole database was about 3 MB on 2026-10-21.
+  Two-way adds `syncdocs` (one copy of each document, about the same again) and
+  the website's changelog, which grows only when the website itself changes
+  something: what the PC pushes is not logged again, and a baseline taken again
+  after Render's night's sleep records only documents that changed. Look at the
+  size in Atlas once a month.
+- **Queries.** One round a minute is a dozen small queries: nothing against
+  M0's limits.
+
+### 19.2 Putting the code on the live service
+
+The live service deploys `Aryapatel-007/Caffeza` `main` on every push, and
+Vercel rebuilds the screens from the same push. This repository has merged that
+`main` (2026-10-21), so pushing it there is a fast-forward.
+
+1. Indexes first, or the production server refuses to start:
+   `MONGO_URI="<the live address>" npm run db:indexes` (it only adds).
+2. Push: `git push upstream main`. With `SYNC_MODE` unset the website behaves as
+   before; the cafe-server connection bar shows only on the PC.
+3. Check: `/api/v1/health` answers with the database connected, and the
+   website signs in and draws the floor. Never make a bill to test it.
+
+### 19.3 Switching on, at a quiet hour
+
+1. Stop billing on the website on every device.
+2. On the Mac: `bash box/export-cloud.sh` (it only reads Atlas). On the PC:
+   **Load cafe data** with that file, typing LOAD.
+3. A secret: `openssl rand -base64 48`.
+4. Render, Environment: add `SYNC_MODE=TWO_WAY` and `REPLICATION_SECRET`, Save,
+   deploy, wait for Live. It takes a changelog baseline of every document once.
+5. The PC's `C:\CafePOS\.env`: the PC rows of the table above. Restart it.
+6. The owner on the PC: **Sync** says "In step" within two minutes. From now on
+   bill on the PC.
+
+### 19.4 When the PC has a problem
+
+- If the PC still runs, wait until **Sync** on it says it synced in the last
+  minute, then move the devices to the website.
+- If the PC is down, move the devices to the website at once. At most the last
+  minute of the PC's changes is not on Atlas yet; they come over when it is back.
+- Website bills continue the PC's series (one series); Day Close waits for the PC. A
+  number both used while apart stays the PC's: the website's bill gets the next
+  number, is listed under **Sync**, and is reprinted for the guest.
+- When the PC is back, start it: within a minute it takes the website's orders
+  and bills and sends what it had kept. Each side's newer version wins; nothing
+  is deleted; a table, bill or name taken on both is listed under **Sync** for
+  the owner. Then move the devices back to the PC.
+
+### 19.5 Rollback
+
+- The new code misbehaves: Render, Events, roll back to the previous deploy.
+- Two-way misbehaves: `SYNC_MODE=ONE_WAY` (or remove it) on Render and on the
+  PC, Save and deploy. Bill on the website only until section 17.5 decides
+  again; the PC must stop billing, or both use the main series.

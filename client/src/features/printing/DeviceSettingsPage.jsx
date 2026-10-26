@@ -1,9 +1,12 @@
+import { Link, useLocation } from 'react-router-dom';
+
 import { useAuth } from '../../context/AuthContext.jsx';
 import { BILL_TEXT_SIZES, EDGE_MARGINS, PAPER_LENGTHS, PRINT_WIDTHS, PRINTER_KEYS, PRINTERS } from './printers.js';
-import { DENSITIES, TEXT_SIZES, THEMES, useDeviceSettings } from './useDeviceSettings.js';
+import { BILL_PRINT_PLACES, billsPrintAtCounter, DENSITIES, TEXT_SIZES, THEMES, useDeviceSettings } from './useDeviceSettings.js';
 
 const THEME_LABELS = { AUTO: 'Automatic', DAY: 'Day', NIGHT: 'Night' };
 const DENSITY_LABELS = { COMFORTABLE: 'Comfortable', COMPACT: 'Compact' };
+const BILL_PRINT_LABELS = { AUTO: 'Automatic', HERE: 'On this device', COUNTER: 'At the counter' };
 const LANGUAGE_LABELS = { NONE: 'None', GUJARATI: 'Gujarati', HINDI: 'Hindi' };
 
 /**
@@ -16,6 +19,7 @@ const LANGUAGE_LABELS = { NONE: 'None', GUJARATI: 'Gujarati', HINDI: 'Hindi' };
  */
 export default function DeviceSettingsPage() {
   const { user, features } = useAuth();
+  const location = useLocation();
   const [settings, update] = useDeviceSettings();
   const isKitchen = user?.role === 'KITCHEN' || user?.role === 'OWNER' || user?.role === 'MANAGER';
   const isTill = ['OWNER', 'MANAGER', 'CASHIER'].includes(user?.role);
@@ -27,6 +31,11 @@ export default function DeviceSettingsPage() {
         <header>
           <h1 className="type-title">This device</h1>
           <p className="type-caption text-muted">Saved on this computer or tablet only, whoever signs in.</p>
+          {location.state?.from === '/print-station' && (
+            <Link to="/print-station" className="type-body text-accent underline">
+              Back to the printer window
+            </Link>
+          )}
         </header>
 
         <Choice
@@ -161,6 +170,19 @@ export default function DeviceSettingsPage() {
           </span>
         </label>
 
+        {/* 2026-10-25. A phone has no bill printer; its bills can print at the counter, as a captain's. */}
+        {isTill && (
+          <Choice
+            legend="Bills print"
+            hint={`Automatic: at the counter on the cafe PC, except on the computer that prints captains' bills; on this device everywhere else. Now: ${
+              billsPrintAtCounter(settings, features) ? 'at the counter' : 'on this device'
+            }.`}
+            options={BILL_PRINT_PLACES.map((value) => ({ value, label: BILL_PRINT_LABELS[value] }))}
+            value={settings.billPrintsAt}
+            onChange={(billPrintsAt) => update({ billPrintsAt })}
+          />
+        )}
+
         {/* P25 Part D. The counter prints what captains send it. */}
         {isTill && (
           <label className="flex min-h-12 items-start gap-3">
@@ -177,21 +199,6 @@ export default function DeviceSettingsPage() {
           </label>
         )}
 
-        {/* P29 Part D. Print first, then ask how it is paid. */}
-        {isTill && (
-          <label className="flex min-h-12 items-start gap-3">
-            <input
-              type="checkbox"
-              checked={settings.printBillOnCreate}
-              onChange={(event) => update({ printBillOnCreate: event.target.checked })}
-              className="mt-1 size-5 accent-[var(--color-accent)]"
-            />
-            <span>
-              <span className="type-body block">Print the bill as soon as it is made</span>
-              <span className="type-caption block text-muted">For the counter computer. A bill made here prints straight away, on this device's printer.</span>
-            </span>
-          </label>
-        )}
 
         {isKitchen && (
           <label className="flex min-h-12 items-start gap-3">

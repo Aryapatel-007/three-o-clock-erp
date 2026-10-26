@@ -1,0 +1,11 @@
+[Unit]
+Description=Hourly cafe POS local snapshot
+
+[Timer]
+OnCalendar=hourly
+# A box that was off at the hour takes the missed snapshot when it comes back.
+Persistent=true
+RandomizedDelaySec=120
+
+[Install]
+WantedBy=timers.target

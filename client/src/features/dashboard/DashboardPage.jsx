@@ -47,7 +47,7 @@ function Stat({ label, value, hint }) {
 }
 
 export default function DashboardPage() {
-  const { user, features } = useAuth();
+  const { user } = useAuth();
   // P22. The restaurant's wordmark, or the product's name; never a client's name written in.
   const { name: brandName } = useTheme();
   const role = user?.role;
@@ -77,7 +77,6 @@ export default function DashboardPage() {
 
   const actions = [
     { to: '/floor', title: 'New dine-in order', note: 'Pick a table', show: canTakeOrders, primary: true },
-    { to: '/orders/counter', title: 'Counter sale', note: 'Order and pay in one go', show: canBill && features?.billing?.payFirstTakeaway !== false },
     { to: '/orders/takeaway', title: 'Takeaway', note: 'Counter order', show: canTakeOrders },
     { to: '/orders/delivery', title: 'Delivery order', note: 'Zomato or Swiggy', show: canTakeOrders },
     { to: '/day-close', title: 'Day Close', note: 'Count the cash and lock the day', show: isManager },

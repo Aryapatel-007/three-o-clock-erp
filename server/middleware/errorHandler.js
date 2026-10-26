@@ -96,6 +96,9 @@ function toAppShape(error) {
   return null;
 }
 
+/** P62. The three 503s whose words a person needs to read. */
+const P62_REFUSALS = Object.freeze([ERROR_CODES.MIRROR_READ_ONLY, ERROR_CODES.CLOCK_BEHIND, ERROR_CODES.WRITER_FENCED]);
+
 export function errorHandler(error, req, res, _next) {
   const mapped = toAppShape(error);
   const statusCode = mapped?.statusCode ?? 500;
@@ -121,8 +124,11 @@ export function errorHandler(error, req, res, _next) {
   // P24. A 502 we raised on purpose names the payment gateway's failure in a
   // sentence a guest can act on ("try again in a moment"), so it is shown.
   const isGatewayFailure = statusCode === 502 && error?.isOperational === true;
+  // P62. A 503 we raised on purpose (the read-only mirror, the box's clock, a
+  // box that stood down) says what to do in plain words, so it is shown too.
+  const isPlannedRefusal = statusCode === 503 && error?.isOperational === true && P62_REFUSALS.includes(mapped?.code);
 
-  if (statusCode >= 500 && !isGatewayFailure) {
+  if (statusCode >= 500 && !isGatewayFailure && !isPlannedRefusal) {
     /**
      * Every 500 looks the same from outside, including the ones we raised
      * deliberately. A 500 means we got something wrong, and the details of how

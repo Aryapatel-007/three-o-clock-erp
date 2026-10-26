@@ -55,6 +55,8 @@ export async function nextNumber({ restaurantId, branchId, name }) {
    * M3 added `scope` to carry a bill sequence's financial year. ORDER and KOT
    * do not reset, so their scope is null, but it still has to be named here.
    */
+  // 2026-10-22, Arya: the website numbers orders and tickets in the same run as the cafe PC.
+
   const counter = await Counter.findOneAndUpdate(
     { restaurantId, branchId, name, scope: null },
     { $inc: { value: 1 } },
@@ -63,5 +65,14 @@ export async function nextNumber({ restaurantId, branchId, name }) {
 
   return counter.value;
 }
+
+/**
+ * P63. While the cafe PC and the website both write, the website draws from
+ * its own run, 900001 on, so an order or ticket number made on each side can
+ * never be the same one. Created at 900000 by $setOnInsert, then the same
+ * atomic $inc, both filters naming every field of the unique index (see above).
+ */
+export const WEBSITE_NUMBER_SCOPE = 'W';
+export const WEBSITE_NUMBER_START = 900_000;
 
 export default { nextNumber };

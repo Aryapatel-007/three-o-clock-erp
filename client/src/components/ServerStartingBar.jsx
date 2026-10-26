@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 
 import { SERVER_NOT_CONFIRMED_MESSAGE } from '../api/client.js';
 import { clearUnconfirmed, getServerState, subscribeServerState } from '../api/serverWaking.js';
+import { snapshot as linkSnapshot, subscribe as subscribeLink } from '../features/network/linkMonitor.js';
 
 /** About how long a cold start takes, for the progress line. */
 const EXPECTED_WAKE_MS = 70_000;
@@ -28,7 +29,11 @@ export default function ServerStartingBar() {
     return () => clearInterval(timer);
   }, [waiting]);
 
+  // P62. When this device cannot reach the server at all, the red banner under the top bar
+  // says which WiFi and address to use; "starting the server" would point the wrong way.
+  const link = useSyncExternalStore(subscribeLink, linkSnapshot);
   if (!waiting && !unconfirmed) return null;
+  if (!unconfirmed && link.status === 'UNREACHABLE') return null;
 
   const progress = since ? Math.min(95, Math.max(5, ((now - since) / EXPECTED_WAKE_MS) * 100)) : 5;
 

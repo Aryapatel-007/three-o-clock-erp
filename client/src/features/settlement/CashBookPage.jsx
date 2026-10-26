@@ -13,7 +13,7 @@ import { formatBusinessDate, formatTimeIst } from '../../utils/formatDate.js';
 import { errorMessage } from '../billing/errorCopy.js';
 import { ROLES } from '../users/roles.js';
 import CashFlow from './cashbook/CashFlow.jsx';
-import { CheckSheet, ExpenseSheet, FloatSheet, TakeOutSheet, TopUpSheet } from './cashbook/CashSheets.jsx';
+import { CheckSheet, ExpenseSheet, FloatSheet, TakeOutSheet, TopUpSheet, VoidEntrySheet } from './cashbook/CashSheets.jsx';
 import CloseDaySheet from './cashbook/CloseDaySheet.jsx';
 import InlineVoid from './InlineVoid.jsx';
 
@@ -58,6 +58,7 @@ export default function CashBookPage() {
   const categories = features?.cash?.expenseCategories ?? [];
   const [sheet, setSheet] = useState(() => (params.get('close') === '1' ? 'close' : null));
   const [toast, setToast] = useState(null);
+  const [voidingEntry, setVoidingEntry] = useState(null);
 
   const query = useQuery({ queryKey: ['cash-book', date ?? 'today'], queryFn: () => getCashBook(date) });
   const book = query.data;
@@ -193,6 +194,11 @@ export default function CashBookPage() {
                     {isManager && !entry.isVoided && !book.isClosed && (
                       <InlineVoid isBusy={voiding.isPending} onConfirm={(reason) => voiding.mutate({ id: entry.id, reason })} />
                     )}
+                    {!isManager && approvals.managerTasks && !entry.isVoided && !book.isClosed && (
+                      <button type="button" onClick={() => setVoidingEntry(entry)} className="min-h-12 type-caption text-alert underline">
+                        Void
+                      </button>
+                    )}
                   </span>
                 </li>
               ))}
@@ -257,6 +263,17 @@ export default function CashBookPage() {
                   : `Check saved. ${check.differenceInPaise < 0 ? 'Short' : 'Over'} by ${moneyText(Math.abs(check.differenceInPaise))}.`,
             )
           }
+        />
+      )}
+      {voidingEntry && (
+        <VoidEntrySheet
+          entry={voidingEntry}
+          label={WORDS[voidingEntry.type]}
+          onCancel={() => setVoidingEntry(null)}
+          onDone={() => {
+            setVoidingEntry(null);
+            done('Entry voided.');
+          }}
         />
       )}
       {sheet === 'float' && <FloatSheet denominations={denominations} onCancel={() => setSheet(null)} onDone={() => done('Opening float recorded.')} />}

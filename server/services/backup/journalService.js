@@ -28,6 +28,7 @@ import { BACKUP_FOLDERS, BACKUP_KINDS, BACKUP_STATUSES, BackupRun } from '../../
 import { BACKUP_STATE_IDS, BackupState } from '../../models/BackupState.js';
 import { nowUtc, toIst } from '../../utils/time.js';
 import {
+  DIARY_ONLY_EXCLUDED,
   EXCLUDED_COLLECTIONS,
   FLUSH_AT_BYTES,
   FLUSH_AT_EVENTS,
@@ -98,7 +99,7 @@ export class ChangeDiary {
   }
 
   #open(options) {
-    this.stream = this.ctx.db.watch([{ $match: { 'ns.coll': { $nin: EXCLUDED_COLLECTIONS } } }], { fullDocument: 'updateLookup', maxAwaitTimeMS: 1000, ...options });
+    this.stream = this.ctx.db.watch([{ $match: { 'ns.coll': { $nin: [...EXCLUDED_COLLECTIONS, ...DIARY_ONLY_EXCLUDED] } } }], { fullDocument: 'updateLookup', maxAwaitTimeMS: 1000, ...options });
     this.stopped = false;
   }
 

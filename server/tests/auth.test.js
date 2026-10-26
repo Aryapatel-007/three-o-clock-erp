@@ -462,7 +462,7 @@ describe('GET /auth/me', () => {
     // `features` added by P02, so every role knows which modules are switched off.
     // `floor` added by P19, so every role's floor screen knows its settings.
     // P47 added payments.
-    assert.deepEqual(Object.keys(body.data).sort(), ['appearance', 'approvals', 'billing', 'branch', 'cash', 'discounts', 'features', 'floor', 'kitchen', 'live', 'online', 'payments', 'restaurant', 'terminals', 'user']);
+    assert.deepEqual(Object.keys(body.data).sort(), ['appearance', 'approvals', 'billing', 'branch', 'cash', 'discounts', 'features', 'floor', 'kitchen', 'live', 'online', 'payments', 'restaurant', 'sync', 'terminals', 'user']);
     assert.deepEqual(body.data.features, { inventory: true, attendance: true, online: false });
     // P08. The cashier platform-discount switch, default off.
     assert.deepEqual(body.data.discounts, { cashierMayApplyPlatformDiscounts: false });

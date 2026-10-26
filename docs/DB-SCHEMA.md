@@ -2677,7 +2677,6 @@ printRequestedAt: { $type: 'date' } }`, for the print queue.
 | `receipt.reviewLinkUrl` | String or null | null |
 | `billing.captainsMayBill` | Boolean | true |
 | `billing.captainsMayTakePayment` | Boolean | false |
-| `billing.payFirstTakeaway` | Boolean | true |
 | `cash.denominations` | `[{ valueInPaise, kind, isActive }]` | India, API-CONTRACT M16 section 8.1 |
 | `payments.requireTerminalForLinkedMethods` | Boolean | true |
 | `reports.onHoldTallyCode` | String or null | null |
@@ -2715,6 +2714,7 @@ Every new field has a default, so nothing is migrated.
 | `orders` | `cancelApprovedBy` | ObjectId or null | null | The same, for a whole-order cancel |
 | `bills` | `voidApprovedBy` | ObjectId or null | null | The same, for a void |
 | `cashmovements` | `approvedBy` | ObjectId or null | null | The same, for a paid in or paid out |
+| `cashmovements` | `voidApprovedBy` | ObjectId or null | null | Added 2026-10-17. The OWNER or MANAGER who approved a cashier's void of a cash entry |
 | `restaurants` | `settings.approvals.lineCancel` | Boolean | true | |
 | `restaurants` | `settings.approvals.paidIn` | Boolean | true | |
 | `restaurants` | `settings.approvals.managerTasks` | Boolean | true | |
@@ -3097,3 +3097,115 @@ field has a default, and no existing value changes.
 `orders.customerName` and `orders.customerPhone` (section 41) can now also be
 set after the order opens, by `PATCH /orders/:orderId/customer`, until it has a
 bill.
+
+## 58. One kitchen ticket per Send (P58)
+
+`docs/prompts/P58-one-ticket-per-send.md`. Additive: a default, no existing
+value changes, and no migration.
+
+| Collection | Field | Type | Default | Notes |
+|---|---|---|---|---|
+| `restaurants` | `settings.kitchen.splitTicketsByStation` | Boolean | true | Off: a Send's dishes go on one ticket with no station of its own, instead of one ticket per station. Each ticket line still keeps its station |
+
+## 59. Bill without KOT (P60)
+
+`docs/prompts/P60-bill-without-kot.md`. Additive: a default, no existing value
+changes, and no migration.
+
+| Collection | Field | Type | Default | Notes |
+|---|---|---|---|---|
+| `orders` | `lines[].billedWithoutKot` | Boolean | false | True on a dish the counter billed without sending to the kitchen: it went from not sent straight to served, with `servedAt` set and `firedAt` and `kotId` left null |
+| `bills` | `lines[].billedWithoutKot` | Boolean | false | Copied from the order line when the bill is made |
+
+## 60. Invoice themes, HSN codes and print fields (P64)
+
+`docs/prompts/P64-invoice-themes-and-print-fields.md`. Additive: every field
+has a default, no existing value changes, no migration. Adds to sections 1
+(`settings`, `brandLogos`), 6 (`menuitems`) and 12 (`bills.lines`).
+
+| Collection | Field | Type | Default | Notes |
+|---|---|---|---|---|
+| `menuitems` | `hsnCode` | String or null | null | 4 to 8 digits. The item's own HSN or SAC code |
+| `orders` | `lines[].hsnCode` | String or null | null | Frozen when the line is added: the item's code, else `settings.invoice.defaultSacCode`. Null on lines from before P64 |
+| `bills` | `lines[].hsnCode` | String or null | null | Copied from the order line. Never back-filled |
+| `restaurants` | `panNumber` | String or null | null | `AAAAA9999A` |
+| `restaurants` | `msmeNumber` | String or null | null | An Udyam number, `UDYAM-GJ-01-0012345` |
+| `restaurants` | `brandLogos.signature` | Logo slot | empty | The P22 slot shape; `data` is `select: false` |
+| `restaurants` | `settings.invoice.defaultSacCode` | String | `"996331"` | 4 to 8 digits |
+| `restaurants` | `settings.receipt.termsText` | String or null | null | Up to 600 characters |
+| `restaurants` | `settings.invoiceLayout.theme` | String | `CLASSIC` | `CLASSIC`, `GST_DETAILED`, `MODERN`, `COMPACT` |
+| `restaurants` | `settings.invoiceLayout.useBrandAccent` | Boolean | false | |
+| `restaurants` | `settings.invoiceLayout.show.*` | Boolean | see API-CONTRACT P64 2 | Twenty switches for the full page |
+| `restaurants` | `settings.invoiceLayout.thermalShow.*` | Boolean | see API-CONTRACT P64 2 | Twelve switches for the roll |
+
+The defaults print what CLASSIC and the thermal bill printed before P64.
+
+## 61. The CA's month (P65)
+
+`docs/prompts/P65-ca-reports-sharing.md`. Additive: one new collection and one
+settings group with defaults; no migration.
+
+| Collection | Field | Type | Default | Notes |
+|---|---|---|---|---|
+| `restaurants` | `settings.reports.ca.enabled` | Boolean | false | |
+| `restaurants` | `settings.reports.ca.name` | String or null | null | Up to 80 characters |
+| `restaurants` | `settings.reports.ca.email` | String or null | null | Lowercased |
+| `restaurants` | `settings.reports.ca.whatsapp` | String or null | null | 10 digits; stored, not used yet |
+
+`careportsends` (CaReportSend), base schema, MIRROR in `config/replication.js`:
+`period` (`"2026-10"`), `status` (`SENDING`, `SENT`, `FAILED`, `REFUSED`),
+`trigger` (`AUTO`, `MANUAL`), `refusedReason`, `openDates` [String],
+`failedChecks` [String], `claimedAt`, `sentAt`, `to` [String], `files` [String],
+`checks { passed, failed }`, `attempts`, `lastError`, `sentBy` (User or null).
+Index `{ restaurantId, period }` unique: one row per month, which is what keeps
+a restart, a second machine or a retry from sending twice.
+
+`auditlogs.action` gains `CA_PACK_SENT` (entity `REPORT`, OWNER only to read).
+
+---
+
+# P62. Replication, intake and the box
+
+Built 2026-10-21. Additive: new collections only, one new audit action
+(`BOX_WIFI_CHANGED`), no field renamed or removed. Classification of every
+collection: `server/config/replication.js` and `docs/REPLICATION.md` section 2.
+
+| Collection | Model | Where | Fields | Indexes |
+|---|---|---|---|---|
+| `changelog` | ChangelogEntry | box | `restaurantId`, `seq` (int ≥ 1), `epoch`, `coll`, `documentId`, `op` (insert, update, replace, delete, baseline), `doc` (Mixed or null), `capturedAt`, `eventId` (string or null). No `branchId`, no timestamps. Append only | `{ restaurantId, seq }` unique; `{ eventId }` unique where a string; `{ restaurantId, capturedAt: -1 }`; `{ coll, documentId, seq: -1 }` |
+| `changelogcounters` | ChangelogCounter | box | `restaurantId`, `value` | `{ restaurantId }` unique |
+| `replicationstate` | ReplicationState | each | `_id` string: `writer` (`epoch`, `fenced`, `fencedAt`, `fencedReason`, `promoted`, `promotedAt`), `changestream` (`resumeToken`, `baselineDoneAt`), `shipper:<rid>` (`shippedSeq`, `shippedAt`, `lastError`, `lastErrorAt`), `boxseen:<rid>` (`seenAt`), `reconcile:<rid>` (`status`, `checkedAt`, `mismatches`), `clock` (`refusing`, `newestKnownAt`, `observedAt`). No `restaurantId`: in `SERVER_MODELS` | |
+| `replicacursors` | ReplicaCursor | mirror | `restaurantId`, `appliedSeq`, `appliedAt`, `lastCapturedAt`, `epoch`, `gap { expectedSeq, gotSeq, at }` | `{ restaurantId }` unique |
+| `replicationquarantine` | ReplicationQuarantine | mirror | `restaurantId`, `sentEpoch`, `currentEpoch`, `firstSeq`, `lastSeq`, `entries` (EJSON text), `receivedAt`. Append only | `{ restaurantId, firstSeq }` |
+| `intake` | IntakeItem | mirror | base schema, `source`, `externalId`, `params`, `body`, `rawBody`, `headers`, `receivedAt`, `status` (RECEIVED, CLAIMED, APPLIED, REJECTED), `claimedAt`, `claimExpiresAt`, `attempts`, `decidedAt`, `reasonCode`, `reasonMessage`, `result`, `pendingStatusToken` (select: false), `guestSecretHash` | `{ restaurantId, source, externalId }` unique; `{ restaurantId, status, receivedAt }` |
+| `intakeapplications` | IntakeApplication | box, ships | base schema, `intakeId`, `source`, `status` (STARTED, APPLIED, REJECTED), `attempts`, `reasonCode`, `result`, `reportedAt` | `{ restaurantId, intakeId }` unique |
+
+`auditlogs.action` gains `BOX_WIFI_CHANGED` (entity `SETTINGS`, OWNER only to read).
+
+P54's `EXCLUDED_COLLECTIONS` gains `replicationstate`; its change diary also
+leaves out `changelog` and `changelogcounters`.
+
+Rollback: set `DEPLOYMENT_ROLE=CLOUD` (the default). Nothing reads the new
+collections then; they can stay.
+
+# P63. Two-way sync
+
+Spec 2026-10-21, `docs/prompts/P63-two-way-sync.md`. Additive: two new
+collections, no field renamed or removed, no index changed.
+
+| Collection | Model | Where | Fields | Indexes |
+|---|---|---|---|---|
+| `syncdocs` | SyncDoc | each side, LOCAL_ONLY | `_id` string `<coll>:<documentId as EJSON>`, `restaurantId`, `coll`, `documentId` (Mixed), `baseHash` (sha256 of the canonical EJSON of the agreed version, or `DELETED`), `baseDoc` (Mixed or null), `appliedHashes` (last 8 hashes written from the other side), `knownHashes` (last 16 versions this side held), `createdAt`, `updatedAt` | `{ restaurantId, coll }` |
+| `syncconflicts` | SyncConflict | both, MIRROR | base schema, `coll`, `documentId` (Mixed), `kind` (EDITED_BOTH, SAME_SLOT, DELETED_HERE), `title`, `detail`, `fields` [string], `keptFrom` (BOX, CLOUD), `detectedOn` (BOX, CLOUD), `detectedAt`, `localDoc`, `incomingDoc`, `resultDoc` (Mixed), `seenAt`, `seenBy` | `{ restaurantId, seenAt, detectedAt: -1 }` |
+
+`replicationstate` gains `_id` `peerpull:<rid>` (`pulledSeq`, `pulledAt`,
+`lastError`, `lastErrorAt`) on the box and `peerseen:<rid>` (`seenPeerSeq`) on
+the cloud.
+
+`counters`: on the cloud while `TWO_WAY`, `scope` `W` for ORDER, KOT,
+ONLINE_ORDER and RESERVATION (first value 900001), and `<fy>/W` or the prefix
+scope plus `W` for BILL. `bills.invoiceSeries` takes `2026-27/W` or the prefix
+plus `W` for website bills; `billSequence` is 900,000,000 plus the number.
+
+Rollback: `SYNC_MODE=ONE_WAY` on both. Nothing reads `syncdocs` then; website
+bills already made keep their W numbers, which stay valid in their series.

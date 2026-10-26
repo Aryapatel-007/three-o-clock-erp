@@ -81,6 +81,33 @@ describe('findMissingIndexes', () => {
     assert.deepEqual(afterBuild.missing, []);
   });
 
+  it('reads indexes listed as MongoDB 9 lists them, with the simple collation, as present', async () => {
+    const listIndexes = User.listIndexes;
+    User.listIndexes = async function asMongo9() {
+      return (await listIndexes.call(this)).map((index) => ({ ...index, collation: { locale: 'simple' } }));
+    };
+    try {
+      const { missing, extra } = await findMissingIndexes([User]);
+      assert.deepEqual(missing, []);
+      assert.deepEqual(extra, []);
+    } finally {
+      User.listIndexes = listIndexes;
+    }
+  });
+
+  it('still counts an index with a real collation as different', async () => {
+    const listIndexes = User.listIndexes;
+    User.listIndexes = async function withFrench() {
+      return (await listIndexes.call(this)).map((index) => ({ ...index, collation: { locale: 'fr' } }));
+    };
+    try {
+      const { missing } = await findMissingIndexes([User]);
+      assert.equal(missing.length, User.schema.indexes().length);
+    } finally {
+      User.listIndexes = listIndexes;
+    }
+  });
+
   it('treats a collection that does not exist as missing every index, without throwing', async () => {
     await Kot.collection.drop();
 

@@ -43,6 +43,36 @@ export function isDatabaseConnected() {
   return mongoose.connection.readyState === mongoose.ConnectionStates.connected;
 }
 
+export const NOT_A_REPLICA_SET_MESSAGE =
+  'The database is not a replica set. Bills are numbered inside a transaction, and a standalone mongod cannot run one, ' +
+  'so every bill would fail at the till. Add replication.replSetName to mongod.conf, restart it, run rs.initiate() once, ' +
+  'and put ?replicaSet=<name> on MONGO_URI. docs/RUNBOOK.md section 2 has the steps.';
+
+/**
+ * P62. The name of the replica set behind `db`, or null for a standalone.
+ *
+ * `hello` is the server's own answer, so a URI that forgets `replicaSet=` but
+ * reaches a member still counts, and a standalone can never pass by a typo.
+ */
+export async function replicaSetName(db) {
+  const hello = await db.admin().command({ hello: 1 });
+  return hello.setName ?? null;
+}
+
+/**
+ * P62 section 2.1. Refuses a standalone at boot, with the fix, instead of a
+ * 500 on the first bill of the day. Atlas is always a replica set.
+ */
+export async function assertReplicaSet(db) {
+  const name = await replicaSetName(db);
+  if (!name) {
+    const error = new Error(NOT_A_REPLICA_SET_MESSAGE);
+    error.code = 'NOT_A_REPLICA_SET';
+    throw error;
+  }
+  return name;
+}
+
 /**
  * Connects, retrying with backoff. After the last attempt the process exits.
  * There is nothing useful this server can do without a database.
@@ -55,6 +85,14 @@ export async function connectDatabase() {
       await mongoose.connect(config.MONGO_URI, {
         serverSelectionTimeoutMS: SERVER_SELECTION_TIMEOUT_MS,
       });
+      try {
+        const setName = await assertReplicaSet(mongoose.connection.db);
+        logger.info({ replicaSet: setName }, 'Database is a replica set.');
+      } catch (error) {
+        if (error.code !== 'NOT_A_REPLICA_SET') throw error;
+        logger.fatal(error.message);
+        process.exit(1);
+      }
       return mongoose.connection;
     } catch (error) {
       const isLastAttempt = attempt === MAX_CONNECT_ATTEMPTS;

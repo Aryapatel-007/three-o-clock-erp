@@ -105,6 +105,12 @@ export const DEFAULT_BUSINESS_DAY_START_MINUTES = 300;
 const IST_OFFSET_MINUTES = 330;
 const MINUTE_MS = 60_000;
 
+/** Minutes past midnight IST, 0 to 1439, for a rule about the hours of the day. P63. */
+export function istMinuteOfDay(instant) {
+  const value = instant instanceof Date ? instant : new Date(instant);
+  return Math.floor((value.getTime() / MINUTE_MS + IST_OFFSET_MINUTES) % 1440);
+}
+
 /**
  * "9:05 PM" in the display time zone. For printed tickets and other places a
  * person reads a time of day. P05.

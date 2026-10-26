@@ -109,6 +109,8 @@ export const ERROR_CODES = Object.freeze({
   /** Added by P10. Day Close blocked, and a write into a closed day. */
   DAY_NOT_READY: 'DAY_NOT_READY',
   DAY_CLOSED: 'DAY_CLOSED',
+  // P63. Day Close on the cloud while the cafe PC and the website both write.
+  CLOSE_ON_CAFE_PC: 'CLOSE_ON_CAFE_PC',
 
   /** Added by P13, built in P15. The Tally export refuses while an ERROR check fails. */
   CHECK_FAILED: 'CHECK_FAILED',
@@ -147,6 +149,15 @@ export const ERROR_CODES = Object.freeze({
   TEMPLATE_NOT_APPROVED: 'TEMPLATE_NOT_APPROVED',
   MESSAGING_NOT_CONNECTED: 'MESSAGING_NOT_CONNECTED',
   GUEST_OPTED_OUT: 'GUEST_OPTED_OUT',
+  // P62. The cafe box and its cloud mirror.
+  MIRROR_READ_ONLY: 'MIRROR_READ_ONLY',
+  CLOCK_BEHIND: 'CLOCK_BEHIND',
+  WRITER_FENCED: 'WRITER_FENCED',
+  REPLICATION_SIGNATURE: 'REPLICATION_SIGNATURE',
+  REPLICATION_GAP: 'REPLICATION_GAP',
+  STALE_EPOCH: 'STALE_EPOCH',
+  WIFI_CONTROL_OFF: 'WIFI_CONTROL_OFF',
+  WIFI_CHANGE_FAILED: 'WIFI_CHANGE_FAILED',
 });
 
 /**
@@ -597,6 +608,16 @@ export class DayNotReadyError extends AppError {
 }
 
 /** P10. A write would change a business date that has been closed. */
+/** P63. Only the cafe PC closes the day while two-way sync is on. */
+export class CloseOnCafePcError extends AppError {
+  constructor() {
+    super('Close the day on the cafe PC. The website and the PC share the day, and only the PC closes it.', {
+      statusCode: 422,
+      code: ERROR_CODES.CLOSE_ON_CAFE_PC,
+    });
+  }
+}
+
 export class DayClosedError extends AppError {
   constructor(businessDate) {
     super(`${businessDate} is closed. An owner can reopen it.`, {
@@ -791,8 +812,9 @@ export class TallyAlreadyExportedError extends AppError {
 
 /** P25 Part J. Only closed days are exported. */
 export class DayNotClosedError extends AppError {
-  constructor(businessDates) {
-    super(`Close the day first: ${businessDates.join(', ')}. Only closed days go to Tally.`, {
+  /** P65. `purpose` says what needs the days closed; Tally's sentence by default. */
+  constructor(businessDates, purpose = 'Only closed days go to Tally.') {
+    super(`Close the day first: ${businessDates.join(', ')}. ${purpose}`, {
       statusCode: 422,
       code: ERROR_CODES.DAY_NOT_CLOSED,
       details: { businessDates },
@@ -859,5 +881,79 @@ export class MessagingNotConnectedError extends AppError {
 export class GuestOptedOutError extends AppError {
   constructor(message = 'This guest has not agreed to offers, so no marketing message goes to them.') {
     super(message, { statusCode: 422, code: ERROR_CODES.GUEST_OPTED_OUT });
+  }
+}
+
+/**
+ * P62. The cloud mirror refuses a write: it is a read-only copy until a person
+ * promotes it (docs/RUNBOOK.md). 503, because the request is fine and the
+ * place that can take it is the cafe box.
+ */
+export class MirrorReadOnlyError extends AppError {
+  constructor(message = 'This is the read-only copy in the cloud. Changes are made on the cafe\'s own server.') {
+    super(message, { statusCode: 503, code: ERROR_CODES.MIRROR_READ_ONLY });
+  }
+}
+
+/**
+ * P62 section 2.6. The box's clock has gone behind the newest sale it holds,
+ * so any write would be dated on the wrong day. Refused until it is fixed.
+ */
+export class ClockBehindError extends AppError {
+  constructor(message = "The cafe server's clock is behind the last sale, so nothing can be saved until it is set right. Ask the manager: the fix is in the runbook, section 4.") {
+    super(message, { statusCode: 503, code: ERROR_CODES.CLOCK_BEHIND });
+  }
+}
+
+/**
+ * P62 section 8. Authority moved to another machine (a higher epoch), so this
+ * one has stood down and writes nothing.
+ */
+export class WriterFencedError extends AppError {
+  constructor(message = 'This server has handed over to the cloud copy. Sign in at the cloud address the manager gives you.') {
+    super(message, { statusCode: 503, code: ERROR_CODES.WRITER_FENCED });
+  }
+}
+
+/** P62. A replication request whose signature does not match the shared secret. */
+export class ReplicationSignatureError extends AppError {
+  constructor() {
+    super('The replication signature did not match.', { statusCode: 401, code: ERROR_CODES.REPLICATION_SIGNATURE });
+  }
+}
+
+/** P62. A batch that does not start where the copy left off. Carries the seq the copy expects. */
+export class ReplicationGapError extends AppError {
+  constructor(expectedSeq, gotSeq) {
+    super(`The copy expects entry ${expectedSeq} next and was sent ${gotSeq}. It will not skip.`, {
+      statusCode: 409,
+      code: ERROR_CODES.REPLICATION_GAP,
+      details: { expectedSeq, gotSeq },
+    });
+  }
+}
+
+/** P62. A batch stamped with an epoch below the current writer's: the sender was replaced. */
+export class StaleEpochError extends AppError {
+  constructor(currentEpoch, sentEpoch) {
+    super(`Authority has moved to epoch ${currentEpoch}; this batch is from epoch ${sentEpoch}.`, {
+      statusCode: 409,
+      code: ERROR_CODES.STALE_EPOCH,
+      details: { currentEpoch, sentEpoch },
+    });
+  }
+}
+
+/** P62. Changing the box's WiFi from the dashboard is switched off on this box. */
+export class WifiControlOffError extends AppError {
+  constructor(message = 'Changing WiFi from here is switched off on this server. docs/STAFF-SETUP.md section 5 says how to switch it on.') {
+    super(message, { statusCode: 422, code: ERROR_CODES.WIFI_CONTROL_OFF });
+  }
+}
+
+/** P62. The box could not join the WiFi asked for, and stayed on the one it had. */
+export class WifiChangeFailedError extends AppError {
+  constructor(message = 'The server could not join that WiFi and stayed on the one it had. Check the name and password.') {
+    super(message, { statusCode: 422, code: ERROR_CODES.WIFI_CHANGE_FAILED });
   }
 }

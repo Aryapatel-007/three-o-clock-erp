@@ -12,7 +12,7 @@ Every gate must be true. None of them can be closed by code alone.
 | # | Gate | How to prove it | Who |
 |---|---|---|---|
 | 1 | The golden day passes end to end | P21 is green on the release being deployed | Arya |
-| 2 | Their CA has signed off on GST | A printed sample bill covering 5%, a discount, an MRP item and a platform delivery order at 0%, plus written answers to the CA questions in `docs/clients/threeoclock/PROFILE.md` section 10 | Arya, with the owner |
+| 2 | Their CA has signed off on GST | A printed sample bill covering 5%, a discount, an MRP item and a platform delivery order at 0%, plus written answers to the CA questions in `docs/clients/zchaat/PROFILE.md` section 15 | Arya, with the owner |
 | 3 | The bill prints properly on their printer | Printed on their actual model, at their paper width, with the longest item name on the menu, "Grilled Tofu Cream Cheese Avocado Focaccia Bagel", wrapping without pushing the amounts out of line | Rishi |
 | 4 | Stations get their tickets | A test order on staging reaches Live Kitchen and Beverages on their own tablets, and prints if they chose paper | Arya |
 | 5 | Staff have practised on staging | Every captain, cashier and station has done the training in section 2 | Both |

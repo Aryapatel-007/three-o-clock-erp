@@ -93,6 +93,10 @@ export const AUDIT_ACTIONS = Object.freeze({
   OPENING_FLOAT_DIFFERED: 'OPENING_FLOAT_DIFFERED',
   // P41. A Send to kitchen taken back within the minute.
   KOT_SEND_UNDONE: 'KOT_SEND_UNDONE',
+  // P62. The cafe box moved to another WiFi from the dashboard. Details name the networks, never a password.
+  BOX_WIFI_CHANGED: 'BOX_WIFI_CHANGED',
+  // P65. A month's CA pack emailed. Details name the period and the files, never the address.
+  CA_PACK_SENT: 'CA_PACK_SENT',
 });
 export const AUDIT_ACTION_VALUES = Object.freeze(Object.values(AUDIT_ACTIONS));
 
@@ -115,6 +119,8 @@ export const AUDIT_ENTITY_TYPES = Object.freeze({
   INTEGRATION: 'INTEGRATION',
   PLATFORM_ORDER: 'PLATFORM_ORDER',
   TALLY_EXPORT: 'TALLY_EXPORT',
+  // P65.
+  REPORT: 'REPORT',
 });
 export const AUDIT_ENTITY_TYPE_VALUES = Object.freeze(Object.values(AUDIT_ENTITY_TYPES));
 

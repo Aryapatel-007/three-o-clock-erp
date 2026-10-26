@@ -295,6 +295,28 @@ export function largestRemainderSplit(amount, weights) {
 }
 
 /**
+ * P65. A rate's CGST shared across rows of that rate, such as the HSN codes of
+ * a month, in proportion to each row's GST, by `largestRemainderSplit`. Each
+ * row's SGST is its GST less its CGST. `cgstTotal` is the rate's CGST from the
+ * bills' own slabs, so the rows add up to exactly what the bills printed.
+ *
+ * `rows` are `{ taxInPaise }`; their GST must add up to the rate's GST
+ * (`cgstTotal` plus the rate's SGST), which C2 guarantees for every bill with
+ * line shares. Returns `{ cgstInPaise, sgstInPaise }` per row, in order.
+ */
+export function splitRateTaxAcrossRows(rows, cgstTotal) {
+  assertNonNegativeInteger(cgstTotal, 'splitRateTaxAcrossRows cgstTotal');
+  const taxes = rows.map((row, index) => {
+    assertNonNegativeInteger(row.taxInPaise, `splitRateTaxAcrossRows row ${index} taxInPaise`);
+    return row.taxInPaise;
+  });
+  const total = taxes.reduce((sum, tax) => sum + tax, 0);
+  if (cgstTotal > total) throw new RangeError(`CGST ${cgstTotal} cannot be more than the rows' GST ${total}.`);
+  const cgst = largestRemainderSplit(cgstTotal, taxes);
+  return taxes.map((tax, index) => ({ cgstInPaise: cgst[index], sgstInPaise: tax - cgst[index] }));
+}
+
+/**
  * Each line's share of the bill's discount and GST. GLOSSARY section 3.
  *
  * `lines` are bill lines, each with `lineTotalInPaise` and `taxRateBps`.

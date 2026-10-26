@@ -17,7 +17,7 @@ import { BACKUP_STATE_IDS, BackupState, FULL_COPIES } from '../models/BackupStat
 import { ALL_MODELS } from '../models/index.js';
 import { ChangeDiary } from '../services/backup/journalService.js';
 import { restoreBackup, eventsToReplay, parseListing, planRestore } from '../services/backup/restoreService.js';
-import { collectionsToCopy, currentFullCopies, folderFor, fullCopiesFor, isDue, runSnapshot } from '../services/backup/snapshotService.js';
+import { collectionsToCopy, currentFullCopies, folderFor, fullCopiesFor, isDue, maybeRunSnapshot, plainError, runSnapshot } from '../services/backup/snapshotService.js';
 import { s3Client } from '../services/backup/storage.js';
 import { checkCounts, checkInvoiceSeries, verifyDatabase } from '../services/backup/verifyService.js';
 import { computeDayFigures } from '../services/dayFiguresService.js';
@@ -370,6 +370,39 @@ describe('full copies', () => {
     const old = await BackupRun.findById(holder._id).lean();
     assert.equal(old.status, 'FAILED');
     assert.equal(old.error, 'Interrupted');
+  });
+
+  it('after a failed copy wait 2, 10, 30 minutes, then an hour, before reading the database again', async () => {
+    fake.state.failUploads = 1000;
+    const start = new Date('2026-11-03T06:40:00Z');
+    const at = (minutes) => new Date(start.getTime() + minutes * 60_000);
+    const tries = async (minutes) => {
+      setClockForTests(at(minutes));
+      const before = await BackupRun.countDocuments({ status: BACKUP_STATUSES.FAILED });
+      await maybeRunSnapshot(ctx).catch(() => null);
+      return (await BackupRun.countDocuments({ status: BACKUP_STATUSES.FAILED })) > before;
+    };
+    assert.equal(await tries(0), true, 'the first copy is tried at once');
+    assert.equal(await tries(1), false);
+    assert.equal(await tries(2), true, '2 minutes after the first failure');
+    assert.equal(await tries(11), false);
+    assert.equal(await tries(12), true, '10 minutes after the second');
+    assert.equal(await tries(41), false);
+    assert.equal(await tries(42), true, '30 minutes after the third');
+    assert.equal(await tries(101), false);
+    assert.equal(await tries(102), true, 'an hour after the fourth');
+    assert.equal(await tries(161), false);
+    assert.equal(await tries(162), true, 'and every hour after that');
+
+    fake.state.failUploads = 0;
+    setClockForTests(at(222));
+    assert.equal((await maybeRunSnapshot(ctx)).status, 'OK', 'once storage works the next try succeeds');
+    assert.equal(await maybeRunSnapshot(ctx), null, 'and copies go back to their slots');
+  });
+
+  it("keep Backblaze's key ID out of the error the owner reads", () => {
+    assert.equal(plainError(new Error("The key 'made-up-key-id' is not valid")), 'The storage key is not valid');
+    assert.equal(plainError(new Error('Signature validation failed')), 'Signature validation failed');
   });
 
   it('slow down to once a day past 4 GB a week, and speed up again under 3 GB', async () => {

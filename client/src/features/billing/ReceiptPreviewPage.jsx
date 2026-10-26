@@ -10,8 +10,9 @@ import { useTheme } from '../../context/ThemeProvider.jsx';
 import BillStatusBadge from './BillStatusBadge.jsx';
 import { errorMessage } from './errorCopy.js';
 import { LABELS } from '../i18n/labels.js';
-import { INVOICE_STYLES, invoiceHtml, THERMAL_BILL_STYLES, thermalBillHtml } from '../printing/invoiceHtml.js';
-import { printBill, reviewQrSvg, thermalLogoDataUrl } from '../printing/printBill.js';
+import { invoiceHtml, invoiceStyles, THERMAL_BILL_STYLES, thermalBillHtml } from '../printing/invoiceHtml.js';
+import { printBill, reviewQrSvg, signatureDataUrl, thermalLogoDataUrl } from '../printing/printBill.js';
+import { COPY_WORDS } from '../printing/themes/shared.js';
 import { contentWidthMm, PRINTER_KEYS, PRINTERS, THERMAL_SIDE_MM } from '../printing/printers.js';
 import { useDeviceSettings } from '../printing/useDeviceSettings.js';
 import { placeLabel } from '../orders/orderLabel.js';
@@ -36,6 +37,8 @@ export default function ReceiptPreviewPage() {
   const [device, updateDevice] = useDeviceSettings();
   const [toast, setToast] = useState(null);
   const [printing, setPrinting] = useState(false);
+  // P64. Which copy a full-page invoice is: the guest's, or the restaurant's own.
+  const [copy, setCopy] = useState('RECIPIENT');
 
   const { brand } = useTheme();
   const printer = device.printer;
@@ -53,12 +56,18 @@ export default function ReceiptPreviewPage() {
   const [slipHeight, setSlipHeight] = useState(600);
   const reviewLinkUrl = shown.data?.reviewLinkUrl ?? null;
   const qr = useQuery({ queryKey: ['review-qr', reviewLinkUrl], queryFn: () => reviewQrSvg(reviewLinkUrl), enabled: Boolean(reviewLinkUrl) });
+  const signature = useQuery({
+    queryKey: ['signature', shown.data?.signature?.hash ?? null, shown.data?.layout?.show?.signatureLine ?? false],
+    queryFn: () => signatureDataUrl(shown.data),
+    enabled: !thermal && Boolean(shown.data),
+  });
+  const marksCopy = Boolean(shown.data?.layout?.show?.copyMarking);
 
   const print = async () => {
     if (!shown.data) return;
     setPrinting(true);
     try {
-      await printBill(billId, { printer, logoDataUrl });
+      await printBill(billId, { printer, logoDataUrl, copy });
       setToast({ tone: 'success', message: 'Sent to the printer.' });
     } catch (error) {
       setToast({ tone: 'error', message: errorMessage(error) });
@@ -137,6 +146,26 @@ export default function ReceiptPreviewPage() {
                 </p>
               </fieldset>
 
+              {!thermal && marksCopy && (
+                <fieldset>
+                  <legend className="mb-2 type-caption text-muted">Copy</legend>
+                  <div className="grid grid-cols-2 gap-1 rounded-lg bg-sunken p-1">
+                    {Object.entries(COPY_WORDS).map(([key, words]) => (
+                      <button
+                        key={key}
+                        type="button"
+                        aria-pressed={copy === key}
+                        onClick={() => setCopy(key)}
+                        className={['min-h-12 rounded-lg px-2 type-caption', copy === key ? 'bg-surface border border-line' : 'text-muted'].join(' ')}
+                      >
+                        {key === 'RECIPIENT' ? 'Original for recipient' : 'Duplicate for supplier'}
+                        <span className="sr-only"> ({words})</span>
+                      </button>
+                    ))}
+                  </div>
+                </fieldset>
+              )}
+
               <Link
                 to={`/bills/${billId}`}
                 className="flex min-h-12 items-center justify-center rounded-lg bg-sunken type-caption hover:bg-sunken"
@@ -159,7 +188,7 @@ export default function ReceiptPreviewPage() {
                 title="Tax invoice as printed"
                 className="w-full max-w-[210mm] bg-surface shadow-float"
                 style={{ aspectRatio: `${PRINTERS[printer].widthMm} / ${PRINTERS[printer].heightMm}` }}
-                srcDoc={`<!doctype html><html><head><meta charset="utf-8" /><style>html,body{margin:0;background:white;color:black}body{padding:12mm}${INVOICE_STYLES}</style></head><body>${invoiceHtml(invoice.data, { qrSvg: qr.data ?? null, logoDataUrl })}</body></html>`}
+                srcDoc={`<!doctype html><html><head><meta charset="utf-8" /><style>html,body{margin:0;background:white;color:black}body{padding:12mm}${invoiceStyles(invoice.data.layout?.theme)}</style></head><body>${invoiceHtml(invoice.data, { qrSvg: qr.data ?? null, logoDataUrl, signatureDataUrl: signature.data ?? null, copy })}</body></html>`}
               />
             )}
 

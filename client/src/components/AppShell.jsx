@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext.jsx';
 import { useTheme } from '../context/ThemeProvider.jsx';
 import OnlineAlerts, { useAlertsOn, useOnlineInbox } from '../features/online/OnlineAlerts.jsx';
 import CaptainBillPrinter from '../features/printing/CaptainBillPrinter.jsx';
+import { CAFE_PC_PAPER } from '../features/printing/useDeviceSettings.js';
 import { inboxOn } from '../features/online/inboxOn.js';
 import BrandLogo from './ui/BrandLogo.jsx';
 import {
@@ -22,9 +23,11 @@ import {
   MoreIcon,
   ReceiptIcon,
   ScooterIcon,
-  SignOutIcon,
 } from './ui/icons/index.jsx';
+import AccountMenu, { SignOutButton } from './AccountMenu.jsx';
 import LiveConnection from './LiveConnection.jsx';
+import ConnectionStatus, { LostConnectionBanner } from '../features/network/ConnectionStatus.jsx';
+import SyncBadge from '../features/sync/SyncBadge.jsx';
 import Sheet from './ui/Sheet.jsx';
 import Spinner from './ui/Spinner.jsx';
 
@@ -50,8 +53,6 @@ const PLACES = {
   home: { to: '/dashboard', label: 'Home', Icon: HomeIcon },
   floor: { to: '/floor', label: 'Floor', Icon: FloorIcon },
   takeaway: { to: '/orders/takeaway', label: 'Takeaway', Icon: BagIcon },
-  // Counter Sale: order and pay in one go.
-  counter: { to: '/orders/counter', label: 'Counter', Icon: BagIcon },
   delivery: { to: '/orders/delivery', label: 'Delivery', Icon: ScooterIcon },
   kitchen: { to: '/kitchen', label: 'Kitchen', Icon: KitchenIcon },
   bills: { to: '/bills', label: 'Bills', Icon: ReceiptIcon },
@@ -69,7 +70,7 @@ const PLACES = {
 const MAIN_BY_ROLE = {
   OWNER: ['floor', 'bills', 'kitchen', 'reports'],
   MANAGER: ['floor', 'bills', 'kitchen', 'dayClose'],
-  CASHIER: ['counter', 'floor', 'bills', 'cash'],
+  CASHIER: ['floor', 'bills', 'takeaway', 'cash'],
   WAITER: ['floor', 'takeaway', 'delivery', 'kitchen'],
   KITCHEN: ['kitchen', 'availability'],
   STOREKEEPER: ['stock', 'availability'],
@@ -93,7 +94,6 @@ function useMoreGroups() {
         // P55. The owner's dashboard, outside the ERP.
         { to: '/owner', label: 'Dashboard', show: role === 'OWNER' },
         { to: '/floor', label: 'Floor', show: floor },
-        { to: '/orders/counter', label: 'Counter sale', show: till && features.billing?.payFirstTakeaway !== false },
         { to: '/orders/takeaway', label: 'Takeaway', show: floor },
         { to: '/orders/delivery', label: 'Delivery', show: floor },
         { to: '/kitchen', label: 'Kitchen', show: true },
@@ -110,7 +110,8 @@ function useMoreGroups() {
       items: [
         { to: '/accounts', label: 'On Hold', show: till },
         { to: '/cash-book', label: 'Cash book', show: till },
-        { to: '/day-end', label: 'Day End', show: manager },
+        // P61. The cashier closes the day too.
+        { to: '/day-end', label: 'Day End', show: till },
         { to: '/day-close', label: 'Day Close history', show: manager },
         { to: '/payouts', label: 'Payouts', show: manager },
         { to: '/reports', label: 'Reports', show: manager },
@@ -129,6 +130,11 @@ function useMoreGroups() {
         { to: '/attendance/me', label: 'My hours', show: attendanceOn },
         { to: '/settings', label: 'Settings', show: role === 'OWNER' },
         { to: '/settings/integrations', label: 'Integrations', show: manager },
+        // P62. The cafe server's WiFi, the devices on it and the cloud copy.
+        { to: '/network', label: 'Network and devices', show: manager },
+        // P63. Two-way sync with the website, and its conflicts.
+        { to: '/sync', label: 'Sync', show: manager && features?.sync?.mode === 'TWO_WAY' },
+        { to: '/connect', label: 'Connect a device', show: true },
         { to: '/device', label: 'This device', show: true },
       ],
     },
@@ -168,7 +174,7 @@ function OnlineBadge() {
 
 function PlaceLink({ place, layout }) {
   const { pathname } = useLocation();
-  const active = isCurrent(pathname, place.to) || (place.to === '/floor' && pathname.startsWith('/orders/') && !pathname.startsWith('/orders/takeaway') && !pathname.startsWith('/orders/counter') && !pathname.startsWith('/orders/delivery'));
+  const active = isCurrent(pathname, place.to) || (place.to === '/floor' && pathname.startsWith('/orders/') && !pathname.startsWith('/orders/takeaway') && !pathname.startsWith('/orders/delivery'));
   const Icon = place.Icon;
   return (
     <NavLink
@@ -206,7 +212,7 @@ function MoreButton({ onClick, layout }) {
 }
 
 function MoreSheet({ onClose }) {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const groups = useMoreGroups();
   return (
     <Sheet title="All places" subtitle={user ? `${user.name}` : null} onClose={onClose}>
@@ -232,10 +238,7 @@ function MoreSheet({ onClose }) {
             </ul>
           </div>
         ))}
-        <button type="button" onClick={logout} className="type-button flex min-h-12 items-center gap-2 rounded-lg border border-ink px-4">
-          <SignOutIcon />
-          Sign out
-        </button>
+        <SignOutButton />
       </nav>
     </Sheet>
   );
@@ -287,7 +290,7 @@ export function ScreenLoading() {
 }
 
 export default function AppShell({ children }) {
-  const { user, logout } = useAuth();
+  const { user, features } = useAuth();
   const { pathname } = useLocation();
   const places = useMainPlaces();
   const [moreOpen, setMoreOpen] = useState(false);
@@ -304,12 +307,12 @@ export default function AppShell({ children }) {
         <header className="flex min-h-12 flex-none items-center justify-between gap-3 border-b border-line bg-surface px-4 print:hidden">
           <TopBarMark isService />
           <span className="flex items-center gap-3">
-            <span className="type-caption truncate text-muted">{user?.name}</span>
-            <button type="button" onClick={logout} className="type-label min-h-12 rounded-lg px-3 text-muted hover:bg-sunken hover:text-ink">
-              Sign out
-            </button>
+            {/* P62. This device's connection to the cafe server, on every device. */}
+            <ConnectionStatus />
+            <AccountMenu />
           </span>
         </header>
+        <LostConnectionBanner />
         <LiveConnection />
         <div className="relative min-h-0 flex-1 overflow-y-auto print:overflow-visible">
           <Suspense fallback={<ScreenLoading />}>{children}</Suspense>
@@ -321,6 +324,7 @@ export default function AppShell({ children }) {
   if (FULL_SCREEN_PATHS.includes(pathname)) {
     return (
       <>
+        <LostConnectionBanner />
         <LiveConnection />
         <Suspense fallback={<ScreenLoading />}>{children}</Suspense>
       </>
@@ -344,15 +348,21 @@ export default function AppShell({ children }) {
         <header className="flex min-h-12 flex-none items-center justify-between gap-3 border-b border-line bg-surface px-4 print:hidden">
           <TopBarMark isService={isServicePath(pathname)} />
           <span className="flex items-center gap-3">
+            {/* P62. This device's connection to the cafe server, and the cloud copy's state. */}
+            <ConnectionStatus />
+            {/* P63. Sync conflicts waiting for an owner or manager. */}
+            <SyncBadge />
             {/* P48. Recall Bill, as on PetPooja: the till finds a bill by its number. */}
             {['OWNER', 'MANAGER', 'CASHIER'].includes(user?.role) && <BillNoSearch />}
-            <span className="type-caption truncate text-muted">{user?.name}</span>
+            <AccountMenu />
           </span>
         </header>
 
+        <LostConnectionBanner />
         <LiveConnection />
         <OnlineAlerts />
-        <CaptainBillPrinter />
+        {/* 2026-10-22. On the cafe PC the till prints captains' bills on the paper with no gap above. */}
+        <CaptainBillPrinter paper={features?.sync?.server === 'BOX' ? CAFE_PC_PAPER : null} />
 
         {/* `relative`, so anything absolutely placed inside a screen (screen-reader text,
             tooltips) belongs to this scroll area. Without it such an element was

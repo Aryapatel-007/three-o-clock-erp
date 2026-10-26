@@ -1,0 +1,26 @@
+# The cafe POS server on the box. P62 section 10.
+# Starts after MongoDB on every boot, and again by itself if it ever stops:
+# the box returns to service after a power cut with nobody touching it.
+[Unit]
+Description=Cafe POS server (the till, kitchen and owner screens)
+After=network-online.target mongod.service
+Wants=network-online.target
+Requires=mongod.service
+
+[Service]
+Type=simple
+User=cafe
+Group=cafe
+WorkingDirectory=/opt/cafe-pos
+EnvironmentFile=/opt/cafe-pos/.env
+Environment=NODE_ENV=production
+ExecStart=/usr/bin/node server/server.js
+Restart=always
+RestartSec=3
+# Staff type http://192.168.1.10 with no port: listening on 80 without root.
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+NoNewPrivileges=true
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

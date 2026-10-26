@@ -445,6 +445,17 @@ body {
     transform: scale(1.04);
   }
 }
+/* A sign-in that was refused: the form shakes once, 280ms, then is still. */
+@keyframes refused {
+  20%,
+  60% {
+    transform: translateX(-6px);
+  }
+  40%,
+  80% {
+    transform: translateX(6px);
+  }
+}
 
 /* Every motion becomes an instant change for anyone who asked for that. */
 @media (prefers-reduced-motion: reduce) {

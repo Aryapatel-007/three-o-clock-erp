@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 
-import { recordCashMovement } from '../../../api/dayClose.js';
+import { recordCashMovement, voidCashMovement } from '../../../api/dayClose.js';
 import { listApprovers } from '../../../api/users.js';
 import ApprovalStep, { useApproval } from '../../../components/ui/ApprovalStep.jsx';
 import Input from '../../../components/ui/Input.jsx';
@@ -236,6 +236,36 @@ export function FloatSheet({ denominations, broughtForward = null, onCancel, onD
         {differs && (
           <Input label="Note, required: why is it not what was kept?" maxLength={200} value={note} onChange={(event) => setNote(event.target.value)} />
         )}
+        {save.isError && <p className="type-body text-alert">{errorMessage(save.error)}</p>}
+      </div>
+    </Sheet>
+  );
+}
+
+/** A cashier's void of a cash entry: the reason and a manager's PIN. Owners and managers void inline. */
+export function VoidEntrySheet({ entry, label, onCancel, onDone }) {
+  const [reason, setReason] = useState('');
+  const approval = useApproval(true);
+  const save = useMutation({ mutationFn: () => voidCashMovement(entry.id, reason.trim(), approval.body), onSuccess: onDone });
+  const ready = reason.trim() && approval.ready;
+
+  return (
+    <Sheet
+      title="Void this entry"
+      subtitle={<>{label} · <Money paise={entry.amountInPaise} /></>}
+      onCancel={onCancel}
+      footer={
+        <SheetActions
+          onCancel={onCancel}
+          confirmLabel={save.isPending ? 'Voiding…' : 'Void it'}
+          disabled={!ready || save.isPending}
+          onConfirm={() => save.mutate()}
+        />
+      }
+    >
+      <div className="flex flex-col gap-4">
+        <Input label="Why is this being voided?" maxLength={200} value={reason} onChange={(event) => setReason(event.target.value)} />
+        <ApprovalStep approval={approval} />
         {save.isError && <p className="type-body text-alert">{errorMessage(save.error)}</p>}
       </div>
     </Sheet>

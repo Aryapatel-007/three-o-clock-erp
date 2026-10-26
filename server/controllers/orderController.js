@@ -52,7 +52,7 @@ import {
   readyToBillChange,
   serialiseOrder,
 } from '../services/orderService.js';
-import { BusinessRuleError } from '../utils/errors.js';
+import { BusinessRuleError, ValidationError } from '../utils/errors.js';
 import { sumPaise } from '../utils/money.js';
 import { sendList, sendSuccess } from '../utils/response.js';
 import { scoped } from '../utils/scopedQuery.js';
@@ -540,9 +540,13 @@ export async function setKitchenNote(req, res) {
  */
 export async function setOrderCustomer(req, res) {
   const { orderId } = req.params;
-  const { version, customerName, customerPhone, offersConsent } = req.body;
+  const { version, customerName, customerPhone, offersConsent, guestCount } = req.body;
 
   const order = await loadOrderInTenant(req, orderId);
+  // P59. Covers belong to a table.
+  if (guestCount !== undefined && order.orderType !== ORDER_TYPES.DINE_IN) {
+    throw new ValidationError('Only a dine-in order has a number of guests.', { guestCount: 'Only for a table.' });
+  }
   if (order.billId || order.status === ORDER_STATUSES.BILLED) {
     throw new BusinessRuleError("This order has a bill, so the guest's details are on it already.");
   }
@@ -561,6 +565,7 @@ export async function setOrderCustomer(req, res) {
       $set: {
         ...(customerName !== undefined ? { customerName } : {}),
         ...(firstPhone ? { customerPhone } : {}),
+        ...(guestCount !== undefined ? { guestCount } : {}),
       },
     },
   });

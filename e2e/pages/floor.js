@@ -14,14 +14,23 @@ export async function gotoFloor(page) {
   await expect(page.getByRole('heading', { name: 'Floor', level: 1 })).toBeVisible();
 }
 
-/** Seats guests at a free table and opens its order. */
+/**
+ * P59. The guests a test means to seat, given on the Guest details sheet at the
+ * table's first Send (see `answerGuestDetails` in order.js), one per page.
+ */
+const pendingGuests = new WeakMap();
+export function takePendingGuests(page) {
+  const guests = pendingGuests.get(page);
+  pendingGuests.delete(page);
+  return guests;
+}
+
+/** Opens a free table's order; P59: a tap opens it, and the guests are given at the first Send. */
 export async function openTable(page, table, guests) {
   await gotoFloor(page);
   await tile(page, table, 'free').click();
-  const sheet = page.getByRole('dialog');
-  await sheet.getByRole('button', { name: String(guests), exact: true }).click();
-  await sheet.getByRole('button', { name: /^Start order/ }).click();
   await expect(page).toHaveURL(/\/orders\/[a-f0-9]{24}$/);
+  if (guests != null) pendingGuests.set(page, guests);
 }
 
 /** Opens the order on a taken table. */

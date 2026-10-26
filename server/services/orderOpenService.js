@@ -11,7 +11,7 @@ import { platformByCode } from '../config/platforms.js';
 import { COUNTER_NAMES } from '../models/Counter.js';
 import { OCCUPYING_ORDER_STATUSES, Order, ORDER_TYPES, TAX_TREATMENTS } from '../models/Order.js';
 import { Table } from '../models/Table.js';
-import { BusinessRuleError, DuplicateError, NotFoundError, TableOccupiedError, ValidationError } from '../utils/errors.js';
+import { BusinessRuleError, DuplicateError, NotFoundError, TableOccupiedError } from '../utils/errors.js';
 import { scoped } from '../utils/scopedQuery.js';
 import { nowUtc } from '../utils/time.js';
 import { nextNumber } from './counterService.js';
@@ -111,12 +111,10 @@ export async function openOrder(req, input) {
 
   const isDineIn = orderType === ORDER_TYPES.DINE_IN;
 
-  // P19. Covers feed average per cover, so a restaurant can require them.
-  if (isDineIn && guestCount === undefined && (await getSetting(req.restaurantId, 'floor.requireGuestCount', { req }))) {
-    throw new ValidationError('How many guests? Enter the number before opening the table.', {
-      guestCount: 'How many guests?',
-    });
-  }
+  /**
+   * P19 required covers here; P59 moved the rule to the first Send
+   * (kitchenService.fireOrder), where the Guest details sheet asks for them.
+   */
 
   const table = isDineIn ? await assertTableUsable(req, tableId) : null;
 

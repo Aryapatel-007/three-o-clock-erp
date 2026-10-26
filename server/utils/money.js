@@ -115,6 +115,50 @@ export function paiseToWholeRupeesText(paise) {
   return `${sign}${new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(rupees)}`;
 }
 
+const ONES = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve',
+  'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+const TENS = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+
+/** 0 to 99 in words. */
+function underHundred(number) {
+  if (number < 20) return ONES[number];
+  return [TENS[Math.floor(number / 10)], ONES[number % 10]].filter(Boolean).join(' ');
+}
+
+/** A whole number in the Indian system: crore, lakh, thousand, hundred. */
+function indianNumberWords(number) {
+  if (number === 0) return 'Zero';
+  const parts = [];
+  const crore = Math.floor(number / 1_00_00_000);
+  const lakh = Math.floor((number % 1_00_00_000) / 1_00_000);
+  const thousand = Math.floor((number % 1_00_000) / 1_000);
+  const hundred = Math.floor((number % 1_000) / 100);
+  const rest = number % 100;
+  if (crore) parts.push(`${indianNumberWords(crore)} Crore`);
+  if (lakh) parts.push(`${underHundred(lakh)} Lakh`);
+  if (thousand) parts.push(`${underHundred(thousand)} Thousand`);
+  if (hundred) parts.push(`${ONES[hundred]} Hundred`);
+  if (rest) parts.push(underHundred(rest));
+  return parts.join(' ');
+}
+
+/**
+ * P64. An amount spelled out for a tax invoice, in the Indian system:
+ * 51000 is "Rupees Five Hundred Ten Only", 82050 "Rupees Eight Hundred Twenty
+ * and Fifty Paise Only". The one place a number is spelled, so no two printed
+ * forms of a bill can spell it differently. Negative amounts are refused: a
+ * bill total is never below zero.
+ */
+export function paiseToIndianWords(paise) {
+  assertInteger(paise, 'paiseToIndianWords expects paise, which');
+  if (paise < 0) throw new RangeError(`An amount in words cannot be negative, received ${paise} paise.`);
+  const rupees = Math.floor(paise / PAISE_PER_RUPEE);
+  const remainder = paise % PAISE_PER_RUPEE;
+  const words = [`Rupees ${indianNumberWords(rupees)}`];
+  if (remainder) words.push(`and ${underHundred(remainder)} Paise`);
+  return `${words.join(' ')} Only`;
+}
+
 /**
  * Applies a rate in basis points to an amount in paise.
  *

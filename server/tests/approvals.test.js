@@ -155,6 +155,31 @@ describe('cash in and out of the drawer', () => {
     assert.equal(off.status, 403);
     assert.match(off.body.error.message, /Only an owner or a manager/);
   });
+
+  it('lets a cashier void a cash entry only with the PIN, stores who approved, and not at all with manager tasks off', async () => {
+    const floor = await floorWithManagerPin();
+    const record = async () =>
+      (await request('POST', '/api/v1/cash-movements', { token: floor.tokens.OWNER, body: { type: 'PAID_IN', amountInPaise: 5000, source: 'OWNER' } })).body.data;
+    const voidIt = (token, id, extra = {}) =>
+      request('POST', `/api/v1/cash-movements/${id}/void`, { token, body: { reason: 'Typed twice', ...extra } });
+
+    const topUp = await record();
+    assert.equal((await voidIt(floor.tokens.WAITER, topUp.id, { approval: floor.good })).status, 403);
+    assert.equal((await voidIt(floor.tokens.CASHIER, topUp.id)).status, 403);
+    assert.equal((await voidIt(floor.tokens.CASHIER, topUp.id, { approval: floor.wrong })).status, 401);
+    const right = await voidIt(floor.tokens.CASHIER, topUp.id, { approval: floor.good });
+    assert.equal(right.status, 200);
+    assert.equal(right.body.data.isVoided, true);
+    assert.equal(right.body.data.voidApprovedBy, floor.managerId);
+
+    const byManager = await voidIt(floor.tokens.MANAGER, (await record()).id);
+    assert.equal(byManager.status, 200);
+    assert.equal(byManager.body.data.voidApprovedBy, null);
+
+    await setApprovals(floor, { managerTasks: false });
+    const off = await voidIt(floor.tokens.CASHIER, (await record()).id, { approval: floor.good });
+    assert.equal(off.status, 403);
+  });
 });
 
 describe('manager tasks a cashier may do with a PIN', () => {

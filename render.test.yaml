@@ -2,16 +2,21 @@
 #
 # One service serves both the API and the screens (the Dockerfile builds the
 # client and the server serves it), at its own address, on its own database:
-# three-o-clock-erp-test on the same Atlas cluster. Staff practise here; nothing
+# restaurant-erp-test on the same Atlas cluster. Staff practise here; nothing
 # touches a real bill or a real invoice number.
 #
 # Create it in Render with New, Blueprint, this repository, and Blueprint path
 # render.test.yaml. Render generates the secrets; it asks for MONGO_URI, which
-# must end in /three-o-clock-erp-test, never the live database. docs/DEPLOYMENT.md
+# must end in /restaurant-erp-test, never /restaurant-erp. docs/DEPLOYMENT.md
 # section 16.
+#
+# P63: this test service is also the website half of two-way sync. SYNC_MODE is
+# TWO_WAY; REPLICATION_SECRET is asked for, and the same value goes in the cafe
+# PC's .env with SYNC_MODE=TWO_WAY and MIRROR_URL=https://zchaat-pos-test.onrender.com.
+# docs/DEPLOYMENT.md section 19.
 services:
   - type: web
-    name: three-o-clock-erp-test
+    name: zchaat-pos-test
     runtime: docker
     plan: free
     region: singapore
@@ -25,7 +30,7 @@ services:
         value: production
       # The screens are served by this same service, so the app's own address.
       - key: CLIENT_ORIGIN
-        value: https://three-o-clock-erp-test.onrender.com
+        value: https://zchaat-pos-test.onrender.com
       # Only Render's proxy in front: no Vercel here.
       - key: TRUST_PROXY
         value: '1'
@@ -41,3 +46,8 @@ services:
         generateValue: true
       - key: DISPLAY_TIMEZONE
         value: Asia/Kolkata
+      # P63. The website and the cafe PC both take bills, kept in step by the PC.
+      - key: SYNC_MODE
+        value: TWO_WAY
+      - key: REPLICATION_SECRET
+        sync: false

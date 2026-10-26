@@ -765,3 +765,184 @@ Added by P56.
 | **Save and send** | Keep the guest's details and send the dishes to the kitchen |
 | **Skip, send without details** | Send the dishes without the guest's details |
 | **Voided to change items** | A bill voided only so its items could change after billing, and billed again. Not a voided bill on any list; its numbers stay in the invoice register. |
+
+---
+
+## 40. The bill in one place
+
+Added by P57.
+
+| Term | Meaning |
+|---|---|
+| **Bill** | On a served order, the box under the dishes: the discount, the totals and Save, before the bill is made |
+| **Add discount** | Choose a discount before the bill is made. Nothing is saved until Save. |
+| **Save** | Make the bill, print nothing |
+| **Save & Print** | Make the bill and print it (P48's word, now on every served order) |
+
+---
+
+## 41. Kitchen tickets without stations
+
+Added by P58.
+
+| Term | Meaning |
+|---|---|
+| **A separate ticket for each station** | The setting `kitchen.splitTicketsByStation`. Off: each Send to the kitchen is one ticket with every dish on it, headed KITCHEN; the next Send from the same table is a new ticket with a new KOT number |
+
+---
+
+## 42. Signing in and out
+
+Added 2026-10-19, for the livelier sign-in screen and the account menu.
+
+| Term | Meaning |
+|---|---|
+| **Good morning, Good afternoon, Good evening, Working late** | The sign-in greeting, by the hour in India: from 5 AM, noon, 5 PM and 11 PM |
+| **Show password, Hide** | Shows the password as typed, or hides it again |
+| **Caps Lock is on** | The keyboard's Caps Lock is on while the password is typed |
+| **Account** | The person's initials in the top bar; it opens their name, role, This device and Sign out |
+| **Hold to sign out** | Sign out is pressed and held, so a stray tap on a shared device never signs anyone out. From the keyboard it asks "Sign out now?" instead |
+| **Signed out** | Shown once on the sign-in screen after someone signs out on this device: "Abhay, you are signed out. See you next shift." |
+
+---
+
+## 43. Printing at the counter and guests at the Send
+
+Added by P59.
+
+| Term | Meaning |
+|---|---|
+| **Sent to the counter** | On a captain's bill: the request is waiting for the counter's printer. Tapping again sends nothing more |
+| **How many guests?** | On the Guest details sheet, at a table's first Send. The count becomes the order's covers |
+| **Small tiles, Big tiles** | On the kitchen screen: small, narrower tickets so more fit in a rush, or the full size. Kept on each device |
+
+---
+
+## 44. Bill without KOT
+
+Added by P60.
+
+| Term | Meaning |
+|---|---|
+| **Bill without KOT** | On the order screen, for the counter: make the bill for dishes not yet sent, without a KOT. The dishes count as served; nothing goes to the kitchen |
+
+---
+
+## 45. A simple Day Close
+
+Added by P61.
+
+| Term | Meaning |
+|---|---|
+| **Before you close** | On Day End: what stops the day closing, each with Open |
+| **Closes by itself** | An order nothing was sent from: Day Close closes it, opened by mistake, and it counts nowhere |
+| **Cash in the drawer** | On Day End: the cash counted at close (counted cash) |
+| **Taking cash out of the drawer?** | Optional at close: keep some for tomorrow and say where the rest went. Without it, everything counted stays as tomorrow's float |
+| **Day's details** | The day's full figures, the cash flow and the day-end message, under the close |
+
+---
+
+## 46. Two-way sync
+
+Added by P63.
+
+| Term | Meaning |
+|---|---|
+| **Two-way sync** | The cafe PC and the website both take orders and bills, and each gets the other's within seconds while the internet is up |
+| **Website series** | Before 2026-10-22, the bill numbers the website used while two-way sync was on: `2026-27/W00001`. Since then the website continues the PC's series |
+| **Renumbered by sync** | A website bill, order or KOT given the next number because the PC had used its number while the two were apart. A renumbered bill is reprinted for the guest |
+| **Sync conflict** | The same thing changed on the cafe PC and on the website before they could tell each other, or the same table, bill or name taken on both. Listed for the owner and manager |
+| **Kept from** | Which side's version a sync conflict kept: the cafe PC or the website |
+| **Mark as seen** | A person has read a sync conflict and dealt with it |
+| **Close the day on the cafe PC** | While two-way sync is on, only the PC closes the day |
+
+---
+
+## 47. The cafe PC
+
+Added 2026-10-22.
+
+| Term | Meaning |
+|---|---|
+| **Cafe POS** | The one desktop icon on the cafe PC: it opens the till at the PC's own address, printing bills with no dialog. Windows opens the same till at sign-in |
+| **Not printed yet** | On a captain's bill, 30 seconds after Print at counter: no counter has printed it, so the till must be open and signed in, with Print bills sent by captains on |
+| **Cafe POS printer** | The print-only window of 2026-10-22 morning, at `/print-station`; from that afternoon the till prints captains' bills itself |
+
+---
+
+## 48. Invoice themes and printed fields
+
+Added by P64. Printed words on the full-page invoice and the screens that set it up.
+
+| Term | Meaning |
+|---|---|
+| **Invoice theme** | How the full-page tax invoice is laid out: Classic, GST detailed, Modern or Compact. Every figure is the same on all four |
+| **Classic** | The full-page invoice as it printed before P64 |
+| **GST detailed** | The theme with an HSN or SAC column, a rate summary, the amount in words, the declaration and a signature line |
+| **Modern** | Classic with a band in the restaurant's accent and lighter rules |
+| **Compact** | A tighter layout for A5 paper, with the same content |
+| **HSN/SAC** | The code a line is classified under for GST. A dish with no code of its own prints the restaurant's default SAC, 996331, restaurant service |
+| **Default SAC code** | The code printed for any dish without one of its own |
+| **Amount in words** | The bill total spelled in rupees and paise, in lakh and crore |
+| **Declaration** | The printed line that the invoice shows the actual price and the particulars are true and correct |
+| **Authorised signatory** | The words under the signature line, beside the restaurant's legal name |
+| **Signature image** | The owner's signature, uploaded once and printed above the signature line |
+| **Terms and conditions** | The restaurant's own text printed at the foot of the full-page invoice |
+| **PAN** | The restaurant's Permanent Account Number |
+| **Udyam number** | The restaurant's MSME registration number |
+| **Account balance** | On an On Hold bill: what the account owes in all, now (its outstanding) |
+| **Original for recipient** | The copy marking on the guest's copy of a full-page invoice (CGST Rule 48(2)) |
+| **Duplicate for supplier** | The copy marking on the restaurant's own copy |
+| **Use the accent colour** | Draw the full-page invoice's band and rules in the accent chosen on Appearance |
+| **Invoice settings** | The tab for the full-page invoice: the theme and what it shows |
+| **Print settings** | The tab that previews the invoice on A4 or A5 and chooses the copy |
+| **Thermal settings** | The tab for what the thermal roll shows |
+| **Invoice layout** | The settings screen for the three tabs above |
+| **Invoice date** | The date the bill was issued, printed when Time issued is off |
+| **Guest** | On the full page: the guest's name, when its switch is on |
+| **Mobile** | On the full page: the last four digits of the guest's mobile, as XXXXXX1234 |
+| **Tax summary** | On GST detailed: each rate's net sales, and its CGST and SGST rate and amount |
+| **CGST rate, SGST rate** | Half the GST rate each, like 2.5% on a 5% dish |
+
+---
+
+## 49. The CA's month
+
+Added by P65.
+
+| Term | Meaning |
+|---|---|
+| **CA reports** | The settings screen that sends the month to the restaurant's chartered accountant |
+| **CA pack** | One workbook for a month of closed days: rate-wise sales, HSN and SAC summary, the document series, money received, On Hold, cash and the checks |
+| **CA's email** | Where the pack is sent on the 1st of every month |
+| **Send now** | Send a month's pack straight away, even one already sent |
+| **Sent** | The pack reached the email service |
+| **Refused** | Not sent, because a day of the month is open, a check failed, or this copy has not received the month yet. Tried again later |
+| **Failed** | The email service refused it. Tried again within the hour |
+| **Outward supplies** | The month's sales, by tax rate |
+| **HSN and SAC summary** | Net sales and tax by the code on each line |
+| **Not recorded** | A line from before HSN codes were kept, or before line shares |
+| **Document series** | Every invoice number in the month, in order, voided ones included |
+| **On Hold movement** | Each account's opening, charged, collected, adjusted and closing balance for the month |
+| **Bank deposit** | Cash taken to the bank: a contra entry, not an expense |
+| **Drawings** | Cash taken by the owner |
+| **Code** | An HSN or SAC code, on the summary |
+| **Line** | One line of the pack's cover, money or checks |
+| **Detail** | What a line of the cover says |
+| **Opening** | An account's balance at the start of the month |
+| **Closing** | An account's balance at the end of the month |
+| **Adjusted** | Adjustments to an account in the month, up or down |
+
+---
+
+## 50. Where a bill prints
+
+Added 2026-10-25.
+
+| Term | Meaning |
+|---|---|
+| **Bills print** | On This device, for the till: where a bill printed from this device comes out |
+| **On this device** | The bill prints on this device's own printer |
+| **At the counter** | The bill goes to the counter's printer, as a captain's does. Automatic on the cafe PC for every device but the till |
+| **Print at counter instead** | On the bill: send it to the counter this once |
+| **Print on this device instead** | On the bill: print it on this device this once |

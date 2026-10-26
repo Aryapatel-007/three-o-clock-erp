@@ -35,6 +35,14 @@ function meaningfulOptions(options = {}) {
   return out;
 }
 
+/** An index as listed, without the simple collation MongoDB 9 reports on every index. */
+export function withoutDefaultCollation(index) {
+  const collation = index.collation;
+  if (!collation || collation.locale !== 'simple' || Object.keys(collation).length !== 1) return index;
+  const { collation: _default, ...rest } = index;
+  return rest;
+}
+
 /** The name MongoDB gives an index when none is supplied: `restaurantId_1_billNumber_1`. */
 export function defaultIndexName(key) {
   return Object.entries(key)
@@ -58,7 +66,13 @@ export function describeKey(key) {
  * Checked against the installed Mongoose 8.x source before relying on it.
  */
 async function diffModel(model) {
-  const { toCreate, toDrop } = await model.diffIndexes({ indexOptionsToCreate: true });
+  // MongoDB 9 lists every index with `collation: { locale: 'simple' }`, the
+  // server's own default, and Mongoose 8 reads that as a different index from
+  // one declared with no collation. So the diff reads the indexes with that
+  // default left out; any other collation still counts.
+  const view = Object.create(model);
+  view.listIndexes = async () => (await model.listIndexes()).map(withoutDefaultCollation);
+  const { toCreate, toDrop } = await model.diffIndexes.call(view, { indexOptionsToCreate: true });
   return {
     toCreate: toCreate.map(([key, options]) => ({ key, options })),
     toDrop,

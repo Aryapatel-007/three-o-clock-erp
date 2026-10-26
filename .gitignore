@@ -3,6 +3,8 @@
 .env.local
 .env.*.local
 *.pem
+# The cafe PC updater's public release key is meant to be shipped.
+!box/windows/release-public-key.pem
 *.key
 
 # Dependencies
@@ -60,9 +62,8 @@ backups/
 # Vercel CLI link and build output at the repo root
 .vercel
 
-# Three O'Clock's menu cards and photos, downloaded from their listings. Kept on this computer, not published.
-docs/clients/threeoclock/source/
+# P62. The cafe box's own data: local snapshots and its network notes. Never commit.
+/box-data/
 
-# The local MongoDB for running the app on this computer.
-.localdb/
-start-local.cmd
+# P62. Built Windows packages (bash box/windows/make-package.sh).
+/release/

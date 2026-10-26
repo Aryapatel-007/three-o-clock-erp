@@ -26,11 +26,8 @@ import { request, startTestServer, stopTestServer } from './helpers/testServer.j
 const SETUP_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', 'setup');
 const caffezaConfig = () => JSON.parse(readFileSync(path.join(SETUP_DIR, 'archive', 'caffeza', 'caffeza.json'), 'utf8'));
 const caffezaMenu = () => readFileSync(path.join(SETUP_DIR, 'archive', 'caffeza', 'caffeza-menu.csv'), 'utf8');
-const zchaatConfig = () => JSON.parse(readFileSync(path.join(SETUP_DIR, 'archive', 'zchaat', 'zchaat.json'), 'utf8'));
-const zchaatMenu = () => readFileSync(path.join(SETUP_DIR, 'archive', 'zchaat', 'zchaat-menu.csv'), 'utf8');
-const threeOClockConfig = () => JSON.parse(readFileSync(path.join(SETUP_DIR, 'threeoclock.json'), 'utf8'));
-const threeOClockMenu = () => readFileSync(path.join(SETUP_DIR, 'threeoclock-menu.csv'), 'utf8');
-const threeOClockAddons = () => readFileSync(path.join(SETUP_DIR, 'threeoclock-addons.csv'), 'utf8');
+const zchaatConfig = () => JSON.parse(readFileSync(path.join(SETUP_DIR, 'zchaat.json'), 'utf8'));
+const zchaatMenu = () => readFileSync(path.join(SETUP_DIR, 'zchaat-menu.csv'), 'utf8');
 
 /** The test server's request already prefixes nothing; the scripts' paths are under /api/v1. */
 const send = (method, pathname, options) => request(method, `/api/v1${pathname}`, options);
@@ -396,54 +393,3 @@ describe('Z Chaat\'s own files, P25', () => {
   });
 });
 
-describe("Three O'Clock's own files", () => {
-  it('pass a dry run: 93 items in 24 categories, the toppings on every iced drink, and the stations routed', async () => {
-    const { config, toConfirm } = validateSetupConfig(threeOClockConfig());
-    assert.equal(config.restaurant.name, "Three O'Clock Cafe");
-    assert.equal(config.stations.length, 3);
-    for (const at of ['restaurant.gstin', 'restaurant.fssaiLicenseNumber', 'staff']) assert.ok(toConfirm.includes(at), at);
-
-    const menu = readMenu(threeOClockMenu(), threeOClockAddons());
-    const items = menu.categories.flatMap((category) => category.items);
-    assert.equal(menu.categories.length, 24);
-    assert.equal(items.length, 93);
-    assert.ok(items.every((item) => item.taxRateBps === 500));
-    const taro = items.find((item) => item.name === 'Taro Milk Tea');
-    assert.deepEqual(taro.variants.map((variant) => variant.name), ['Small', 'Medium']);
-    assert.equal(taro.addOns.length, 9);
-    assert.equal(items.filter((item) => item.addOns.length > 0).length, 32);
-
-    const { client } = await ownerClient();
-    const setupSteps = await planSetup(client, config, { toConfirm });
-    const tables = setupSteps.filter((step) => step.section === 'Tables');
-    assert.equal(tables.length, 18);
-    assert.ok(tables.every((step) => step.action === 'create'));
-    const menuSteps = await planMenu(client, menu, { config });
-    assert.equal(menuSteps.filter((step) => step.section === 'Items' && step.action === 'create').length, 93);
-    assert.equal(menuSteps.find((step) => step.section === 'Categories' && step.name === 'Iced Milk Tea').detail, 'station Coffee Bar');
-    assert.equal(menuSteps.find((step) => step.section === 'Categories' && step.name === 'Delicate Desserts').detail, 'station Bakery Counter');
-    assert.equal(menuSteps.find((step) => step.section === 'Categories' && step.name === 'Nachos').detail, 'station Kitchen');
-  });
-
-  it('applied to a fresh restaurant: tables in two sections, Indoor then Outdoor, in file order', async () => {
-    const { client, restaurant } = await ownerClient();
-    const { config, toConfirm } = validateSetupConfig({ tables: threeOClockConfig().tables });
-    await applySetup(await planSetup(client, config, { toConfirm }));
-    const tables = await Table.find({ restaurantId: restaurant._id, isActive: true }).sort({ displayOrder: 1 }).lean();
-    assert.equal(tables.length, 18);
-    assert.equal(tables.filter((table) => table.section === 'Indoor').length, 10);
-    assert.deepEqual([tables[0].name, tables[0].section], ['Table 1', 'Indoor']);
-    assert.deepEqual([tables[10].name, tables[10].section], ['Outdoor 1', 'Outdoor']);
-  });
-
-  it('refuses a table name used in two sections, pointing at the second', () => {
-    const tables = [
-      { section: 'Indoor', names: ['Table 1'] },
-      { section: 'Outdoor', names: ['table 1'] },
-    ];
-    assert.throws(
-      () => validateSetupConfig({ tables }),
-      (error) => error instanceof SetupConfigError && error.issues.some((issue) => issue.path === 'tables[1].names[0]'),
-    );
-  });
-});

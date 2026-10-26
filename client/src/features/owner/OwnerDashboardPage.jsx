@@ -1,13 +1,17 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 
+import { getCaSends } from '../../api/caReports.js';
 import { getReport } from '../../api/reportsV2.js';
+import { monthWords, sendWords } from '../settings/CaSendHistory.jsx';
 import ErrorMessage from '../../components/ui/ErrorMessage.jsx';
 import Money, { moneyText } from '../../components/ui/Money.jsx';
 import { useTheme } from '../../context/ThemeProvider.jsx';
 import { businessDateToday, formatTimeIst } from '../../utils/formatDate.js';
 import { wholePercents } from '../../utils/wholePercents.js';
 import { drillHref } from '../reports/catalog.js';
+import OwnerNetworkCard from '../network/OwnerNetworkCard.jsx';
+import ConnectionStatus, { LostConnectionBanner } from '../network/ConnectionStatus.jsx';
 import { hourLabel, shortBusinessDate } from '../reports/formatReport.js';
 
 /**
@@ -88,6 +92,7 @@ export default function OwnerDashboardPage() {
 
   return (
     <div data-owner className="min-h-dvh bg-dash-page text-dash-ink">
+      <LostConnectionBanner />
       <main className="mx-auto flex w-full max-w-xl flex-col gap-3 px-4 pb-8 pt-4">
         <header className="flex flex-col pt-1">
           <div className="flex items-center justify-between gap-3">
@@ -95,7 +100,11 @@ export default function OwnerDashboardPage() {
               <span className="size-2 shrink-0 rounded-full bg-dash-ok" aria-hidden="true" />
               <span className="truncate text-[11px] font-semibold uppercase leading-none tracking-widest text-dash-muted">{restaurantName}</span>
             </div>
-            <span className="rounded-full border border-dash-line bg-dash-card px-3 py-1 text-xs font-medium">{shortBusinessDate(date)}</span>
+            <span className="flex items-center gap-2">
+              {/* P62. This device's connection to the cafe server, as in the ERP's top bar. */}
+              <ConnectionStatus />
+              <span className="rounded-full border border-dash-line bg-dash-card px-3 py-1 text-xs font-medium">{shortBusinessDate(date)}</span>
+            </span>
           </div>
           <div className="pt-3">
             <h1 className="text-2xl font-bold leading-tight tracking-tight">Today</h1>
@@ -112,6 +121,12 @@ export default function OwnerDashboardPage() {
         {failed && <ErrorMessage error={failed.error} />}
         {!failed && !ready && <p className="py-12 text-center text-sm text-dash-muted">Reading today&apos;s figures…</p>}
         {ready && <Figures date={date} today={today.data} day={day.data} hours={hours.data} />}
+
+        {/* P65. Last month's CA pack, when it did not go. */}
+        <CaPackNotice />
+
+        {/* P62. The WiFi the system runs on, the devices connected, the cloud copy. */}
+        <OwnerNetworkCard />
 
         <Link to="/dashboard" className="mt-1 flex min-h-12 items-center justify-center rounded-xl border border-dash-line bg-dash-card text-sm font-medium hover:bg-dash-track">
           Open the ERP
@@ -353,5 +368,22 @@ function TickCircle() {
       <circle cx="8" cy="8" r="7.2" stroke="currentColor" strokeWidth="1.6" />
       <path d="M4.8 8.2L7 10.4L11.2 5.8" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" />
     </svg>
+  );
+}
+
+/**
+ * P65. The most recent month's CA pack, shown only when it was not sent: a day
+ * still open, a check failing, or the email service refusing it. Nothing when
+ * the send is off or the month went.
+ */
+function CaPackNotice() {
+  const sends = useQuery({ queryKey: ['ca-sends'], queryFn: getCaSends, refetchInterval: REFRESH_MS * 5 });
+  const latest = sends.data?.ca?.enabled ? sends.data.sends[0] : null;
+  if (!latest || !['REFUSED', 'FAILED'].includes(latest.status)) return null;
+  return (
+    <Link to="/settings/ca-reports" className="flex flex-col gap-1 rounded-xl border border-dash-line bg-dash-card px-4 py-3 hover:bg-dash-track">
+      <span className="text-sm font-semibold">The CA pack for {monthWords(latest.period)} was not sent</span>
+      <span className="text-xs text-dash-muted">{sendWords(latest)}</span>
+    </Link>
   );
 }

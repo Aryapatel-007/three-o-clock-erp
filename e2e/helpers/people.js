@@ -29,6 +29,15 @@ export async function signIn(browser, { name, phone, password, device }) {
   await page.getByLabel('Password').fill(password);
   await page.getByRole('button', { name: 'Sign in' }).click();
   await expect(page).not.toHaveURL(/\/login/);
+  // 2026-10-25. The counter computer prints its own bills. On a test server running as a cafe PC,
+  // Automatic would send them to the counter, as on any device there but the till window.
+  if (device === 'computer') {
+    await page.evaluate(() => {
+      const stored = JSON.parse(window.localStorage.getItem('caffeza.device') ?? '{}');
+      window.localStorage.setItem('caffeza.device', JSON.stringify({ ...stored, billPrintsAt: 'HERE' }));
+      window.dispatchEvent(new Event('erp-device-change'));
+    });
+  }
   return { name, device, context, page, prints };
 }
 

@@ -1,5 +1,7 @@
 import { expect } from '@playwright/test';
 
+import { takePendingGuests } from './floor.js';
+
 /** A dish card on the order screen. */
 const card = (page, item) => page.locator('li').filter({ has: page.getByRole('heading', { name: item, exact: true, level: 3 }) });
 
@@ -41,7 +43,7 @@ export async function addFromPanel(page, note = null) {
 export async function sendToKitchen(page) {
   await page.getByRole('button', { name: /^Send \d+ to (the )?kitchen/ }).filter({ visible: true }).first().click();
   const sent = page.getByText('Sent to the kitchen.');
-  // P56. A table's first Send asks for the guest's details; these tests skip them.
+  // P56. A table's first Send asks for the guest's details; P59: with the guests given to openTable.
   const guest = page.getByRole('dialog', { name: 'Guest details' });
   await expect(sent.or(guest).first()).toBeVisible();
   if (await guest.isVisible()) await skipGuestDetails(page);
@@ -49,10 +51,20 @@ export async function sendToKitchen(page) {
   await page.getByRole('button', { name: 'Dismiss' }).click().catch(() => {});
 }
 
-/** P56. Skips the Guest details sheet a table's first Send opens. */
+/**
+ * P56. Answers the Guest details sheet a table's first Send opens: P59, with the
+ * number of guests given to `openTable` when there is one, else Skip.
+ */
 export async function skipGuestDetails(page) {
   const guest = page.getByRole('dialog', { name: 'Guest details' });
-  await guest.getByRole('button', { name: 'Skip, send without details' }).click();
+  const guests = takePendingGuests(page);
+  if (guests != null) {
+    await guest.getByRole('button', { name: guests > 7 ? 'More' : String(guests), exact: true }).click();
+    for (let more = 8; more < guests; more += 1) await guest.getByRole('button', { name: 'One more' }).click();
+    await guest.getByRole('button', { name: 'Save and send' }).click();
+  } else {
+    await guest.getByRole('button', { name: 'Skip, send without details' }).click();
+  }
   await expect(guest).toHaveCount(0);
 }
 
@@ -146,42 +158,12 @@ export async function giveNoCharge(page, reason) {
   await expect(page.getByText('No Charge given. The table is free.')).toBeVisible();
 }
 
-/**
- * Bills an order waiting for the cashier, and lands on its bill.
- *
- * A captain still has Bill this order. The till now takes payment on the
- * order's own page and never visits the bill in service, so for the tests of
- * the bill page itself the bill is made through the API, unprinted, and opened
- * the way Bills opens a past one.
- */
+/** Bills an order waiting for the cashier, and lands on its bill. */
 export async function billOrder(page) {
   await page.reload();
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
-  const captainButton = page.getByRole('button', { name: 'Bill this order' });
-  if ((await captainButton.count()) > 0) {
-    await captainButton.click();
-    await expect(page).toHaveURL(/\/bills\/[a-f0-9]{24}$/);
-    return page.url();
-  }
-  const orderId = new URL(page.url()).pathname.split('/').at(-1);
-  // From inside the page, as the app itself calls: the browser sends its own session cookie.
-  const billId = await page.evaluate(async (id) => {
-    const call = async (method, path, body) => {
-      const response = await fetch(`/api/v1${path}`, {
-        method,
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'fetch', ...(call.token ? { Authorization: `Bearer ${call.token}` } : {}) },
-        body: body === undefined ? undefined : JSON.stringify(body),
-      });
-      const json = await response.json();
-      if (!response.ok) throw new Error(`${method} ${path}: ${JSON.stringify(json)}`);
-      return json.data;
-    };
-    call.token = (await call('POST', '/auth/refresh')).accessToken;
-    const order = await call('GET', `/orders/${id}`);
-    return order.billId ?? (await call('POST', '/bills', { orderId: id, version: order.version })).id;
-  }, orderId);
-  await page.goto(`/bills/${billId}`);
+  // P57. The Bill box's Save makes the bill and prints nothing; these tests print where they mean to.
+  await page.getByRole('region', { name: 'Bill' }).getByRole('button', { name: 'Save', exact: true }).click();
   await expect(page).toHaveURL(/\/bills\/[a-f0-9]{24}$/);
   return page.url();
 }

@@ -24,9 +24,19 @@ function toQuery(params = {}) {
   return query ? `?${query}` : '';
 }
 
-/** Creates the bill for an order. The order's current version, from the order screen. */
-export function createBill({ orderId, version }) {
-  return api.post('/bills', { orderId, version });
+/**
+ * Creates the bill for an order. The order's current version, from the order screen.
+ * P57: with the discount chosen before Save, and `preview` for the totals shown before it.
+ */
+export function createBill({ orderId, version, discount, preview, withoutKot }) {
+  return api.post('/bills', {
+    orderId,
+    version,
+    ...(discount ? { discount } : {}),
+    ...(preview ? { preview: true } : {}),
+    // P60. The counter bills dishes not yet sent, without a KOT.
+    ...(withoutKot ? { withoutKot: true } : {}),
+  });
 }
 
 export function getBill(billId) {
@@ -82,9 +92,14 @@ export function applyAdvance(billId) {
   return api.post(`/bills/${billId}/apply-advance`, {});
 }
 
-export function voidBill(billId, { reasonCode, note, approval }) {
-  // P28. A cashier's void carries an owner's or manager's PIN.
-  return api.post(`/bills/${billId}/void`, { reasonCode, note: note || null, ...(approval ? { approval } : {}) });
+export function voidBill(billId, { reasonCode, note, approval, closeOrder }) {
+  // P28. A cashier's void carries an owner's or manager's PIN. 2026-10-22: closeOrder frees the table too.
+  return api.post(`/bills/${billId}/void`, {
+    reasonCode,
+    note: note || null,
+    ...(approval ? { approval } : {}),
+    ...(typeof closeOrder === 'boolean' ? { closeOrder } : {}),
+  });
 }
 
 /** width is 32 (58mm) or 48 (80mm). The server lays it out; the client only prints it. */
@@ -119,8 +134,8 @@ export function requestBillPrint(billId) {
 }
 
 /** P25 Part D. Every print, from any device, records itself, so the next one says Duplicate. */
-export function markBillPrinted(billId) {
-  return api.post(`/bills/${billId}/printed`, {});
+export function markBillPrinted(billId, { forRequestAt } = {}) {
+  return api.post(`/bills/${billId}/printed`, forRequestAt ? { forRequestAt } : {});
 }
 
 /** P25 Part D. The bills captains asked the counter to print, oldest first. */

@@ -16,9 +16,9 @@
 import { AUDIT_ACTIONS, AUDIT_ENTITY_TYPES } from '../models/AuditLog.js';
 import { Bill } from '../models/Bill.js';
 import { Counter, COUNTER_NAMES } from '../models/Counter.js';
-import { INVOICE_MODES, Restaurant } from '../models/Restaurant.js';
+import { INVOICE_MODES, INVOICE_SHOW_DEFAULTS, Restaurant, THERMAL_SHOW_DEFAULTS } from '../models/Restaurant.js';
 import { recordAudit } from './auditService.js';
-import { ACCENT_PRESETS, checkBrandPair, nightVariant } from '../utils/colour.js';
+import { ACCENT_PRESETS, checkAccent, checkBrandPair, nightVariant } from '../utils/colour.js';
 import { BusinessRuleError, ERROR_CODES, ValidationError } from '../utils/errors.js';
 import { financialYearFor, nowUtc } from '../utils/time.js';
 import { withOptionalTransaction } from '../utils/transaction.js';
@@ -50,6 +50,8 @@ const SETTING_PATHS = Object.freeze({
   'receipt.showFssai': 'settings.receipt.showFssai',
   'receipt.showServerName': 'settings.receipt.showServerName',
   'receipt.reviewLinkUrl': 'settings.receipt.reviewLinkUrl',
+  // P64.
+  'receipt.termsText': 'settings.receipt.termsText',
 
   'inventory.lowStockAlertsEnabled': 'settings.inventory.lowStockAlertsEnabled',
 
@@ -60,6 +62,12 @@ const SETTING_PATHS = Object.freeze({
   'invoice.mode': 'settings.invoice.mode',
   'invoice.prefix': 'settings.invoice.prefix',
   'invoice.startingNumber': 'settings.invoice.startingNumber',
+  // P64.
+  'invoice.defaultSacCode': 'settings.invoice.defaultSacCode',
+  'invoiceLayout.theme': 'settings.invoiceLayout.theme',
+  'invoiceLayout.useBrandAccent': 'settings.invoiceLayout.useBrandAccent',
+  ...Object.fromEntries(Object.keys(INVOICE_SHOW_DEFAULTS).map((key) => [`invoiceLayout.show.${key}`, `settings.invoiceLayout.show.${key}`])),
+  ...Object.fromEntries(Object.keys(THERMAL_SHOW_DEFAULTS).map((key) => [`invoiceLayout.thermalShow.${key}`, `settings.invoiceLayout.thermalShow.${key}`])),
 
   'delivery.platformCollectsGst': 'settings.delivery.platformCollectsGst',
 
@@ -68,13 +76,13 @@ const SETTING_PATHS = Object.freeze({
   'billing.captainsMayTakePayment': 'settings.billing.captainsMayTakePayment',
   'billing.reviseUnpaidBills': 'settings.billing.reviseUnpaidBills',
   'billing.printBeforePayment': 'settings.billing.printBeforePayment',
-  'billing.payFirstTakeaway': 'settings.billing.payFirstTakeaway',
   'approvals.lineCancel': 'settings.approvals.lineCancel',
   'approvals.paidIn': 'settings.approvals.paidIn',
   'approvals.managerTasks': 'settings.approvals.managerTasks',
   'approvals.revisePrintedBill': 'settings.approvals.revisePrintedBill',
   'kitchen.readyMeansServed': 'settings.kitchen.readyMeansServed',
   'kitchen.oneTicketPerOrder': 'settings.kitchen.oneTicketPerOrder',
+  'kitchen.splitTicketsByStation': 'settings.kitchen.splitTicketsByStation',
 
   'dayClose.showCashDifferenceToManager': 'settings.dayClose.showCashDifferenceToManager',
   'cash.denominations': 'settings.cash.denominations',
@@ -85,6 +93,11 @@ const SETTING_PATHS = Object.freeze({
   'payments.otherModes': 'settings.payments.otherModes',
   'reports.onHoldTallyCode': 'settings.reports.onHoldTallyCode',
   'reports.dayEndEmails': 'settings.reports.dayEndEmails',
+  // P65.
+  'reports.ca.enabled': 'settings.reports.ca.enabled',
+  'reports.ca.name': 'settings.reports.ca.name',
+  'reports.ca.email': 'settings.reports.ca.email',
+  'reports.ca.whatsapp': 'settings.reports.ca.whatsapp',
 
   'floor.sectionOrder': 'settings.floor.sectionOrder',
   'floor.longOpenMinutes': 'settings.floor.longOpenMinutes',
@@ -122,6 +135,13 @@ const SETTING_PATHS = Object.freeze({
   'assistant.handoffHours': 'settings.assistant.handoffHours',
   'assistant.dailyAiLimit': 'settings.assistant.dailyAiLimit',
 });
+
+/**
+ * P65. Settings whose values are a third party's contact details. Their audit
+ * line says the field changed and who changed it, never the value: the audit
+ * collection carries no personal data (DB-SCHEMA section 13, CONVENTIONS 12).
+ */
+const UNRECORDED_VALUE_PATHS = Object.freeze(new Set(['reports.ca.name', 'reports.ca.email', 'reports.ca.whatsapp']));
 
 /** The modules a restaurant can switch off. P02. */
 export const FEATURE_NAMES = Object.freeze(['inventory', 'attendance', 'online']);
@@ -294,6 +314,8 @@ async function lastIssuedUnderPrefix(restaurantId, prefix) {
  * made sure all three fields are present and consistent with the mode.
  */
 async function assertInvoiceChangeAllowed(restaurantId, current, next) {
+  // P64. `defaultSacCode` may be sent on its own; the series rules are about the other three.
+  if (['mode', 'prefix', 'startingNumber'].every((key) => next[key] === undefined)) return;
   const unchanged =
     current.mode === next.mode &&
     current.prefix === next.prefix &&
@@ -384,15 +406,30 @@ function assertAppearanceComplete(current, next) {
 }
 
 /**
+ * P64. The accent a full-page invoice is drawn in, checked again by
+ * utils/colour.js before it is put on a tax document. A preset always passes;
+ * a custom colour stored before a rule tightened might not, and is refused.
+ */
+function assertPrintableAccent(appearance) {
+  const accent = resolvedAccent(appearance);
+  const verdict = checkAccent(accent);
+  if (!verdict.ok) throw new BusinessRuleError(verdict.message);
+}
+
+/** The accent colour the restaurant chose, worked out once for every reader. */
+export function resolvedAccent(appearance) {
+  return appearance.accentPreset === 'CUSTOM' && appearance.accentHex
+    ? appearance.accentHex
+    : (ACCENT_PRESETS[appearance.accentPreset] ?? ACCENT_PRESETS.OCEAN);
+}
+
+/**
  * The look as `GET /auth/me` gives it to every role, P20A: the accent's day and
  * night colours already worked out, and the wordmark already resolved, so the
  * client does no colour arithmetic on load.
  */
 export function presentAppearance(appearance, restaurantName) {
-  const accent =
-    appearance.accentPreset === 'CUSTOM' && appearance.accentHex
-      ? appearance.accentHex
-      : (ACCENT_PRESETS[appearance.accentPreset] ?? ACCENT_PRESETS.OCEAN);
+  const accent = resolvedAccent(appearance);
   return {
     accentPreset: appearance.accentPreset,
     accent,
@@ -430,6 +467,17 @@ export async function updateSettings(
   }
 
   if (patch.appearance !== undefined) assertAppearanceComplete(before.appearance, patch.appearance);
+
+  // P65. The pack goes by email, so it cannot be switched on without one.
+  if (patch.reports?.ca?.enabled === true) {
+    const email = patch.reports.ca.email !== undefined ? patch.reports.ca.email : before.reports.ca.email;
+    if (!email) throw new BusinessRuleError("Add the CA's email first: the pack goes by email.");
+  }
+
+  // P64. Drawing the accent on an invoice: the accent must still pass the accent rules.
+  if (patch.invoiceLayout?.useBrandAccent === true) {
+    assertPrintableAccent({ ...before.appearance, ...(patch.appearance ?? {}) });
+  }
 
   const changes = [];
   for (const apiPath of SETTING_API_PATHS) {
@@ -482,11 +530,13 @@ export async function updateSettings(
           amountInPaise: null,
           // A field path and two scalars. No personal data goes in here, for
           // the reason DB-SCHEMA section 13 gives.
-          details: {
-            field: change.apiPath,
-            previousValue: String(change.previous),
-            newValue: String(change.next),
-          },
+          details: UNRECORDED_VALUE_PATHS.has(change.apiPath)
+            ? { field: change.apiPath, valueRecorded: false }
+            : {
+                field: change.apiPath,
+                previousValue: String(change.previous),
+                newValue: String(change.next),
+              },
         },
         session,
       );

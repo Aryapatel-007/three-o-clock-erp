@@ -1,5 +1,5 @@
 /**
- * Email, through Resend. P44: only the day-end message uses it.
+ * Email, through Resend. P44: the day-end message; P65: the CA's monthly pack.
  *
  * One HTTPS call with the API key, no SDK, the way razorpayClient.js reaches
  * Razorpay. The key comes from RESEND_API_KEY and is never logged. Without it,
@@ -26,8 +26,12 @@ export function isEmailSetUp() {
   return Boolean(settings().apiKey);
 }
 
-/** Sends one plain-text email. Returns Resend's id. Throws a 422 without a key, a 502 when Resend says no. */
-export async function sendEmail({ to, subject, text }) {
+/**
+ * Sends one plain-text email. Returns Resend's id. Throws a 422 without a key,
+ * a 502 when Resend says no. P65: `attachments`, optional, in Resend's own
+ * shape, `[{ filename, content }]` with `content` as base64.
+ */
+export async function sendEmail({ to, subject, text, attachments }) {
   const { apiKey, base, from } = settings();
   if (!apiKey) throw new BusinessRuleError('Email is not set up on the server.');
 
@@ -36,7 +40,7 @@ export async function sendEmail({ to, subject, text }) {
     response = await fetch(`${base}/emails`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ from, to, subject, text }),
+      body: JSON.stringify({ from, to, subject, text, ...(attachments?.length ? { attachments } : {}) }),
       signal: AbortSignal.timeout(15_000),
     });
   } catch {

@@ -494,14 +494,18 @@ describe('every report', () => {
   });
 
   it('answers each role as the contract\'s permission table says', async () => {
-    const ownerOnly = new Set(['payments', 'cash-till']);
+    // P65, changed on purpose: R20 is the owner's, and takes a month. This golden world has
+    // September's other days open, so the owner gets past the role check to DAY_NOT_CLOSED.
+    const ownerOnly = new Set(['payments', 'cash-till', 'ca-pack']);
+    const ownerStatus = { 'ca-pack': 422 };
     for (const definition of REPORTS) {
-      const query = QUERIES[definition.name] + (definition.name === 'tally-export' ? '&format=xlsx' : '');
+      const query =
+        definition.name === 'ca-pack' ? 'month=2026-09' : QUERIES[definition.name] + (definition.name === 'tally-export' ? '&format=xlsx' : '');
       for (const role of ['OWNER', 'MANAGER', 'CASHIER', 'WAITER']) {
         const token = role === 'WAITER' ? golden.people['Khuman Singh'] : golden.tokens[role];
         const response = await fetch(`${baseUrl}/api/v1/reports/v2/${definition.name}?${query}`, { headers: { Authorization: `Bearer ${token}` } });
         const allowed = role === 'OWNER' || (role === 'MANAGER' && !ownerOnly.has(definition.name));
-        if (allowed) assert.equal(response.status, 200, `${role} ${definition.name}`);
+        if (allowed) assert.equal(response.status, role === 'OWNER' ? (ownerStatus[definition.name] ?? 200) : 200, `${role} ${definition.name}`);
         else assert.equal(response.status, 403, `${role} ${definition.name}`);
       }
     }

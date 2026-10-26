@@ -6,6 +6,22 @@ import Money from '../../components/ui/Money.jsx';
 import Spinner from '../../components/ui/Spinner.jsx';
 
 /**
+ * How well a dish's name matches the search, best first, or null for no match.
+ * Every typed word must be in the name. A name starting with the search comes
+ * first, then one with a word starting with it, then any other match: typing
+ * "latte" lists Caffe Latte before Chole Kulcha Platter. 2026-10-17.
+ */
+function searchRank(name, needle) {
+  const haystack = name.toLowerCase();
+  const words = needle.split(/\s+/).filter(Boolean);
+  if (!words.every((word) => haystack.includes(word))) return null;
+  if (haystack.startsWith(needle)) return 0;
+  const starts = haystack.split(/[^a-z0-9]+/);
+  if (words.every((word) => starts.some((part) => part.startsWith(word)))) return 1;
+  return 2;
+}
+
+/**
  * The menu, for adding lines to an order.
  *
  * Reads GET /menu, which is exactly what that endpoint is for: the sellable
@@ -47,17 +63,17 @@ export default function MenuPicker({
   const categories = tree ?? [];
   const needle = search.trim().toLowerCase();
 
-  const visible = useMemo(
-    () =>
-      categories
-        .filter((category) => needle || categoryId === null || category.id === categoryId)
-        .flatMap((category) =>
-          needle
-            ? category.items.filter((item) => item.name.toLowerCase().includes(needle))
-            : category.items,
-        ),
-    [categories, categoryId, needle],
-  );
+  const visible = useMemo(() => {
+    const items = categories
+      .filter((category) => needle || categoryId === null || category.id === categoryId)
+      .flatMap((category) => category.items);
+    if (!needle) return items;
+    return items
+      .map((item) => ({ item, rank: searchRank(item.name, needle) }))
+      .filter((entry) => entry.rank !== null)
+      .sort((a, b) => a.rank - b.rank)
+      .map((entry) => entry.item);
+  }, [categories, categoryId, needle]);
 
   const totalItems = categories.reduce((sum, category) => sum + category.items.length, 0);
 

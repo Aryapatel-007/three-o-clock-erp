@@ -90,3 +90,23 @@ test('a day through the cash book', async ({ browser }) => {
   expect(book.broughtForward).toMatchObject({ fromDate: DAY, keptInPaise: 200000 });
   await owner.page.screenshot({ path: 'e2e/screenshots/cash-book.png', fullPage: true });
 });
+
+test("a cashier voids a top-up typed twice, with the manager's PIN", async ({ browser }) => {
+  const golden = await resetGolden();
+  await at('12:00', DAY);
+  const cashier = await signIn(browser, { name: 'Counter', phone: golden.phones.Counter, password: golden.password, device: 'phone' });
+  const approval = { name: 'Manager', pin: '2468' };
+  await recordCash(cashier.page, 'Top-up', '500', null, { source: 'From the owner', approval });
+
+  const today = cashier.page.getByRole('region', { name: 'Today' });
+  await today.getByRole('button', { name: 'Void', exact: true }).click();
+  const sheet = cashier.page.getByRole('dialog', { name: 'Void this entry' });
+  await sheet.getByLabel('Why is this being voided?').fill('Typed twice');
+  await expect(sheet.getByRole('button', { name: 'Void it' })).toBeDisabled();
+  await sheet.getByRole('button', { name: approval.name, exact: true }).click();
+  await sheet.getByLabel('Their PIN').fill(approval.pin);
+  await sheet.getByRole('button', { name: 'Void it' }).click();
+  await expect(cashier.page.getByText('Entry voided.')).toBeVisible();
+  await expect(today.getByText(/voided: Typed twice/)).toBeVisible();
+  await cashier.context.close();
+});

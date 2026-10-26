@@ -208,30 +208,46 @@ describe('GET /tables, the floor states', () => {
 });
 
 describe('The guest count rule', () => {
-  it('with requireGuestCount on, a dine-in order without guests is refused; takeaway and delivery are not', async () => {
+  it('P59: with requireGuestCount on, a table opens without guests and the first Send asks for them', async () => {
     const team = await seedTeam();
     const owner = team.tokens.OWNER;
     const table = (await createTable(owner, { name: 'R1' })).body.data;
-
-    const first = await openOrder(team.tokens.WAITER, { tableId: table.id });
-    assert.equal(first.status, 201, 'off by default');
-    const cancelled = await request('POST', `/api/v1/orders/${first.body.data.id}/cancel`, {
-      token: owner,
-      body: { version: first.body.data.version, reasonCode: 'GUEST_LEFT' },
-    });
-    assert.equal(cancelled.status, 200, JSON.stringify(cancelled.body));
+    const item = (await createMenuItem(owner, { name: 'Pani Puri' })).body.data;
 
     const on = await request('PATCH', '/api/v1/settings', { token: owner, body: { reason: 'Covers on every table', floor: { requireGuestCount: true } } });
     assert.equal(on.status, 200, JSON.stringify(on.body));
 
-    const refused = await openOrder(team.tokens.WAITER, { tableId: table.id });
+    const opened = await openOrder(team.tokens.WAITER, { tableId: table.id, lines: [{ menuItemId: item.id, quantity: 1 }] });
+    assert.equal(opened.status, 201, 'P59: opening no longer needs guests');
+    let order = opened.body.data;
+
+    const refused = await request('POST', `/api/v1/orders/${order.id}/fire`, { token: team.tokens.WAITER, body: { version: order.version } });
     assert.equal(refused.status, 400);
     assert.equal(refused.body.error.code, 'VALIDATION_FAILED');
-    assert.equal(refused.body.error.message, 'How many guests? Enter the number before opening the table.');
+    assert.equal(refused.body.error.message, 'How many guests? Enter the number before sending to the kitchen.');
     assert.ok(refused.body.error.fields.guestCount);
 
-    assert.equal((await openOrder(team.tokens.WAITER, { tableId: table.id, guestCount: 2 })).status, 201);
-    assert.equal((await request('POST', '/api/v1/orders', { token: team.tokens.CASHIER, body: { orderType: 'TAKEAWAY' } })).status, 201);
+    const counted = await request('PATCH', `/api/v1/orders/${order.id}/customer`, { token: team.tokens.WAITER, body: { version: order.version, guestCount: 3 } });
+    assert.equal(counted.status, 200, JSON.stringify(counted.body));
+    assert.equal(counted.body.data.guestCount, 3);
+    order = counted.body.data;
+    const fired = await request('POST', `/api/v1/orders/${order.id}/fire`, { token: team.tokens.WAITER, body: { version: order.version } });
+    assert.equal(fired.status, 200, JSON.stringify(fired.body));
+
+    // A table opened before, sent once without guests while the rule was off, is never refused a later Send.
+    const other = (await createTable(owner, { name: 'R2' })).body.data;
+    await request('PATCH', '/api/v1/settings', { token: owner, body: { reason: 'Off', floor: { requireGuestCount: false } } });
+    let late = (await openOrder(team.tokens.WAITER, { tableId: other.id, lines: [{ menuItemId: item.id, quantity: 1 }] })).body.data;
+    late = (await request('POST', `/api/v1/orders/${late.id}/fire`, { token: team.tokens.WAITER, body: { version: late.version } })).body.data.order;
+    await request('PATCH', '/api/v1/settings', { token: owner, body: { reason: 'On', floor: { requireGuestCount: true } } });
+    late = (await request('POST', `/api/v1/orders/${late.id}/lines`, { token: team.tokens.WAITER, body: { version: late.version, lines: [{ menuItemId: item.id, quantity: 1 }] } })).body.data;
+    const again = await request('POST', `/api/v1/orders/${late.id}/fire`, { token: team.tokens.WAITER, body: { version: late.version } });
+    assert.equal(again.status, 200, JSON.stringify(again.body));
+
+    // Takeaway and delivery never take a count.
+    const takeaway = (await request('POST', '/api/v1/orders', { token: team.tokens.CASHIER, body: { orderType: 'TAKEAWAY' } })).body.data;
+    const noCount = await request('PATCH', `/api/v1/orders/${takeaway.id}/customer`, { token: team.tokens.CASHIER, body: { version: takeaway.version, guestCount: 2 } });
+    assert.equal(noCount.status, 400);
     assert.equal(
       (await request('POST', '/api/v1/orders', { token: team.tokens.CASHIER, body: { orderType: 'DELIVERY', platform: { code: 'SWIGGY', orderId: '12345678' } } })).status,
       201,

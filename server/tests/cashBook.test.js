@@ -226,6 +226,22 @@ describe('a cash check', () => {
   });
 });
 
+describe('voiding from the cash book', () => {
+  it('gives every entry its id, so a top-up voided from the screen comes off the drawer', async () => {
+    const golden = await setupGoldenRestaurant({ name: 'Void Book Cafe' });
+    setClockForTests(ist('10:00'));
+    ok(await cash(golden.tokens.MANAGER, { type: 'OPENING_FLOAT', amountInPaise: 200000 }), 'float');
+    ok(await cash(golden.tokens.OWNER, { type: 'PAID_IN', amountInPaise: 50000, source: 'OWNER' }), 'top-up');
+    const book = await cashBook(golden.tokens.MANAGER);
+    assert.ok(book.movements.every((entry) => typeof entry.id === 'string' && entry._id === undefined), 'id, not _id');
+    const topUp = book.movements.find((entry) => entry.type === 'PAID_IN');
+    ok(await request('POST', `/api/v1/cash-movements/${topUp.id}/void`, { token: golden.tokens.MANAGER, body: { reason: 'mistake' } }), 'void');
+    const after = await cashBook(golden.tokens.OWNER);
+    assert.equal(after.topUps.totalInPaise, 0);
+    assert.equal(after.cashInDrawerInPaise, 200000);
+  });
+});
+
 describe('the rules', () => {
   it('refuses keeping more than was counted', async () => {
     const golden = await setupGoldenRestaurant({ name: 'Keep Cafe' });

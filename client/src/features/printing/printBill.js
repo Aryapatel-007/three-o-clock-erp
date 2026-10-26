@@ -7,9 +7,10 @@
  * print queue all print through here, so a bill looks the same whoever prints
  * it.
  */
+import { fetchLogoDataUrl } from '../../api/brand.js';
 import { getInvoice, markBillPrinted } from '../../api/bills.js';
 
-import { INVOICE_STYLES, invoiceHtml, THERMAL_BILL_STYLES, thermalBillHtml } from './invoiceHtml.js';
+import { invoiceHtml, invoiceStyles, THERMAL_BILL_STYLES, thermalBillHtml } from './invoiceHtml.js';
 import { PRINTERS } from './printers.js';
 import { printDocument } from './printText.js';
 import { readDeviceSettings } from './useDeviceSettings.js';
@@ -25,6 +26,20 @@ export async function reviewQrSvg(url) {
   if (!url) return null;
   const { default: QRCode } = await import('qrcode');
   return QRCode.toString(url, { type: 'svg', margin: 0, errorCorrectionLevel: 'M' });
+}
+
+/**
+ * P64. The signature image, as a `data:` URL, only when the bill's layout
+ * prints the signature line and a signature is set. Kept by its hash, so a
+ * counter printing forty bills fetches it once.
+ */
+const signatures = new Map();
+
+export function signatureDataUrl(data) {
+  const hash = data?.signature?.hash;
+  if (!hash || !data.layout?.show?.signatureLine) return Promise.resolve(null);
+  if (!signatures.has(hash)) signatures.set(hash, fetchLogoDataUrl('SIGNATURE').catch(() => null));
+  return signatures.get(hash);
 }
 
 /**
@@ -66,17 +81,39 @@ export async function thermalLogoDataUrl(dataUrl) {
 /**
  * Prints the bill, then records the print (P25 Part D), so the next print of
  * it, from any device, says Duplicate at the top.
+ *
+ * P59. With `forRequestAt`, a captain's request from the print queue: the
+ * request is claimed on the server after the bill is laid out and before it
+ * prints, and only the device whose claim succeeds prints it. Resolves to
+ * null when another device took it.
  */
-export async function printBill(billId, { printer, logoDataUrl = null }) {
+export async function printBill(billId, { printer, logoDataUrl = null, forRequestAt = null, copy = 'RECIPIENT', paper = null }) {
+  const data = await getInvoice(billId);
+  let document;
   if (PRINTERS[printer]?.thermal === false) {
-    const data = await getInvoice(billId);
-    const qrSvg = await reviewQrSvg(data.reviewLinkUrl);
-    await printDocument({ printer, bodyHtml: invoiceHtml(data, { qrSvg, logoDataUrl }), styles: INVOICE_STYLES });
+    // P64. The restaurant's theme, its signature, and which copy this is.
+    const [qrSvg, signature] = await Promise.all([reviewQrSvg(data.reviewLinkUrl), signatureDataUrl(data)]);
+    document = {
+      printer,
+      bodyHtml: invoiceHtml(data, { qrSvg, logoDataUrl, signatureDataUrl: signature, copy }),
+      styles: invoiceStyles(data.layout?.theme),
+    };
   } else {
     // 2026-10-09: a thermal bill is laid out from the invoice data too, in the layout guests know.
-    const data = await getInvoice(billId);
     const [qrSvg, logo] = await Promise.all([reviewQrSvg(data.reviewLinkUrl), thermalLogoDataUrl(logoDataUrl)]);
-    await printDocument({ printer, bodyHtml: thermalBillHtml(data, { printer, logoDataUrl: logo, qrSvg, textSize: readDeviceSettings().billTextSize }), styles: THERMAL_BILL_STYLES });
+    document = { printer, bodyHtml: thermalBillHtml(data, { printer, logoDataUrl: logo, qrSvg, textSize: readDeviceSettings().billTextSize }), styles: THERMAL_BILL_STYLES };
   }
-  return markBillPrinted(billId);
+  if (!forRequestAt) {
+    await printDocument({ ...document, paper });
+    return markBillPrinted(billId);
+  }
+  let recorded;
+  try {
+    recorded = await markBillPrinted(billId, { forRequestAt });
+  } catch (error) {
+    if (error?.code === 'DUPLICATE') return null;
+    throw error;
+  }
+  await printDocument({ ...document, paper });
+  return recorded;
 }

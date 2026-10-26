@@ -28,7 +28,7 @@ import {
   ValidationError,
 } from '../utils/errors.js';
 import { scoped } from '../utils/scopedQuery.js';
-import { businessDateFor } from '../utils/time.js';
+import { businessDateFor, nowUtc } from '../utils/time.js';
 
 /** Mongo's duplicate key error. */
 const DUPLICATE_KEY = 11000;
@@ -58,9 +58,13 @@ export async function ensureDefaultPaymentMethods(restaurantId, { branchId, sess
             commissionBps: null,
             displayOrder: method.displayOrder,
             isActive: method.isActive,
+            createdAt: nowUtc(),
+            updatedAt: nowUtc(),
           },
         },
-        { upsert: true, ...(session ? { session } : {}) },
+        // Without timestamps: false Mongoose stamps updatedAt on every call, so every payment
+        // would change all four methods for nothing, and each change is synced (P63).
+        { upsert: true, timestamps: false, ...(session ? { session } : {}) },
       );
     } catch (error) {
       if (error?.code !== DUPLICATE_KEY) throw error;

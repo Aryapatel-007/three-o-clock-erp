@@ -6,6 +6,10 @@
  * authService.js owns it, so a grep of this folder for the field name comes
  * back empty and stays that way.
  */
+import { currentRole } from '../config/deployment.js';
+import { ROLES } from '../config/roles.js';
+import { syncMode } from '../services/sync/mode.js';
+import { conflictsUnseen } from '../services/sync/statusService.js';
 import { config } from '../config/env.js';
 import { logger } from '../config/logger.js';
 import { Branch } from '../models/Branch.js';
@@ -37,6 +41,7 @@ import { resetPasswordFromSignIn } from '../services/passwordResetService.js';
 import { sendSuccess } from '../utils/response.js';
 import { nowUtc } from '../utils/time.js';
 import { activeOrderChannels, activeTerminals, whatsappOn } from '../services/integrations/channelStatus.js';
+import { writeRefusal } from '../models/plugins/writerGuard.js';
 
 function presentUser(user, { includeLastLoginAt = false, includeStation = false } = {}) {
   const shape = {
@@ -112,8 +117,13 @@ export async function login(req, res) {
   const accessToken = issueAccessToken(user);
   const refreshToken = await issueRefreshToken(user, requestContext(req));
 
-  user.lastLoginAt = nowUtc();
-  await user.save();
+  // P62. Signing in works wherever writing does not: the read-only cloud copy,
+  // a box that stood down, a box whose clock is wrong. There the last sign-in
+  // time is simply not written; the user record belongs to the writer.
+  if (!writeRefusal('User')) {
+    user.lastLoginAt = nowUtc();
+    await user.save();
+  }
 
   // The refresh token leaves the server once, in an httpOnly cookie the browser
   // stores and JavaScript cannot read. It is never in the response body.
@@ -239,7 +249,6 @@ export async function me(req, res) {
       captainsMayTakePayment: billing.captainsMayTakePayment,
       reviseUnpaidBills: billing.reviseUnpaidBills,
       printBeforePayment: billing.printBeforePayment,
-      payFirstTakeaway: billing.payFirstTakeaway,
     },
     // P28. What needs a manager's PIN, so the till and the captain know when to ask. The server still decides.
     approvals: {
@@ -248,7 +257,7 @@ export async function me(req, res) {
       managerTasks: approvals.managerTasks,
       revisePrintedBill: approvals.revisePrintedBill,
     },
-    kitchen: { readyMeansServed: kitchen.readyMeansServed },
+    kitchen: { readyMeansServed: kitchen.readyMeansServed, splitTicketsByStation: kitchen.splitTicketsByStation !== false },
     // P47. The modes Other offers one tap each; a cashier cannot read GET /settings.
     payments: { otherModes: payments?.otherModes ?? [] },
     // P25 Part I. The card machines this device may send a payment to.
@@ -281,6 +290,14 @@ export async function me(req, res) {
     // P33. Whether the live channel is on, and where to open it: a page on
     // Vercel reaches the API through a rewrite that does not carry a WebSocket.
     live: { enabled: config.LIVE_CHANNEL === 'on', origin: config.LIVE_ORIGIN },
+    // P63. Owners and managers see how many sync conflicts wait to be read.
+    sync: {
+      mode: syncMode(),
+      // Which server answered: CLOUD (the website), BOX (the cafe PC) or MIRROR. The cafe
+      // server's connection bar and banner show only off the website.
+      server: currentRole(),
+      conflictsUnseen: [ROLES.OWNER, ROLES.MANAGER].includes(req.user.role) ? await conflictsUnseen(req.restaurantId) : null,
+    },
     // P22. Each logo slot's hash and size, never its bytes: a device fetches a
     // logo only when the hash differs from the one it saved.
     appearance: { ...presentAppearance(appearance, req.currentRestaurant?.name), logos: presentLogos(req.currentRestaurant) },

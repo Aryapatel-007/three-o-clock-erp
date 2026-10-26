@@ -9,6 +9,8 @@
  * Nothing here computes money. If you find yourself adding a `+` to a paise
  * figure in this file, it belongs in utils/tax.js.
  */
+import { GUEST_LEFT, voidBillAndCloseOrder } from '../services/billGuestLeftService.js';
+import { assertMayBillWithoutKot } from '../services/billWithoutKotService.js';
 import { ROLES } from '../config/roles.js';
 import { Bill } from '../models/Bill.js';
 import { Order } from '../models/Order.js';
@@ -32,7 +34,8 @@ import {
 import { cancelLinesAfterBilling, listRefunds as findRefunds, markRefundDone } from '../services/billCancelLinesService.js';
 import { markPrinted, printQueue, requestPrint } from '../services/billPrintService.js';
 import { buildInvoiceData, renderReceipt } from '../services/receiptService.js';
-import { getSetting, getSettings } from '../services/settingsService.js';
+import { getSetting, getSettings, resolvedAccent } from '../services/settingsService.js';
+import { outstandingFor } from '../services/accountService.js';
 import { sendList, sendSuccess } from '../utils/response.js';
 import { scoped, scopedForAggregate } from '../utils/scopedQuery.js';
 import { businessDateFor, nowUtc } from '../utils/time.js';
@@ -63,13 +66,20 @@ async function resolveRange(req, { from, to }) {
 
 /** POST /bills */
 export async function postBill(req, res) {
+  // P60. Only the counter skips the kitchen.
+  if (req.body.withoutKot) assertMayBillWithoutKot(req.user);
   // P25 Part D. A captain may bill by the owner's setting; the till always may.
   if (req.user.role === ROLES.WAITER) {
     const order = await Order.findOne({ ...scoped(req), _id: req.body.orderId }).select('orderType').lean();
     assertCanBill(req.user, order, await getSettingsGroup(req, 'billing'));
   }
+  // P57. A discount given with the bill follows the bill screen's rule exactly.
+  if (req.body.discount) {
+    const cashierMayApplyPlatformDiscounts = await getSetting(req.restaurantId, 'discounts.cashierMayApplyPlatformDiscounts', { req });
+    assertCanDiscount(req.user, { reasonCode: req.body.discount.reasonCode, cashierMayApplyPlatformDiscounts });
+  }
   const bill = await createBill(req, req.body);
-  return sendSuccess(res, bill, 201);
+  return sendSuccess(res, bill, req.body.preview ? 200 : 201);
 }
 
 /** GET /bills/:billId */
@@ -206,8 +216,12 @@ export async function postCorrectPayment(req, res) {
 export async function postVoid(req, res) {
   // P28. An owner or manager voids; a cashier may with their PIN, when the owner allows it.
   const { approvals } = await getSettings(req.restaurantId, { req });
-  const { approval, ...body } = req.body;
+  const { approval, closeOrder, ...body } = req.body;
   const approvedBy = await approverForManagerTask(req, approval, approvals, 'Only an owner or a manager can void a bill.');
+  // P59, then 2026-10-22: the order goes too, so the table is free. Left out, only Guest left closes it.
+  if (closeOrder ?? body.reasonCode === GUEST_LEFT) {
+    return sendSuccess(res, await voidBillAndCloseOrder(req, req.params.billId, { reasonCode: body.reasonCode, note: body.note ?? null, approvedBy }));
+  }
   return sendSuccess(res, await voidBill(req, req.params.billId, { ...body, approvedBy }));
 }
 
@@ -235,7 +249,7 @@ export async function getReceipt(req, res) {
 export async function getInvoice(req, res) {
   const bill = await readBill(req, req.params.billId);
   const restaurant = await Restaurant.findById(req.restaurantId);
-  const { receipt } = await getSettings(req.restaurantId, { req });
+  const { receipt, invoiceLayout, appearance } = await getSettings(req.restaurantId, { req });
   /**
    * 2026-10-09, for the thermal bill: who made the bill, read now as a label,
    * and the guest from the order. Only the last four digits of a mobile leave
@@ -243,15 +257,33 @@ export async function getInvoice(req, res) {
    */
   const [cashier, order] = await Promise.all([
     bill.billedBy ? User.findOne({ restaurantId: req.restaurantId, _id: bill.billedBy }).select('name').lean() : null,
-    Order.findOne({ ...scoped(req), _id: bill.orderId }).select('customerName customerPhone').lean(),
+    Order.findOne({ ...scoped(req), _id: bill.orderId }).select('customerName customerPhone lines._id lines.notes').lean(),
   ]);
+  /**
+   * P64. Each line's note, read from the order the bill was made from, the
+   * account's outstanding now for an On Hold bill, the signature slot, and the
+   * layout with its accent worked out. Section P64 5.
+   */
+  const lineNotes = new Map((order?.lines ?? []).map((line) => [String(line._id), line.notes ?? null]));
+  const onHoldOutstandingInPaise = bill.account?.accountId ? await outstandingFor(req, bill.account.accountId) : null;
+  const signature = restaurant.brandLogos?.signature?.sha256
+    ? { hash: restaurant.brandLogos.signature.sha256, contentType: restaurant.brandLogos.signature.contentType }
+    : null;
   return sendSuccess(res, {
-    ...buildInvoiceData({ restaurant, bill, receipt }),
+    ...buildInvoiceData({ restaurant, bill, receipt, lineNotes }),
     cashierName: cashier?.name ?? null,
     customer:
       order?.customerName || order?.customerPhone
         ? { name: order.customerName ?? null, mobileLast4: order.customerPhone ? String(order.customerPhone).slice(-4) : null }
         : null,
+    onHoldOutstandingInPaise,
+    signature,
+    layout: {
+      theme: invoiceLayout.theme,
+      accent: invoiceLayout.useBrandAccent ? resolvedAccent(appearance) : null,
+      show: { ...invoiceLayout.show },
+      thermalShow: { ...invoiceLayout.thermalShow },
+    },
   });
 }
 
@@ -267,7 +299,7 @@ export async function getPrintQueue(req, res) {
 
 /** POST /bills/:billId/printed. P25 Part D. */
 export async function postPrinted(req, res) {
-  return sendSuccess(res, await markPrinted(req, req.params.billId));
+  return sendSuccess(res, await markPrinted(req, req.params.billId, req.body ?? {}));
 }
 
 /** POST /bills/:billId/cancel-lines. P25 Part E. The service decides who may, and checks the PIN. */

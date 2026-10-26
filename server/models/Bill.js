@@ -141,6 +141,10 @@ const billLineSchema = new mongoose.Schema(
     categoryName: { type: String, trim: true, default: null },
     // P46. Copied from the order line: a typed name and price.
     isOpenItem: { type: Boolean, default: false },
+    // P64. Copied from the order line; null on bills from before P64, never back-filled.
+    hsnCode: { type: String, trim: true, default: null },
+    // P60. Copied from the order line: billed without a KOT.
+    billedWithoutKot: { type: Boolean, default: false },
 
     /**
      * This line's share of the bill discount, its net sales, and its share of

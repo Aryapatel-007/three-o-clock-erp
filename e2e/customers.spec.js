@@ -21,11 +21,8 @@ test("the guest's details on the first Send, and a note for all dishes on the ti
 
   const captain = await signIn(browser, { name: 'Khuman Singh', phone: golden.phones['Khuman Singh'], password: golden.password, device: 'phone' });
   await gotoFloor(captain.page);
+  // P59. A free table opens at once; nothing is asked until the first Send.
   await tile(captain.page, 'Table 2', 'free').click();
-  const seat = captain.page.getByRole('dialog');
-  await seat.getByRole('button', { name: '3', exact: true }).click();
-  await expect(seat.getByLabel('Guest name')).toHaveCount(0);
-  await seat.getByRole('button', { name: /^Start order/ }).click();
   await expect(captain.page).toHaveURL(/\/orders\/[a-f0-9]{24}$/);
 
   await addItems(captain.page, ['Caffe Latte']);
@@ -38,6 +35,10 @@ test("the guest's details on the first Send, and a note for all dishes on the ti
 
   await captain.page.getByRole('button', { name: /^Send \d+ to (the )?kitchen/ }).filter({ visible: true }).first().click();
   const sheet = captain.page.getByRole('dialog', { name: 'Guest details' });
+  // P59. The golden restaurant requires covers: no Skip, and Save waits for the count.
+  await expect(sheet.getByRole('button', { name: 'Skip, send without details' })).toHaveCount(0);
+  await expect(sheet.getByRole('button', { name: 'Choose the number of guests' })).toBeDisabled();
+  await sheet.getByRole('button', { name: '3', exact: true }).click();
   await sheet.getByLabel('Guest name').fill('Meera Joshi');
   await sheet.getByLabel('Mobile number').fill('98250 12345');
   await sheet.getByText('The guest agrees to offers and news by SMS or WhatsApp').click();
@@ -45,6 +46,7 @@ test("the guest's details on the first Send, and a note for all dishes on the ti
   await sheet.getByRole('button', { name: 'Save and send' }).click();
   await expect(captain.page.getByText('Sent to the kitchen.')).toBeVisible();
   await expect(captain.page.getByText('Meera Joshi').first()).toBeVisible();
+  await expect(captain.page.getByText('3 guests').first()).toBeVisible();
   expect(await captain.page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 
   const kitchen = await signIn(browser, { name: 'Manager', phone: golden.phones.Manager, password: golden.password, device: 'computer' });

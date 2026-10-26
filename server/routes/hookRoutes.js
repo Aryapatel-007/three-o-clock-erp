@@ -11,6 +11,8 @@ import express, { Router } from 'express';
 
 import { webhookLimiter } from '../middleware/rateLimit.js';
 import { receiveWebhook, verifySubscription } from '../services/integrations/webhookService.js';
+import { partnerIntake } from '../services/intake/cloudIntake.js';
+import { mirrorIsReadOnly } from '../services/replication/writerState.js';
 import { sendSuccess } from '../utils/response.js';
 import { NotFoundError, UnauthenticatedError } from '../utils/errors.js';
 
@@ -36,7 +38,10 @@ router.post(
   webhookLimiter,
   async (req, res) => {
     const rawBody = Buffer.isBuffer(req.body) ? req.body : Buffer.alloc(0);
-    const outcome = await receiveWebhook(req.params.provider, req.params.webhookKey, rawBody, req.headers);
+    // P62. On the read-only cloud mirror: verified the same way, kept in intake for the cafe box.
+    const outcome = mirrorIsReadOnly()
+      ? await partnerIntake(req.params.provider, req.params.webhookKey, rawBody, req.headers)
+      : await receiveWebhook(req.params.provider, req.params.webhookKey, rawBody, req.headers);
     if (outcome.status === 404) throw new NotFoundError();
     if (outcome.status === 401) throw new UnauthenticatedError('The signature did not match.');
     if (outcome.status === 400) {

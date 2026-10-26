@@ -33,9 +33,13 @@ import {
   TAX_PRICING_MODE_VALUES,
   TODAY_TILE_KEYS,
   WORDMARK_MAX_LENGTH,
+  INVOICE_SHOW_DEFAULTS,
+  INVOICE_THEMES,
+  TERMS_TEXT_MAX_LENGTH,
+  THERMAL_SHOW_DEFAULTS,
 } from '../models/Restaurant.js';
 import { checkAccent } from '../utils/colour.js';
-import { basisPoints } from './common.js';
+import { basisPoints, normalisePhoneIndia } from './common.js';
 
 export const SETTINGS_REASON_MAX_LENGTH = 200;
 
@@ -120,6 +124,8 @@ const receipt = z
     showFssai: z.boolean({ error: 'Must be true or false.' }).optional(),
     showServerName: z.boolean({ error: 'Must be true or false.' }).optional(),
     reviewLinkUrl: reviewLinkUrl.optional(),
+    // P64.
+    termsText: receiptText(TERMS_TEXT_MAX_LENGTH, 'The terms and conditions').optional(),
   })
   .strict();
 
@@ -154,6 +160,12 @@ export const INVOICE_PREFIX_MESSAGE =
  */
 const invoice = z
   .object({
+    // P64. Sent on its own or with the other three; the together rule is about those three.
+    defaultSacCode: z
+      .string({ error: 'A SAC code is 4 to 8 digits.' })
+      .trim()
+      .regex(/^\d{4,8}$/, 'A SAC code is 4 to 8 digits.')
+      .optional(),
     mode: z.enum(INVOICE_MODE_VALUES, { error: 'Must be FINANCIAL_YEAR or PREFIX.' }).optional(),
     prefix: z
       .union([z.string().trim().regex(INVOICE_PREFIX_PATTERN, INVOICE_PREFIX_MESSAGE), z.null()], {
@@ -244,8 +256,6 @@ const billing = z
     // P29.
     reviseUnpaidBills: z.boolean({ error: 'Must be true or false.' }).optional(),
     printBeforePayment: z.boolean({ error: 'Must be true or false.' }).optional(),
-    // Counter Sale.
-    payFirstTakeaway: z.boolean({ error: 'Must be true or false.' }).optional(),
   })
   .strict();
 
@@ -265,6 +275,8 @@ const kitchen = z
   .object({
     readyMeansServed: z.boolean({ error: 'Must be true or false.' }).optional(),
     oneTicketPerOrder: z.boolean({ error: 'Must be true or false.' }).optional(),
+    // P58.
+    splitTicketsByStation: z.boolean({ error: 'Must be true or false.' }).optional(),
   })
   .strict();
 
@@ -368,6 +380,24 @@ const reports = z
       .array(z.string().trim().toLowerCase().email('Is not an email address.'), { error: 'Must be a list of email addresses.' })
       .max(5, 'At most 5 addresses.')
       .refine((list) => new Set(list).size === list.length, 'The same address is listed twice.')
+      .optional(),
+    // P65. The CA's details. "" or null clears a field.
+    ca: z
+      .object({
+        enabled: z.boolean({ error: 'Must be true or false.' }).optional(),
+        name: receiptText(80, "The CA's name").optional(),
+        email: z
+          .union([z.string(), z.null()])
+          .transform((value) => (value === null || value.trim() === '' ? null : value.trim().toLowerCase()))
+          .refine((value) => value === null || z.email().safeParse(value).success, 'Is not an email address.')
+          .optional(),
+        whatsapp: z
+          .union([z.string(), z.null()])
+          .transform((value) => (value === null || value.trim() === '' ? null : normalisePhoneIndia(value)))
+          .refine((value) => value === null || /^[6-9]\d{9}$/.test(value), 'Must be a 10 digit Indian mobile number.')
+          .optional(),
+      })
+      .strict()
       .optional(),
   })
   .strict();
@@ -498,6 +528,21 @@ const appearance = z
   })
   .strict();
 
+/** P64. A group of booleans, each optional, nothing else. */
+const switchGroup = (defaults) =>
+  z
+    .object(Object.fromEntries(Object.keys(defaults).map((key) => [key, z.boolean({ error: 'Must be true or false.' }).optional()])))
+    .strict('Is not something the invoice can show.');
+
+const invoiceLayout = z
+  .object({
+    theme: z.enum(INVOICE_THEMES, { error: `Must be one of ${INVOICE_THEMES.join(', ')}.` }).optional(),
+    useBrandAccent: z.boolean({ error: 'Must be true or false.' }).optional(),
+    show: switchGroup(INVOICE_SHOW_DEFAULTS).optional(),
+    thermalShow: switchGroup(THERMAL_SHOW_DEFAULTS).optional(),
+  })
+  .strict();
+
 /** Everything except `reason`. Used to tell "a group was sent" from "only a reason was sent". */
 export const SETTINGS_GROUPS = Object.freeze([
   'business',
@@ -506,6 +551,7 @@ export const SETTINGS_GROUPS = Object.freeze([
   'inventory',
   'features',
   'invoice',
+  'invoiceLayout',
   'delivery',
   'discounts',
   'billing',
@@ -557,6 +603,7 @@ export const updateSettingsSchema = z.object({
       inventory: inventory.optional(),
       features: features.optional(),
       invoice: invoice.optional(),
+      invoiceLayout: invoiceLayout.optional(),
       delivery: delivery.optional(),
       discounts: discounts.optional(),
       billing: billing.optional(),

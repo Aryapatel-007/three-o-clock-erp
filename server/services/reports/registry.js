@@ -9,6 +9,7 @@ import bills from './definitions/bills.js';
 import accounts from './definitions/accounts.js';
 import cancellations from './definitions/cancellations.js';
 import captains from './definitions/captains.js';
+import caPack from './definitions/caPack.js';
 import cashTill from './definitions/cashTill.js';
 import dayClose from './definitions/dayClose.js';
 import discounts from './definitions/discounts.js';
@@ -43,6 +44,7 @@ export const REPORTS = Object.freeze([
   noCharge,
   accounts,
   bills,
+  caPack,
 ]);
 
 export const REPORTS_BY_NAME = Object.freeze(Object.fromEntries(REPORTS.map((report) => [report.name, report])));

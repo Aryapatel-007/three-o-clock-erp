@@ -36,6 +36,7 @@ export const BILL_VOID_REASONS = [
   { code: 'DUPLICATE', label: 'Billed twice' },
   { code: 'GUEST_DISPUTE', label: 'Guest disputed the bill' },
   { code: 'PLATFORM_CANCELLED', label: 'Cancelled by the platform' },
+  { code: 'GUEST_LEFT', label: 'Guest left' },
   { code: 'OTHER', label: 'Other' },
 ];
 

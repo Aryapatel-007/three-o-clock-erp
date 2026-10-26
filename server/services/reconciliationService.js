@@ -279,6 +279,8 @@ export const C5_GROUPINGS = Object.freeze({
   5: 'hours',
   6: 'days',
   7: 'tax rates',
+  // P65, R20.
+  8: 'HSN or SAC codes',
 });
 
 /**

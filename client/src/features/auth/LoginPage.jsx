@@ -1,13 +1,14 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 
 import BrandLogo from '../../components/ui/BrandLogo.jsx';
 import Button from '../../components/ui/Button.jsx';
 import ErrorMessage from '../../components/ui/ErrorMessage.jsx';
-import Input from '../../components/ui/Input.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useTheme } from '../../context/ThemeProvider.jsx';
 import ResetPasswordForm from './ResetPasswordForm.jsx';
+import { forgetSignedOut, readSignedOut } from './signedOut.js';
+import { FloorDoodle, greetingFor, IdentifierField, PASSWORD_FIELD_ID, PasswordField, seatedTables, ServiceClock, SignedOutNote, useNow } from './signInParts.jsx';
 
 /**
  * Sign in. P22, DESIGN-SYSTEM sections 4d and 11b.
@@ -24,13 +25,23 @@ import ResetPasswordForm from './ResetPasswordForm.jsx';
  *
  * Without one, the screen is as it was before P22, with the restaurant's name,
  * or the product's, in place of a hardcoded client's.
+ *
+ * 2026-10-19, at Rishi's request, livelier and still within DESIGN-SYSTEM
+ * section 10: the panel carries the time and day in India, the greeting
+ * follows the hour, the phone-or-email field shows what it has read, the
+ * password has Show and a Caps Lock warning, a refused sign-in shakes the form
+ * once and puts the cursor back in the password, and someone who just signed
+ * out is told so. Nothing moves on page load; every motion answers the person.
  */
 /**
  * The brand panel: the logo centred on `brand`, or the name in `on-brand` when
  * there is no logo. Exported so the Appearance page previews the real thing.
  * `compact` draws the 180px band a phone shows, at any width.
  */
-export function BrandPanel({ compact = false, className = '' }) {
+// The one shake of a refused sign-in, DESIGN-SYSTEM section 10.
+const REFUSED_MOTION = 'animate-[refused_280ms_ease-in-out]';
+
+export function BrandPanel({ compact = false, className = '', now = null, seated = null }) {
   const { name } = useTheme();
   if (compact) {
     return (
@@ -42,10 +53,19 @@ export function BrandPanel({ compact = false, className = '' }) {
   return (
     <section
       aria-label={name}
-      className={`flex h-[180px] flex-none items-center justify-center bg-brand px-6 min-[900px]:h-auto min-[900px]:min-h-full min-[900px]:w-2/5 ${className}`}
+      className={`relative flex h-[180px] flex-none items-center justify-center bg-brand px-6 min-[900px]:h-auto min-[900px]:min-h-full min-[900px]:w-2/5 ${className}`}
     >
       <BrandLogo ground="dark" height={120} maxWidth={240} textClassName="type-title text-on-brand" className="min-[900px]:hidden" />
       <BrandLogo ground="dark" height={148} maxWidth={240} textClassName="type-title text-on-brand" className="hidden min-[900px]:flex" />
+      {seated !== null && (
+        <FloorDoodle
+          seated={seated}
+          emptyClass="border-on-brand"
+          seatedClass="border-on-brand bg-on-brand"
+          className="absolute left-12 top-12 hidden min-[900px]:grid"
+        />
+      )}
+      {now && <ServiceClock now={now} className="absolute bottom-12 left-12 hidden text-on-brand min-[900px]:flex" />}
     </section>
   );
 }
@@ -63,6 +83,37 @@ export default function LoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   // P34. The sign-in form, or Forgot password in its place.
   const [isResetting, setIsResetting] = useState(false);
+  // Each refusal shakes the form once: a new key replays the motion.
+  const [refusals, setRefusals] = useState(0);
+  // Read once; forgotten after the first paint so a reload does not say it again.
+  const [signedOutName] = useState(readSignedOut);
+  const now = useNow();
+  // A keyboard and mouse at the counter: start in the field. A phone keeps its keyboard down until tapped.
+  const [startInField] = useState(() => window.matchMedia?.('(pointer: fine)').matches ?? false);
+
+  const formRef = useRef(null);
+
+  useEffect(() => {
+    forgetSignedOut();
+  }, []);
+
+  /**
+   * After a refusal, once the fields are enabled again: shake the form once and
+   * put the cursor in the password with it selected, so typing replaces it.
+   * The class comes off and back on so a second refusal shakes again.
+   */
+  useEffect(() => {
+    if (refusals === 0 || isSubmitting) return;
+    const form = formRef.current;
+    if (form) {
+      form.classList.remove(REFUSED_MOTION);
+      void form.offsetWidth;
+      form.classList.add(REFUSED_MOTION);
+    }
+    const field = document.getElementById(PASSWORD_FIELD_ID);
+    field?.focus();
+    field?.select();
+  }, [refusals, isSubmitting]);
 
   // Where they were headed before ProtectedRoute sent them here.
   // P55. With nowhere in particular to go, `/` sends the owner to the dashboard and everyone else home.
@@ -95,6 +146,7 @@ export default function LoginPage() {
        * the account exists, which is the leak the server works to avoid.
        */
       setError(loginError);
+      setRefusals((count) => count + 1);
     } finally {
       setIsSubmitting(false);
     }
@@ -118,34 +170,14 @@ export default function LoginPage() {
   );
 
   const signInForm = (
-    <form onSubmit={handleSubmit} className="mt-8 flex flex-col gap-4">
-      <Input
-        label="Phone or email"
-        name="identifier"
-        type="text"
-        autoComplete="username"
-        required
-        value={identifier}
-        onChange={(event) => setIdentifier(event.target.value)}
-        hint="10-digit mobile number, or the email on your account"
-        disabled={isSubmitting}
-      />
-
-      <Input
-        label="Password"
-        name="password"
-        type="password"
-        autoComplete="current-password"
-        required
-        value={password}
-        onChange={(event) => setPassword(event.target.value)}
-        disabled={isSubmitting}
-      />
+    <form ref={formRef} onSubmit={handleSubmit} className="mt-8 flex flex-col gap-4">
+      <IdentifierField value={identifier} onChange={setIdentifier} disabled={isSubmitting} autoFocus={startInField} />
+      <PasswordField value={password} onChange={setPassword} disabled={isSubmitting} />
 
       {error && <ErrorMessage error={error} />}
 
       <Button type="submit" size="lg" fullWidth isLoading={isSubmitting}>
-        Sign in
+        {isSubmitting ? 'Signing in' : 'Sign in'}
       </Button>
 
       <Button variant="quiet" fullWidth onClick={() => setIsResetting(true)} disabled={isSubmitting}>
@@ -163,22 +195,25 @@ export default function LoginPage() {
     </>
   ) : (
     <>
-      <h2 className="type-title text-ink">Welcome back</h2>
+      <h2 className="type-title text-ink">{greetingFor(now)}</h2>
       <p className="type-body mt-1 text-muted">Sign in to start your shift.</p>
     </>
   );
 
+  const seated = seatedTables({ identifier, password, isSubmitting });
+  const goodbye = signedOutName !== null && !isResetting ? <SignedOutNote name={signedOutName} /> : null;
   const footnote = <p className="type-caption mt-6 text-muted">Accounts are created by your administrator. There is no self signup.</p>;
 
   if (isBranded) {
     return (
       <main className="flex min-h-full flex-col bg-ground min-[900px]:flex-row">
-        <BrandPanel />
+        <BrandPanel now={now} seated={seated} />
 
         <section className="flex flex-1 items-start bg-ground px-4 py-8 min-[900px]:items-center min-[900px]:px-12">
           <div className="w-full max-w-[400px]">
             {greeting}
             {form}
+            {goodbye}
             {footnote}
           </div>
         </section>
@@ -188,7 +223,9 @@ export default function LoginPage() {
 
   return (
     <main className="flex min-h-full flex-col bg-surface lg:flex-row">
-      <section className="flex min-h-[260px] flex-col justify-end bg-ink p-8 text-surface lg:min-h-full lg:w-[55%] lg:p-12">
+      <section className="flex min-h-[260px] flex-col justify-between gap-8 bg-ink p-8 text-surface lg:min-h-full lg:w-[55%] lg:p-12">
+        <ServiceClock now={now} />
+        <FloorDoodle seated={seated} emptyClass="border-surface" seatedClass="border-surface bg-surface" className="hidden lg:grid" />
         <h1 className="type-heading">{name}</h1>
       </section>
 
@@ -196,6 +233,7 @@ export default function LoginPage() {
         <div className="w-full max-w-[400px]">
           {greeting}
           {form}
+          {goodbye}
           {footnote}
         </div>
       </section>

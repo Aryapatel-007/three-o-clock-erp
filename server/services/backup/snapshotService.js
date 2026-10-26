@@ -30,6 +30,7 @@ import {
   FORMAT_VERSION,
   READ_BATCH,
   SLOW_DOWN_ABOVE_BYTES,
+  SNAPSHOT_RETRY_MS,
   SNAPSHOT_STALE_MS,
   SPEED_UP_BELOW_BYTES,
 } from './constants.js';
@@ -210,14 +211,39 @@ export async function runSnapshot(ctx, { now = nowUtc(), reason = 'SCHEDULED' } 
 /** Bytes kept forever: monthly copies and the diary. Their runs expire; this does not. */
 export const addForeverBytes = (bytes) => BackupState.updateOne({ _id: BACKUP_STATE_IDS.STORAGE }, { $inc: { foreverBytes: bytes } }, { upsert: true });
 
-/** An error in plain words, never a secret: the S3 client's messages name no key. */
+/**
+ * An error in plain words, never a secret. Backblaze names the key ID in some
+ * messages ("The key '005...' is not valid"); it is not a secret, but it does
+ * not belong on the owner's card, so it is taken out.
+ */
 export function plainError(error) {
-  const text = String(error?.message ?? error ?? 'Unknown error').replace(/\s+/g, ' ').trim();
+  const text = String(error?.message ?? error ?? 'Unknown error')
+    .replace(/key '[^']*'/gi, 'storage key')
+    .replace(/\s+/g, ' ')
+    .trim();
   return text.slice(0, 300);
+}
+
+/**
+ * Whether a failed full copy was too recent to try again: 2 minutes after the
+ * first failure in a row, then 10, 30, and every hour after that.
+ */
+export async function waitingAfterFailure(now = nowUtc()) {
+  const recent = await BackupRun.find({ kind: BACKUP_KINDS.SNAPSHOT, $or: [{ status: BACKUP_STATUSES.FAILED }, { status: BACKUP_STATUSES.OK, objectKey: { $ne: null } }] })
+    .sort({ startedAt: -1 })
+    .limit(SNAPSHOT_RETRY_MS.length)
+    .lean();
+  const failures = recent.findIndex((run) => run.status !== BACKUP_STATUSES.FAILED);
+  const inARow = failures === -1 ? recent.length : failures;
+  if (inARow === 0) return false;
+  const wait = SNAPSHOT_RETRY_MS[Math.min(inARow, SNAPSHOT_RETRY_MS.length) - 1];
+  const failedAt = recent[0].finishedAt ?? recent[0].startedAt;
+  return now.getTime() - failedAt.getTime() < wait;
 }
 
 /** The scheduler's tick: takes a copy when one is due. */
 export async function maybeRunSnapshot(ctx, { now = nowUtc() } = {}) {
+  if (await waitingAfterFailure(now)) return null;
   const fullCopies = await currentFullCopies(now);
   const last = await lastGoodCopy();
   if (!isDue(now, last?.startedAt ?? null, fullCopies)) return null;

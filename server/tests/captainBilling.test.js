@@ -33,7 +33,7 @@ describe('captains bill', () => {
     const floor = await seedFloor();
     const me = (await request('GET', '/api/v1/auth/me', { token: floor.tokens.WAITER })).body.data;
     // P29 added the two billing switches beside them.
-    assert.deepEqual(me.billing, { captainsMayBill: true, captainsMayTakePayment: false, reviseUnpaidBills: true, printBeforePayment: true, payFirstTakeaway: true });
+    assert.deepEqual(me.billing, { captainsMayBill: true, captainsMayTakePayment: false, reviseUnpaidBills: true, printBeforePayment: true });
 
     const order = await readyToBillOrder(floor);
     const billed = await createBill(floor.tokens.WAITER, order);
@@ -114,6 +114,53 @@ describe('printing at the counter', () => {
     const again = await request('POST', `/api/v1/bills/${bill.id}/printed`, { token: floor.tokens.CASHIER });
     assert.deepEqual(again.body.data, { printCount: 2, isDuplicate: true, revision: 0 });
     assert.deepEqual((await queue()).body.data, []);
+  });
+
+  it('P59: a second tap while the request waits keeps its time', async () => {
+    const floor = await seedFloor();
+    const bill = (await createBill(floor.tokens.WAITER, await readyToBillOrder(floor))).body.data;
+    const ask = () => request('POST', `/api/v1/bills/${bill.id}/print-request`, { token: floor.tokens.WAITER });
+
+    const first = (await ask()).body.data.printRequestedAt;
+    await new Promise((resolve) => setTimeout(resolve, 15));
+    const second = await ask();
+    assert.equal(second.status, 200);
+    assert.equal(second.body.data.printRequestedAt, first, 'the waiting request keeps its time');
+
+    await request('POST', `/api/v1/bills/${bill.id}/printed`, { token: floor.tokens.CASHIER, body: { forRequestAt: first } });
+    await new Promise((resolve) => setTimeout(resolve, 15));
+    const afterPrint = (await ask()).body.data.printRequestedAt;
+    assert.notEqual(afterPrint, first, 'a request after the print is a new request');
+  });
+
+  it('P59: of two counter devices claiming one request, exactly one prints it', async () => {
+    const floor = await seedFloor();
+    const bill = (await createBill(floor.tokens.WAITER, await readyToBillOrder(floor))).body.data;
+    await request('POST', `/api/v1/bills/${bill.id}/print-request`, { token: floor.tokens.WAITER });
+    const [waiting] = (await request('GET', '/api/v1/bills/print-queue', { token: floor.tokens.CASHIER })).body.data;
+
+    const claim = (token) =>
+      request('POST', `/api/v1/bills/${bill.id}/printed`, { token, body: { forRequestAt: waiting.printRequestedAt } });
+    const results = await Promise.all([claim(floor.tokens.CASHIER), claim(floor.tokens.MANAGER)]);
+    const statuses = results.map((result) => result.status).sort();
+    assert.deepEqual(statuses, [200, 409]);
+    const lost = results.find((result) => result.status === 409);
+    assert.equal(lost.body.error.code, 'DUPLICATE');
+    assert.equal(lost.body.error.message, 'Another device has printed this bill.');
+
+    const read = (await request('GET', `/api/v1/bills/${bill.id}`, { token: floor.tokens.CASHIER })).body.data;
+    assert.equal(read.printCount, 1, 'one print recorded');
+    assert.deepEqual((await request('GET', '/api/v1/bills/print-queue', { token: floor.tokens.CASHIER })).body.data, []);
+
+    // A claim for a request time that is not the bill's is refused too, and changes nothing.
+    const stale = await request('POST', `/api/v1/bills/${bill.id}/printed`, {
+      token: floor.tokens.CASHIER,
+      body: { forRequestAt: '2026-01-01T00:00:00.000Z' },
+    });
+    assert.equal(stale.status, 409);
+    const bad = await request('POST', `/api/v1/bills/${bill.id}/printed`, { token: floor.tokens.CASHIER, body: { forRequestAt: 'soon' } });
+    assert.equal(bad.status, 400);
+    assert.equal((await request('GET', `/api/v1/bills/${bill.id}`, { token: floor.tokens.CASHIER })).body.data.printCount, 1);
   });
 
   it('keeps the queue to the till, and to its own restaurant', async () => {

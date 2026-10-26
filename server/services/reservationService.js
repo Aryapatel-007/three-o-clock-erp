@@ -41,6 +41,7 @@ import {
 import { bookableDates, reservationSlots } from './openingHoursService.js';
 import { assertTableUsable, openOrder } from './orderOpenService.js';
 import { onlineConsent } from './customerService.js';
+import { mirrorIsReadOnly } from './replication/writerState.js';
 
 const MINUTE_MS = 60_000;
 const MONGO_DUPLICATE_KEY = 11000;
@@ -269,6 +270,8 @@ function startDeposit(req, doc, online, amountInPaise) {
 export async function guestRead(req, id) {
   const doc = await Reservation.findOne({ ...scoped(req), _id: id });
   assertGuestToken(doc, req);
+  // P62. The read-only cloud mirror shows what the box shipped; the read-back is the box's write.
+  if (mirrorIsReadOnly()) return guestView(req, id);
   if (doc.status === RESERVATION_STATUSES.AWAITING_PAYMENT && doc.paymentId) {
     const { online } = await onlineSettings(req);
     await readBackIfDue(req, await OnlinePayment.findOne({ ...scoped(req), _id: doc.paymentId }), { online });

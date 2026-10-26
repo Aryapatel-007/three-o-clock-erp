@@ -46,6 +46,7 @@ import { pickupBounds, windowContaining } from './openingHoursService.js';
 import { openOrder } from './orderOpenService.js';
 import { buildLineSnapshots, computeLineTotalInPaise, serialiseOrder } from './orderService.js';
 import { onlineConsent } from './customerService.js';
+import { mirrorIsReadOnly } from './replication/writerState.js';
 
 const MINUTE_MS = 60_000;
 const MONGO_DUPLICATE_KEY = 11000;
@@ -298,6 +299,9 @@ export function serialiseForStaff(doc, names, now = nowUtc(), payments = new Map
 export async function guestRead(req, id) {
   const doc = await OnlineOrder.findOne({ ...scoped(req), _id: id });
   assertGuestToken(doc, req);
+  // P62. The read-only cloud mirror only shows what the box shipped: the read-back
+  // and the expiry are the box's writes, made when the box reads it.
+  if (mirrorIsReadOnly()) return serialiseForGuest(req, doc);
   // P24. A guest who paid and is watching this page sees it move, even without a webhook.
   if (doc.status === ONLINE_ORDER_STATUSES.AWAITING_PAYMENT && doc.paymentId) {
     const { online } = await onlineSettings(req);

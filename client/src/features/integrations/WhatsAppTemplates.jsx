@@ -27,7 +27,7 @@ const RECEIPT_STARTER = Object.freeze({
   language: 'en',
   bodyText: 'Thanks for visiting {{1}}! Your bill {{2}} for {{3}} is attached. We hope to see you again.',
   variables: 'restaurantName, billNumber, billTotal',
-  example: "Three O'Clock Cafe, 2026-27/000148, ₹795.00",
+  example: 'Z Chaat, 2026-27/000148, ₹795.00',
   submit: 'yes',
 });
 

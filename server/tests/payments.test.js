@@ -207,6 +207,18 @@ describe('built-in payment methods', () => {
     assert.equal(after.name, 'Cash in drawer');
     assert.equal(after.isActive, false);
   });
+
+  it('running it again does not even touch updatedAt, so a payment syncs no method change (P63)', async () => {
+    const floor = await seedFloor();
+    const scope = { branchId: floor.branch._id };
+    await ensureDefaultPaymentMethods(floor.restaurant.id, scope);
+    const before = await PaymentMethod.find({ restaurantId: floor.restaurant.id }).sort({ code: 1 }).lean();
+    assert.ok(before.every((method) => method.createdAt instanceof Date && method.updatedAt instanceof Date));
+    await new Promise((resolve) => { setTimeout(resolve, 20); });
+    await ensureDefaultPaymentMethods(floor.restaurant.id, scope);
+    const again = await PaymentMethod.find({ restaurantId: floor.restaurant.id }).sort({ code: 1 }).lean();
+    assert.deepEqual(again.map((method) => method.updatedAt.getTime()), before.map((method) => method.updatedAt.getTime()));
+  });
 });
 
 describe('configuring payment methods', () => {

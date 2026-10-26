@@ -295,6 +295,46 @@ const envSchema = z
     BACKUP_DRILL_KEY_ID: nullableText,
     BACKUP_DRILL_SECRET: nullableText,
 
+    /**
+     * P62. Where this process runs, and so what it may write.
+     *   CLOUD   the hosted server of P12 to P61: the only writer, in the cloud. The default,
+     *           so nothing changes for a deployment that sets nothing.
+     *   BOX     the cafe box: the only writer, on the cafe's LAN, shipping its changes up.
+     *   MIRROR  the cloud copy: read-only except intake, the replication receiver and sign-in,
+     *           until a person promotes it (docs/RUNBOOK.md).
+     */
+    DEPLOYMENT_ROLE: enumVar('DEPLOYMENT_ROLE', ['CLOUD', 'BOX', 'MIRROR'], 'CLOUD'),
+    // P63. TWO_WAY on a BOX and a CLOUD: both write, and the box keeps them in step.
+    SYNC_MODE: enumVar('SYNC_MODE', ['ONE_WAY', 'TWO_WAY'], 'ONE_WAY'),
+    /**
+     * P63. How often the cafe PC syncs with the website during SYNC_HOURS, in seconds. BOX only.
+     * Every request keeps Render's free server awake, so the hours matter more than the seconds.
+     */
+    SYNC_EVERY_SECONDS: intVar('SYNC_EVERY_SECONDS', { min: 10, max: 3600, fallback: 60 }),
+    /**
+     * P63. The hours, India time, when the PC syncs on its own pace, like 08:30-02:30 (past
+     * midnight is fine), or "always". Outside them it syncs only when it has something to send,
+     * at most every 15 minutes, so Render's free server sleeps at night. BOX only.
+     */
+    SYNC_HOURS: optionalVar('SYNC_HOURS', '08:30-02:30').refine(
+      (value) => value === 'always' || /^([01]\d|2[0-3]):[0-5]\d-([01]\d|2[0-3]):[0-5]\d$/.test(value),
+      'SYNC_HOURS must be like 08:30-02:30, or always.',
+    ),
+    /** P62. The mirror's replication address, as the box reaches it, e.g. https://cafe-mirror.example.com. BOX only. */
+    MIRROR_URL: nullableText.refine((value) => value === null || /^https?:[/][/][^/]+$/.test(value), 'MIRROR_URL must be a bare origin with no trailing slash.'),
+    /** P62. The secret the box and the mirror sign every replication request with. Both sides hold the same value. */
+    REPLICATION_SECRET: nullableText.refine((value) => value === null || value.length >= MIN_SECRET_LENGTH, `REPLICATION_SECRET must be at least ${MIN_SECRET_LENGTH} characters. Make one with: openssl rand -base64 48`),
+    /** P62. The box's own data folder: local snapshots and the network settings file. BOX only. */
+    BOX_DATA_DIR: optionalVar('BOX_DATA_DIR', path.join(REPO_ROOT, 'box-data')),
+    /** P62. The address staff type on a tablet, shown on the setup card, e.g. http://192.168.1.10. BOX only. */
+    BOX_PUBLIC_URL: nullableText.refine((value) => value === null || /^https?:[/][/][^/]+$/.test(value), 'BOX_PUBLIC_URL must be a bare origin with no trailing slash.'),
+    /** P62. The box's second name, without the internet's DNS: avahi's mDNS name, e.g. http://cafezza.local. Optional. */
+    BOX_LOCAL_NAME_URL: nullableText.refine((value) => value === null || /^https?:[/][/][^/]+$/.test(value), 'BOX_LOCAL_NAME_URL must be a bare origin with no trailing slash.'),
+    /** P62. The network adapter the box uses for WiFi (wlan0, en0, Wi-Fi). Found by itself when unset. */
+    BOX_WIFI_INTERFACE: nullableText,
+    /** P62. `on` lets the owner change the box's WiFi from the dashboard. Off by default: it needs the box set up for it. */
+    BOX_WIFI_CONTROL: enumVar('BOX_WIFI_CONTROL', ['on', 'off'], 'off'),
+
     /** P24. Razorpay's API address. Tests and the e2e server point it at a fake. */
     RAZORPAY_API_BASE: optionalVar('RAZORPAY_API_BASE', 'https://api.razorpay.com').refine(
       whenPresent((value) => /^https?:[/][/][^/]+$/.test(value)),
@@ -336,6 +376,22 @@ const envSchema = z
     for (const old of values.BACKUP_OLD_KEYS) {
       const problem = backupKeyProblem('BACKUP_OLD_KEYS', old);
       if (problem) ctx.addIssue({ code: 'custom', path: ['BACKUP_OLD_KEYS'], message: problem });
+    }
+  })
+  // P62. A box that ships, and a mirror that receives, both need the shared secret.
+  .superRefine((values, ctx) => {
+    if (values.NODE_ENV === 'test') return;
+    if (values.DEPLOYMENT_ROLE === 'MIRROR' && !values.REPLICATION_SECRET) {
+      ctx.addIssue({ code: 'custom', path: ['REPLICATION_SECRET'], message: 'REPLICATION_SECRET must be set on the mirror. See docs/REPLICATION.md section 5.' });
+    }
+    if (values.SYNC_MODE === 'TWO_WAY' && values.DEPLOYMENT_ROLE === 'MIRROR') {
+      ctx.addIssue({ code: 'custom', path: ['SYNC_MODE'], message: 'SYNC_MODE=TWO_WAY is for a BOX and a CLOUD, never a MIRROR. See docs/REPLICATION.md section 13.' });
+    }
+    if (values.SYNC_MODE === 'TWO_WAY' && !values.REPLICATION_SECRET) {
+      ctx.addIssue({ code: 'custom', path: ['REPLICATION_SECRET'], message: 'REPLICATION_SECRET must be set for SYNC_MODE=TWO_WAY, the same on the box and the cloud.' });
+    }
+    if (values.DEPLOYMENT_ROLE === 'BOX' && values.MIRROR_URL && !values.REPLICATION_SECRET) {
+      ctx.addIssue({ code: 'custom', path: ['REPLICATION_SECRET'], message: 'REPLICATION_SECRET must be set when MIRROR_URL is. See docs/REPLICATION.md section 5.' });
     }
   })
   // In development and test an absent TRUST_PROXY means false. In production
@@ -381,4 +437,7 @@ export const config = Object.freeze({
   isProduction: parsed.data.NODE_ENV === 'production',
   // P54. Never under test: the tests drive the backup services themselves.
   backupsOn: parsed.data.BACKUP_ENABLED === 'on' && parsed.data.NODE_ENV !== 'test',
+  // P62. Which machine this is. Read through these, never by comparing the string again.
+  isBox: parsed.data.DEPLOYMENT_ROLE === 'BOX',
+  isMirror: parsed.data.DEPLOYMENT_ROLE === 'MIRROR',
 });

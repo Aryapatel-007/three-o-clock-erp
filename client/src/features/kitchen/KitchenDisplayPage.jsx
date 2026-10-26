@@ -8,6 +8,7 @@ import { useAuth } from '../../context/AuthContext.jsx';
 import Sheet from '../../components/ui/Sheet.jsx';
 import StateChip from '../../components/ui/StateChip.jsx';
 import TicketCard from '../../components/ui/TicketCard.jsx';
+import { packColumns, useColumnCount } from './ticketColumns.js';
 import { useMinuteClock } from '../../components/ui/TimeEdge.jsx';
 import { formatTimeIst } from '../../utils/formatDate.js';
 import { errorMessage } from '../orders/errorCopy.js';
@@ -56,18 +57,27 @@ function finishedAt(lines) {
  * remembered on the device. With auto-print on and one station chosen, every
  * ticket that appears for the first time prints once.
  *
+ * P58. With `kitchen.splitTicketsByStation` off, there are no stations here:
+ * no picker, every ticket whole, whatever station the device has saved, and
+ * auto-print prints every new ticket whole.
+ *
  * Everything here is sized for someone standing back from a screen with their
  * hands full: big type, whole rows as tap targets, and no nested navigation.
  */
 export default function KitchenDisplayPage() {
   const queryClient = useQueryClient();
-  const { user } = useAuth();
+  const { user, features } = useAuth();
   const [device, updateDevice] = useDeviceSettings();
+  const board = useRef(null);
+  const smallTiles = device.kitchenTiles === 'SMALL';
+  const columnCount = useColumnCount(board, { small: smallTiles });
   const [error, setError] = useState(null);
   // KOT ids whose print failed on this screen. Shown as "Not printed".
   const [notPrinted, setNotPrinted] = useState(() => new Set());
 
-  const chosenStation = device.kitchenStationId ?? user?.stationId ?? ALL_STATIONS;
+  // P58. Without stations, the device's saved station is kept but not used.
+  const usesStations = features?.kitchen?.splitTicketsByStation !== false;
+  const chosenStation = usesStations ? (device.kitchenStationId ?? user?.stationId ?? ALL_STATIONS) : ALL_STATIONS;
   const stationFilter = chosenStation === ALL_STATIONS ? undefined : chosenStation;
 
   const stations = useQuery({ queryKey: ['stations'], queryFn: () => listStations() });
@@ -167,17 +177,18 @@ export default function KitchenDisplayPage() {
    */
   const printing = useRef(false);
   useEffect(() => {
-    if (!device.autoPrintKots || !stationFilter || !tickets.isSuccess || printing.current) return;
+    // P58. Without stations, every ticket is this device's to print.
+    if (!device.autoPrintKots || (usesStations && !stationFilter) || !tickets.isSuccess || printing.current) return;
     /**
      * P36. One slip per round of a ticket with this station's dishes in it,
      * remembered as "ticket:round". A ticket id on its own, remembered before
      * P36, stands for its first round.
      */
     const onScreen = (tickets.data?.data ?? []).flatMap((kot) =>
-      [...new Set(kot.lines.filter((line) => line.stationId === stationFilter).map((line) => line.round ?? 1))].map((round) => `${kot.id}:${round}`),
+      [...new Set(kot.lines.filter((line) => !stationFilter || line.stationId === stationFilter).map((line) => line.round ?? 1))].map((round) => `${kot.id}:${round}`),
     );
     const printedBefore = (key) => device.printedKotIds.includes(key) || (key.endsWith(':1') && device.printedKotIds.includes(key.slice(0, -2)));
-    const seedKey = `${device.autoPrintArmedAt ?? 0}:${stationFilter}`;
+    const seedKey = `${device.autoPrintArmedAt ?? 0}:${stationFilter ?? 'all'}`;
 
     if (device.autoPrintSeededFor !== seedKey) {
       updateDevice((current) => ({
@@ -203,7 +214,7 @@ export default function KitchenDisplayPage() {
     })();
     // printKot reads the device width; the dependencies below are what decide
     // whether there is anything new to print.
-  }, [tickets.data, device.autoPrintKots, device.autoPrintSeededFor, device.autoPrintArmedAt, stationFilter]);
+  }, [tickets.data, device.autoPrintKots, device.autoPrintSeededFor, device.autoPrintArmedAt, stationFilter, usesStations]);
 
   const clock = useMinuteClock();
   const targets = new Map((stations.data ?? []).map((station) => [station.id, station.targetMinutes ?? DEFAULT_TARGET_MINUTES]));
@@ -284,6 +295,26 @@ export default function KitchenDisplayPage() {
 
         <div className="ml-auto flex items-center gap-3 text-right">
           {/* P45. The bell for a new ticket, on or off on this device. */}
+          {/* 2026-10-21. Small tiles in a rush, so more tickets fit; kept on this device. */}
+          <div role="group" aria-label="Tile size" className="flex gap-1">
+            {[
+              ['SMALL', 'Small tiles'],
+              ['BIG', 'Big tiles'],
+            ].map(([size, label]) => (
+              <button
+                key={size}
+                type="button"
+                aria-pressed={(device.kitchenTiles ?? 'BIG') === size}
+                onClick={() => updateDevice({ kitchenTiles: size })}
+                className={[
+                  'type-button min-h-12 rounded-lg border px-3',
+                  (device.kitchenTiles ?? 'BIG') === size ? 'border-2 border-ink bg-sunken' : 'border-line bg-surface hover:bg-sunken',
+                ].join(' ')}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
           <button
             type="button"
             aria-pressed={device.kitchenSound}
@@ -304,13 +335,13 @@ export default function KitchenDisplayPage() {
           <p className="type-num-tile">{formatTimeIst(clock)}</p>
           <p className="type-caption text-muted">
             Updates every 10 seconds
-            {device.autoPrintKots && stationFilter && ' · Printing new tickets'}
+            {device.autoPrintKots && (stationFilter || !usesStations) && ' · Printing new tickets'}
           </p>
           </div>
         </div>
 
         {/* P05. The station picker. Remembered on this device. */}
-        {(stations.data ?? []).length > 0 && (
+        {usesStations && (stations.data ?? []).length > 0 && (
           <div className="-mx-1 flex w-full gap-2 overflow-x-auto px-1" role="tablist" aria-label="Station">
             {[{ id: ALL_STATIONS, name: 'All stations' }, ...(stations.data ?? [])].map((station) => {
               const active = chosenStation === station.id;
@@ -351,30 +382,36 @@ export default function KitchenDisplayPage() {
           <EmptyState title="All caught up" description="Nothing is waiting. New tickets appear here on their own." />
         )}
 
-        {/* P48. Dense, as PetPooja's: four across from 1024 px, five from 1280, six from 1536, so a service fits one screen. */}
-        <ul className="grid items-start gap-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
-          {kots.map((kot) => (
-            <li key={kot.id}>
-              <TicketCard
-                kotNumber={kot.kotNumber}
-                place={kot.tableName ?? `Order ${kot.orderNumber}`}
-                subtitle={[ORDER_TYPE_LABELS[kot.orderType] ?? kot.orderType, `#${kot.orderNumber}`, kot.stationName, `Fired ${formatTimeIst(kot.firedAt)}`, kot.rounds > 1 ? `${kot.rounds} rounds` : null]
-                  .filter(Boolean)
-                  .join(' · ')}
-                firedAt={kot.waitingSince}
-                targetMinutes={targetFor(kot)}
-                lines={kot.lines}
-                notPrinted={notPrinted.has(kot.id)}
-                note={kot.kitchenNote}
-                onReprint={() => printKot(kot.id, { reprint: true })}
-                isBusy={markReady.isPending || undo.isPending}
-                onLineReady={(lineId) => markReady.mutate({ kotId: kot.id, lineId, label: `${nameOf(kot, lineId)} marked ready.` })}
-                onLineUndo={(lineId) => undo.mutate({ kotId: kot.id, lineId })}
-                onAllReady={() => markReady.mutate({ kotId: kot.id, label: `KOT ${kot.kotNumber} marked ready.` })}
-              />
-            </li>
+        {/* P48. Dense, as PetPooja's, up to six across. 2026-10-21: each column stacks on its own, so a
+            short ticket never leaves a gap beside a long one, and the board's width sets how many fit. */}
+        <div ref={board} className="flex items-start gap-2">
+          {packColumns(kots, columnCount).map((column, index) => (
+            <ul key={index} className="flex min-w-0 flex-1 flex-col gap-2">
+              {column.map((kot) => (
+                <li key={kot.id}>
+                  <TicketCard
+                    kotNumber={kot.kotNumber}
+                    place={kot.tableName ?? `Order ${kot.orderNumber}`}
+                    subtitle={[ORDER_TYPE_LABELS[kot.orderType] ?? kot.orderType, `#${kot.orderNumber}`, kot.stationName, `Fired ${formatTimeIst(kot.firedAt)}`, kot.rounds > 1 ? `${kot.rounds} rounds` : null]
+                      .filter(Boolean)
+                      .join(' · ')}
+                    firedAt={kot.waitingSince}
+                    targetMinutes={targetFor(kot)}
+                    lines={kot.lines}
+                    notPrinted={notPrinted.has(kot.id)}
+                    note={kot.kitchenNote}
+                    onReprint={() => printKot(kot.id, { reprint: true })}
+                    isBusy={markReady.isPending || undo.isPending}
+                    onLineReady={(lineId) => markReady.mutate({ kotId: kot.id, lineId, label: `${nameOf(kot, lineId)} marked ready.` })}
+                    onLineUndo={(lineId) => undo.mutate({ kotId: kot.id, lineId })}
+                    onAllReady={() => markReady.mutate({ kotId: kot.id, label: `KOT ${kot.kotNumber} marked ready.` })}
+                    compact={smallTiles}
+                  />
+                </li>
+              ))}
+            </ul>
           ))}
-        </ul>
+        </div>
       </div>
 
       {/* P41. Recall: the tickets finished in the last hour, newest first. */}

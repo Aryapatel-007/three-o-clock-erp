@@ -232,6 +232,8 @@ const orderLineSchema = new mongoose.Schema(
     priceSource: { type: String, enum: ['MENU', 'PLATFORM'], default: 'MENU' },
     // P46. An open item: `itemName` and `unitPriceInPaise` are what staff typed.
     isOpenItem: { type: Boolean, default: false },
+    // P60. Billed by the counter without a KOT: not sent, then served, never with the kitchen.
+    billedWithoutKot: { type: Boolean, default: false },
 
     status: {
       type: String,
@@ -278,6 +280,13 @@ const orderLineSchema = new mongoose.Schema(
      */
     categoryId: { type: mongoose.Schema.Types.ObjectId, ref: 'Category', default: null },
     categoryName: { type: String, trim: true, default: null },
+
+    /**
+     * P64. The HSN or SAC code when the line was added: the item's own, else
+     * the restaurant's `invoice.defaultSacCode`. Null on lines from before P64,
+     * and never filled in later.
+     */
+    hsnCode: { type: String, trim: true, default: null },
 
     /**
      * The item's own GST rate, kept for reference when this line is frozen at

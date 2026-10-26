@@ -1,0 +1,20 @@
+# The hourly local snapshot: mongodump --oplog into BOX_DATA_DIR/snapshots.
+# P62 section 4.2. Run by cafe-snapshot.timer, not by the server, so a server
+# that is down still gets its snapshot.
+[Unit]
+Description=Cafe POS local snapshot (mongodump --oplog)
+After=mongod.service
+Requires=mongod.service
+
+[Service]
+Type=oneshot
+User=cafe
+Group=cafe
+WorkingDirectory=/opt/cafe-pos
+EnvironmentFile=/opt/cafe-pos/.env
+# The snapshot logs in as the backup user, which can read the oplog; the app's user cannot.
+EnvironmentFile=/opt/cafe-pos/.env.snapshot
+Environment=NODE_ENV=production
+ExecStart=/usr/bin/node server/scripts/localSnapshot.js
+Nice=10
+IOSchedulingClass=idle

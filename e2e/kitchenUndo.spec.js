@@ -57,6 +57,19 @@ test('a wrong tick in the kitchen, undone', async ({ browser }) => {
   await tickDish(station.page, 'Table 12', 'Half & Half Pizza');
   await expect(station.page.getByRole('status').filter({ hasText: 'Half & Half Pizza marked ready.' })).toBeVisible();
 
+  // 2026-10-21. Small tiles for a rush: narrower tickets, the switch without its word, kept on this device.
+  const ticket = tickets(station.page, 'Table 12');
+  await expect(ticket.getByText('Cooking', { exact: true })).toBeVisible();
+  await station.page.getByRole('button', { name: 'Small tiles' }).click();
+  await expect(station.page.getByRole('button', { name: 'Small tiles' })).toHaveAttribute('aria-pressed', 'true');
+  await expect(ticket.getByText('Cooking', { exact: true })).toHaveCount(0);
+  await expect(ticket.getByText('Hold: 1 left')).toBeVisible();
+  await expect(ticket.getByRole('switch', { name: 'Creamy Pesto Pasta ready' })).toHaveAttribute('aria-checked', 'false');
+  await station.page.reload();
+  await expect(station.page.getByRole('button', { name: 'Small tiles' })).toHaveAttribute('aria-pressed', 'true');
+  await station.page.getByRole('button', { name: 'Big tiles' }).click();
+  await expect(tickets(station.page, 'Table 12').getByText('Cooking', { exact: true })).toBeVisible();
+
   const captain = await signIn(browser, { name: 'Khuman Singh', phone: golden.phones['Khuman Singh'], password: golden.password, device: 'phone' });
   await captain.page.goto(`/orders/${order.id}`);
   await captain.page.getByRole('button', { name: /Item total, before GST/ }).click();

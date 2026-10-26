@@ -18,8 +18,8 @@ hidden. It is never read from a file or a flag.
 2. Set it up, dry run first:
 
    ```
-   npm run setup:restaurant -- --config setup/threeoclock.json --owner-phone 98xxxxxxxx
-   npm run setup:restaurant -- --config setup/threeoclock.json --owner-phone 98xxxxxxxx --apply
+   npm run setup:restaurant -- --config setup/zchaat.json --owner-phone 98xxxxxxxx
+   npm run setup:restaurant -- --config setup/zchaat.json --owner-phone 98xxxxxxxx --apply
    ```
 
    New staff logins get a generated password, printed once at the end. Hand
@@ -29,15 +29,15 @@ hidden. It is never read from a file or a flag.
    kitchen station; `--addons` is optional.
 
    ```
-   npm run import:menu -- --file setup/threeoclock-menu.csv --config setup/threeoclock.json --owner-phone 98xxxxxxxx
-   npm run import:menu -- --file setup/threeoclock-menu.csv --config setup/threeoclock.json --owner-phone 98xxxxxxxx --apply
+   npm run import:menu -- --file setup/zchaat-menu.csv --config setup/zchaat.json --owner-phone 98xxxxxxxx
+   npm run import:menu -- --file setup/zchaat-menu.csv --config setup/zchaat.json --owner-phone 98xxxxxxxx --apply
    ```
 
 4. Read every line of each plan before adding `--apply`.
 
 Paths are relative to the folder you run `npm` from.
 
-## The setup file, `threeoclock.json`
+## The setup file, `zchaat.json`
 
 | Key | What it sets |
 |---|---|
@@ -45,7 +45,7 @@ Paths are relative to the folder you run `npm` from.
 | `settings` | `businessDayStartsAtMinutes`, and the `features`, `receipt`, `delivery`, `discounts` and `dayClose` groups |
 | `stations` | Kitchen stations, by name |
 | `categoryStations`, `defaultStation` | Which station each category's tickets go to. A category not listed goes to the default. |
-| `tables` | One `section`, the table `names`, and `seats` for each; or a list of those, one per section. A table's name is unique across all of them. |
+| `tables` | One `section`, the table `names`, and `seats` for each |
 | `paymentMethods` | Matched by `code`. A method's code and kind never change. |
 | `accounts` | On Hold accounts. The opening balance is set once, when the account is created. |
 | `staff` | Name, phone, role, and `station` for a `KITCHEN` login |
@@ -58,7 +58,7 @@ invoice series is set by hand on cutover day (`docs/GO-LIVE.md` section 4).
 The whole file is checked with the server's own validation before anything
 changes, and every problem is listed at once.
 
-## The menu file, `threeoclock-menu.csv`
+## The menu file, `zchaat-menu.csv`
 
 ```
 category,item,size,price,gst_percent,available,description
@@ -94,13 +94,8 @@ item,addon,price,available
 Caffe Latte,Extra Shot,40.00,yes
 ```
 
-`threeoclock-menu.csv` is Three O'Clock's menu, read from the four menu cards on
-their Zomato and District listings on 16 October 2026, and
-`threeoclock-addons.csv` is the toppings card, offered on every iced drink.
-Check every TO CONFIRM item in `docs/clients/threeoclock/PROFILE.md` before
-cutover.
-
-Z Chaat's files, the client this repository was copied from, are kept in
-`setup/archive/zchaat/`.
+`zchaat-menu.csv` is Z Chaat's menu, read from their printed menu and table
+cards on 8 October 2026. Check every TO CONFIRM item in
+`docs/clients/zchaat/PROFILE.md` before cutover.
 
 Cafezza's files, the first client's, are kept in `setup/archive/caffeza/`.

@@ -40,17 +40,20 @@ const DEFAULTS = Object.freeze({
   // device that saved one is moved from on its next load.
   printer: DEFAULT_PRINTER,
   // 2026-10-09. BILL or ROLL: how long a thermal page is. printers.js says why.
-  paperLength: DEFAULT_PAPER_LENGTH,
+  // 2026-10-22, offline only: every device starts on what prints with no gap above on the Rugtek (CAFE_PC_PAPER).
+  paperLength: 'ROLL',
   // 2026-10-09. SMALL, NORMAL or LARGE: the thermal bill's text, from invoiceHtml.js.
   billTextSize: DEFAULT_BILL_TEXT_SIZE,
   // 2026-10-09. NONE, SMALL or MORE: space kept clear at each side of a roll, from printers.js.
-  edgeMargin: DEFAULT_EDGE_MARGIN,
+  edgeMargin: 'MORE',
   // 2026-10-10. WIDE (78 mm) or STANDARD (72 mm): the 80 mm roll's printed width, from printers.js.
-  printWidth: DEFAULT_PRINT_WIDTH,
+  printWidth: 'STANDARD',
   autoPrintKots: false,
   // P25 Part D. A counter computer prints the bills captains send it.
   printCaptainBills: false,
-  // P29 Part D. The counter prints a bill the moment it is made here.
+  // 2026-10-25. Where a bill printed from this device comes out: AUTO, HERE or COUNTER (billsPrintAtCounter).
+  billPrintsAt: 'AUTO',
+  // P29 Part D, retired by P57: Save & Print on the order screen says when to print. Kept so old saved settings still read.
   printBillOnCreate: false,
   printedBillRequests: [],
   // P25 Part I. The card machine on this counter, by its Pine Labs client id.
@@ -74,7 +77,30 @@ const DEFAULTS = Object.freeze({
   kitchenSound: false,
   // How far back the kitchen's Recall looks: 30m, 1h, 3h or day.
   recallRange: '1h',
+  // 2026-10-21. The kitchen screen's tiles: BIG, or SMALL in a rush so more tickets fit.
+  kitchenTiles: 'BIG',
 });
+
+export const BILL_PRINT_PLACES = Object.freeze(['AUTO', 'HERE', 'COUNTER']);
+
+/**
+ * 2026-10-25. Whether a bill printed from this device goes to the counter's
+ * printer, as a captain's does (API-CONTRACT M3 16.3), instead of this device's.
+ *
+ * On the cafe PC the bill printer is on the PC itself, and only the till window
+ * prints captains' bills (`printCaptainBills`). A manager's or cashier's phone
+ * there printed to nothing: Print bill opened the phone's own printing, and no
+ * bill came out (Z Chaat, 2026-10-25). So, automatically, every device on the
+ * cafe PC's server but the till window, or one that prints captains' bills,
+ * sends to the counter. On the website it stays this device, as before. This device can
+ * choose either.
+ */
+export function billsPrintAtCounter(device, features) {
+  if (device?.billPrintsAt === 'COUNTER') return true;
+  if (device?.billPrintsAt === 'HERE') return false;
+  // The till window (?till=1) always prints here: it is the counter.
+  return features?.sync?.server === 'BOX' && !device?.cafeTill && !device?.printCaptainBills;
+}
 
 /** Same-tab listeners. The `storage` event only reaches other tabs. */
 const CHANGE_EVENT = 'erp-device-change';
@@ -89,7 +115,8 @@ function withDefaults(stored) {
   const billTextSize = BILL_TEXT_SIZES[rest.billTextSize] ? rest.billTextSize : DEFAULT_BILL_TEXT_SIZE;
   const edgeMargin = EDGE_MARGINS[rest.edgeMargin] ? rest.edgeMargin : DEFAULT_EDGE_MARGIN;
   const printWidth = PRINT_WIDTHS[rest.printWidth] ? rest.printWidth : DEFAULT_PRINT_WIDTH;
-  return { ...rest, printer: printerFor(stored), paperLength, billTextSize, edgeMargin, printWidth };
+  const billPrintsAt = BILL_PRINT_PLACES.includes(rest.billPrintsAt) ? rest.billPrintsAt : 'AUTO';
+  return { ...rest, printer: printerFor(stored), paperLength, billTextSize, edgeMargin, printWidth, billPrintsAt };
 }
 
 function readStored() {
@@ -99,6 +126,63 @@ function readStored() {
     return null;
   }
 }
+
+/**
+ * 2026-10-22. The cafe PC's bill printer (Z Chaat's Rugtek, driver POS-80) prints
+ * on its 80(72.1) x 3276 mm roll and skips the blank after the last line. A page
+ * as long as the bill was put at the end of that long page, so a whole page of
+ * blank paper came out before every bill, and at 78 mm the right side was cut.
+ * Every browser and window keeps its own This device, so setting each by hand
+ * missed the one that printed. Signed in to the cafe PC's own server (/auth/me
+ * `sync.server` BOX, AuthContext), every device moves once to what prints best
+ * on the website's counter (Arya, 2026-10-22): the printer's roll, 72 mm, 4 mm
+ * each side, Normal text. The till also prints captains' bills: on the PC it is
+ * the one window that prints (box/windows/start-till.ps1). A later choice on
+ * This device is kept. The website never runs this.
+ */
+/**
+ * What prints best on Z Chaat's Rugtek, measured on the website's counter: the
+ * printer's roll, 72 mm, 4 mm each side. The cafe PC's hidden printer window
+ * always prints with it, whatever This device holds, since nobody can open its
+ * This device (PrintStationPage).
+ */
+export const CAFE_PC_PAPER = Object.freeze({ paperLength: 'ROLL', printWidth: 'STANDARD', edgeMargin: 'MORE' });
+
+// 3: only the hidden printer window (PrintStationPage, which prints whatever this switch says)
+// prints captains' bills, always on CAFE_PC_PAPER. At 1 every browser on the PC did, and a plain
+// Chrome window showed the print dialog; at 2 the till did too, on its own paper, and left blank
+// paper above the bill (Arya, 2026-10-22). 4: the same paper once more on every device on the PC.
+// 5: the till prints captains' bills again, on CAFE_PC_PAPER (AppShell): the hidden printer window
+// printed nothing, as Chrome holds back printing from a hidden page.
+const CAFE_PC_PRINT_SETUP = 5;
+
+export function applyCafePcPrintSetup() {
+  const stored = readStored() ?? lastWritten ?? {};
+  if ((stored.cafePcPrintSetup ?? 0) >= CAFE_PC_PRINT_SETUP) return;
+  write({
+    ...stored,
+    printer: 'THERMAL_80',
+    paperLength: 'ROLL',
+    printWidth: 'STANDARD',
+    edgeMargin: 'MORE',
+    billTextSize: 'NORMAL',
+    printCaptainBills: Boolean(stored.cafeTill),
+    cafePcPrintSetup: CAFE_PC_PRINT_SETUP,
+  });
+}
+
+/**
+ * The till window that box/windows/start-till.ps1 opens, with ?till=1, prints
+ * with no dialog (--kiosk-printing): it prints captains' bills. Marked once as
+ * the app loads, before any screen changes the address.
+ */
+function markCafeTill() {
+  const stored = readStored() ?? lastWritten ?? {};
+  if (stored.cafeTill && stored.printCaptainBills) return;
+  write({ ...stored, cafeTill: true, printCaptainBills: true });
+}
+
+if (typeof window !== 'undefined' && window.location && new URLSearchParams(window.location.search).get('till') === '1') markCafeTill();
 
 function read() {
   return withDefaults(readStored() ?? lastWritten ?? {});

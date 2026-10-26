@@ -524,11 +524,18 @@ export const orderCustomerSchema = z.object({
         .optional(),
       customerPhone: phoneIndia.optional(),
       offersConsent: z.boolean({ error: 'Must be true or false.' }).optional(),
+      // P59. The covers, asked with the guest's details at the first Send.
+      guestCount: z
+        .number({ error: 'Must be a number.' })
+        .int('Must be a whole number.')
+        .min(MIN_GUEST_COUNT, 'Must be at least 1.')
+        .max(MAX_GUEST_COUNT, `Cannot be more than ${MAX_GUEST_COUNT}.`)
+        .optional(),
     })
     .strict('Is not a field you can set here.')
-    .refine((body) => body.customerName !== undefined || body.customerPhone !== undefined, {
+    .refine((body) => body.customerName !== undefined || body.customerPhone !== undefined || body.guestCount !== undefined, {
       path: ['customerName'],
-      message: "Give the guest's name or mobile.",
+      message: "Give the guest's name, mobile or number of guests.",
     })
     .refine((body) => !body.offersConsent || Boolean(body.customerPhone), {
       path: ['offersConsent'],

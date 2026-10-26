@@ -68,6 +68,6 @@ describe('print before payment', () => {
     assert.equal(me.billing.printBeforePayment, true);
     assert.equal(me.billing.reviseUnpaidBills, true);
     assert.equal(me.approvals.revisePrintedBill, true);
-    assert.deepEqual(me.kitchen, { readyMeansServed: true });
+    assert.deepEqual(me.kitchen, { readyMeansServed: true, splitTicketsByStation: true });
   });
 });

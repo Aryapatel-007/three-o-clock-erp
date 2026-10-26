@@ -18,6 +18,18 @@ const fssaiLicenseNumber = z
   .trim()
   .regex(/^\d{14}$/, 'Must be exactly 14 digits.');
 
+/** P64. A PAN, AAAAA9999A, or null to clear it. */
+const panNumber = z.union([
+  z.string().trim().toUpperCase().regex(/^[A-Z]{5}\d{4}[A-Z]$/, 'A PAN is 5 letters, 4 digits and a letter, like AAAPZ1234C.'),
+  z.null(),
+], { error: 'A PAN is 5 letters, 4 digits and a letter, like AAAPZ1234C.' });
+
+/** P64. An Udyam (MSME) number, UDYAM-GJ-01-0012345, or null to clear it. */
+const msmeNumber = z.union([
+  z.string().trim().toUpperCase().regex(/^UDYAM-[A-Z]{2}-\d{2}-\d{7}$/, 'An Udyam number looks like UDYAM-GJ-01-0012345.'),
+  z.null(),
+], { error: 'An Udyam number looks like UDYAM-GJ-01-0012345.' });
+
 const pincode = z
   .string({ error: 'Is required.' })
   .trim()
@@ -72,6 +84,8 @@ export const updateRestaurantSchema = z.object({
       legalName: nonEmptyString.optional(),
       gstin: gstin.optional(),
       fssaiLicenseNumber: fssaiLicenseNumber.optional(),
+      panNumber: panNumber.optional(),
+      msmeNumber: msmeNumber.optional(),
       contactPhone: phoneIndia.optional(),
       contactEmail: email.optional(),
       address: address.optional(),

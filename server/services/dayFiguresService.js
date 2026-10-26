@@ -33,7 +33,7 @@ import { Refund, REFUND_STATUSES } from '../models/Refund.js';
 import { averagePaise, sumPaise } from '../utils/money.js';
 import { scoped } from '../utils/scopedQuery.js';
 import { businessDateFor, businessDateRangeToUtc } from '../utils/time.js';
-import { formatBillNumber, formatPrefixBillNumber } from './billNumberService.js';
+import { formatBillNumber, formatPrefixBillNumber, formatWebsiteBillNumber, WEBSITE_SEQUENCE_BASE } from './billNumberService.js';
 import { computeLineTotalInPaise } from './orderService.js';
 import { getSetting } from './settingsService.js';
 
@@ -334,6 +334,8 @@ const FINANCIAL_YEAR_SERIES = /^\d{4}-\d{2}$/;
 
 /** A sequence as the number printed on a bill in that series. */
 export function numberInSeries(series, sequence) {
+  // P63. The website's series counts from WEBSITE_SEQUENCE_BASE.
+  if (sequence > WEBSITE_SEQUENCE_BASE) return formatWebsiteBillNumber(series, sequence);
   return FINANCIAL_YEAR_SERIES.test(series)
     ? formatBillNumber(series, sequence)
     : formatPrefixBillNumber(series, sequence);

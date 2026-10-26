@@ -76,7 +76,7 @@ export const recordCashSchema = z.object({
 
 export const voidCashSchema = z.object({
   params: z.object({ movementId: objectId }),
-  body: z.object({ reason }).strict('Is not a field you can set here.'),
+  body: z.object({ reason, approval: approval.optional() }).strict('Is not a field you can set here.'),
 });
 
 export const closeDaySchema = z.object({

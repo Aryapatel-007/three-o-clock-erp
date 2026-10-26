@@ -1,5 +1,21 @@
 # Restaurant ERP
 
+
+## Cafezza-Offline: the box in the cafe (P62)
+
+This repository is the local-first build: the same product, able to run on a
+small server **inside the cafe** so billing, KOTs and printing never wait on
+the internet, with Atlas as a read-only cloud mirror, backup, and the intake
+for online orders and partner webhooks.
+
+- How it works: [`docs/REPLICATION.md`](docs/REPLICATION.md)
+- **Windows cafe PC:** `bash box/windows/make-package.sh` makes `release/CafePOS.zip`; on the PC, extract to `C:\CafePOS` and double-click **Install Cafe POS**. [`docs/WINDOWS-INSTALL.md`](docs/WINDOWS-INSTALL.md)
+- Ubuntu mini PC: `sudo LAN_IP=192.168.1.10 bash box/install-ubuntu.sh`, then [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) sections 17 and 18
+- **Staff: connecting a tablet, which WiFi, which link:** [`docs/STAFF-SETUP.md`](docs/STAFF-SETUP.md), or open `/connect` on the system
+- When something is wrong: [`docs/RUNBOOK.md`](docs/RUNBOOK.md)
+
+`DEPLOYMENT_ROLE` picks the role: `CLOUD` (default, unchanged), `BOX` or `MIRROR`.
+
 A multi-tenant SaaS restaurant ERP for independent restaurants in Ahmedabad.
 MongoDB, Express, React, Node. The API is REST.
 
@@ -21,7 +37,7 @@ you stop.
 | [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) | Cloud server and Atlas, backups, the cafe setup |
 | [`docs/GO-LIVE.md`](docs/GO-LIVE.md) | Gates, training, pilot days, cutover |
 | [`docs/prompts/`](docs/prompts/) | The build prompts, P00 to P21, run in order |
-| [`docs/clients/threeoclock/PROFILE.md`](docs/clients/threeoclock/PROFILE.md) | The live client's real setup: tax, invoice series, tables, staff, payment methods, and what is still to confirm |
+| [`docs/clients/zchaat/PROFILE.md`](docs/clients/zchaat/PROFILE.md) | The live client's real setup: tax, invoice series, tables, staff, payment methods, and what is still to confirm |
 | [`docs/INTEGRATIONS.md`](docs/INTEGRATIONS.md) | Connecting Swiggy, Zomato, a Pine Labs card machine and Tally: what to ask for, how to set each up, what is still waiting |
 
 ## Running it

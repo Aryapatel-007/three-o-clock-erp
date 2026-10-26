@@ -62,8 +62,15 @@ The full table, with dependencies and owners, is in
 | P51 | The WhatsApp assistant: questions, table bookings, and stop | Built 2026-10-12 against a fake Meta and a fake model; the eval run on Groq. Numbered P39 when written; merged with Rishi's P38 to P50 on 2026-10-15. Waits for P37's real WhatsApp account and a paid AI key. Rishi's read outstanding. |
 | P52 | Campaigns: offers and new dishes | Written by Arya, not saved here yet; comes after P37 has run on a real WhatsApp account. Numbered P38 in P37's prompt. |
 | P53 | Attribution and campaign reporting | Not written yet. Numbered P39 in P37's prompt. |
-| P54 | Constant backups | In progress. Written as P44. |
+| P54 | Constant backups | Done, waiting for Arya to switch on: the storage secret, then the practice restore. Written as P44. |
 | P55 | The owner's dashboard, beside the ERP | Built 2026-10-15. Written as P51 and renumbered on merging Arya's P51 to P54. Arya's read outstanding. |
 | P56 | A note for every dish, the guest's details before the first KOT, and only whole voids in the void lists | Built 2026-10-15. Arya's read outstanding. |
+| P57 | The bill in one place: review, discount, then Save or Save & Print | Built 2026-10-17. Arya's read outstanding. |
+| P58 | One kitchen ticket per Send, not per station | Built and deployed 2026-10-17. Z Chaat's owner switches it off in Settings, Kitchen, after the deploy. Rishi's read outstanding. |
+| P59 | A captain's bill prints once, and the guest count moves to the first Send | Built 2026-10-21. Arya's read outstanding. |
+| P60 | Bill without KOT | Built 2026-10-21. Arya's read outstanding. |
+| P61 | A simple Day Close | Built 2026-10-21. Arya's read outstanding. |
+| P64 | Invoice themes, and what prints on a bill | Built 2026-10-25, not deployed. Arya's read outstanding. |
+| P65 | The CA's month, sent by itself | Built 2026-10-25, not deployed. Arya's read outstanding. |
 
 Prompt files that do not exist yet are added as they are written.

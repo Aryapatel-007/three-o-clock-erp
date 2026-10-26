@@ -31,6 +31,28 @@ function connectionForKey(provider, key) {
 }
 
 /**
+ * P62. The signature check of `receiveWebhook` and nothing else: no event
+ * log, no job. The cloud mirror runs it before keeping a webhook in intake,
+ * so it verifies exactly as M21 does and writes nothing operational. Gives
+ * back `{ status }`, 200 with the connection's restaurant and branch when the
+ * partner signed it.
+ */
+export async function verifyWebhookSignatureOnly(provider, key, rawBody, headers) {
+  const connection = await connectionForKey(provider, key);
+  if (!connection) return { status: 404 };
+  // A connection that is off still answers 200 to the partner, as today; the box ignores it.
+  if (connection.status !== CONNECTION_STATUSES.ACTIVE) return { status: 200, restaurantId: connection.restaurantId, branchId: connection.branchId };
+  const adapter = await adapterFor(provider);
+  let verified = false;
+  try {
+    verified = Boolean(await adapter.verifyWebhook({ rawBody, headers, connection, secrets: secretsOf(connection) }));
+  } catch {
+    verified = false;
+  }
+  return verified ? { status: 200, restaurantId: connection.restaurantId, branchId: connection.branchId } : { status: 401 };
+}
+
+/**
  * P37. A partner's subscription handshake (Meta's GET with `hub.challenge`).
  * Returns `{ status, text }`: the challenge back when the partner's adapter
  * accepts it, else 403. Found by the same key as the POST.

@@ -6,8 +6,10 @@ import { formatBusinessDate, formatTimeIst } from '../../../utils/formatDate.js'
  *
  *   Brought forward + Top-ups + Cash sales - Expenses - Taken out = Cash in drawer
  *
- * From 1024 px the steps run left to right as cards joined by large signs,
- * ending in a wider Cash in drawer card. Below that, a stacked list: the sign
+ * With 1024 px of its own width the steps run left to right as cards joined
+ * by large signs, ending in a wider Cash in drawer card. With less, a stacked
+ * list (2026-10-21: by the space it has, not the window, so inside Day End's
+ * narrow column on a wide screen it never squeezes six cards): the sign
  * in a wide left column, the amount on the right, and Cash in drawer last and
  * largest. Each step opens its entries. The server leaves the cash in the
  * drawer out for anyone who may not see it, and so does this.
@@ -66,9 +68,9 @@ function DrawerCard({ book, wide = false }) {
 export default function CashFlow({ book, onOpen }) {
   const steps = flowSteps(book);
   return (
-    <>
+    <div className="@container">
       {/* Wide: cards joined by signs, the way the owner drew it. */}
-      <div className="hidden items-stretch gap-2 lg:flex">
+      <div className="hidden items-stretch gap-2 @5xl:flex">
         {steps.map((step) => (
           <div key={step.key} className="flex min-w-0 flex-1 items-center gap-2">
             {step.sign && <span aria-hidden="true" className="type-title flex-none text-muted">{step.sign}</span>}
@@ -90,7 +92,7 @@ export default function CashFlow({ book, onOpen }) {
       </div>
 
       {/* Phone and tablet: one line per step, the sign on the left, the amount on the right. */}
-      <ul className="divide-y divide-line rounded-[10px] border border-line bg-surface lg:hidden">
+      <ul className="divide-y divide-line rounded-[10px] border border-line bg-surface @5xl:hidden">
         {steps.map((step) => (
           <li key={step.key}>
             <button type="button" onClick={() => onOpen(step.key)} className="flex min-h-14 w-full items-center gap-3 px-4 py-2 text-left hover:bg-sunken">
@@ -107,6 +109,6 @@ export default function CashFlow({ book, onOpen }) {
           <DrawerCard book={book} />
         </li>
       </ul>
-    </>
+    </div>
   );
 }

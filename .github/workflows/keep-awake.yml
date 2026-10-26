@@ -17,14 +17,14 @@
 #
 # The address comes from the repository variable KEEP_AWAKE_URL (Settings,
 # Secrets and variables, Actions, Variables), for example
-# https://three-o-clock-erp-api.onrender.com/api/v1/wake. No secret is needed: the
+# https://zchaat-pos-api.onrender.com/api/v1/wake. No secret is needed: the
 # address is public anyway.
 
 name: Keep the server awake
 
 on:
-  schedule:
-    - cron: '*/10 3-20 * * *'
+  # P62 (Cafezza-Offline): by hand only. A box in the cafe never sleeps, and this
+  # repository has no KEEP_AWAKE_URL, so a schedule would only fail every ten minutes.
   workflow_dispatch:
 
 permissions: {}

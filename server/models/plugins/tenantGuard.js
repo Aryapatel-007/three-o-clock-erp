@@ -22,6 +22,7 @@
 import { config } from '../../config/env.js';
 import { logger } from '../../config/logger.js';
 import { TenantFilterMissingError } from '../../utils/errors.js';
+import { writerGuardPlugin } from './writerGuard.js';
 
 /** Every query operation that reaches the database with a filter. */
 export const GUARDED_QUERY_OPERATIONS = Object.freeze([
@@ -134,6 +135,11 @@ export function tenantGuardPlugin(schema) {
 
     raiseViolation(modelNameOf(this), 'aggregate');
   });
+
+  // P62. Every tenant model also refuses a write while this machine is not the
+  // writer. One line here rather than one in each of forty model files, so a
+  // new model cannot forget it. models/plugins/writerGuard.js says why.
+  schema.plugin(writerGuardPlugin);
 }
 
 export default tenantGuardPlugin;

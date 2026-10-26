@@ -104,7 +104,7 @@ function reconcileSubdocuments(existing, incoming, NotFoundForKind) {
 
 /** POST /menu-items */
 export async function createMenuItem(req, res) {
-  const { categoryId, name, description, priceInPaise, taxRateBps, displayOrder, variants, addOns, isOpenItem } =
+  const { categoryId, name, description, priceInPaise, taxRateBps, displayOrder, variants, addOns, isOpenItem, hsnCode } =
     req.body;
 
   await assertCategoryUsable(req, categoryId);
@@ -136,6 +136,8 @@ export async function createMenuItem(req, res) {
     addOns: addOns ?? [],
     // P46.
     isOpenItem: isOpenItem ?? false,
+    // P64.
+    hsnCode: hsnCode ?? null,
   });
 
   await item.save().catch(rethrowDuplicate);
@@ -202,7 +204,7 @@ export async function getMenuItem(req, res) {
 /** PATCH /menu-items/:menuItemId */
 export async function updateMenuItem(req, res) {
   const item = await loadMenuItemInTenant(req, req.params.menuItemId);
-  const { categoryId, name, description, priceInPaise, taxRateBps, displayOrder, variants, addOns, isOpenItem } =
+  const { categoryId, name, description, priceInPaise, taxRateBps, displayOrder, variants, addOns, isOpenItem, hsnCode } =
     req.body;
 
   if (categoryId !== undefined && String(categoryId) !== String(item.categoryId)) {
@@ -233,6 +235,8 @@ export async function updateMenuItem(req, res) {
   if (nextAddOns !== undefined) item.addOns = nextAddOns;
   // P46.
   if (isOpenItem !== undefined) item.isOpenItem = isOpenItem;
+  // P64. Changes only lines added from now: every line already added froze its own.
+  if (hsnCode !== undefined) item.hsnCode = hsnCode;
 
   await item.save().catch(rethrowDuplicate);
 

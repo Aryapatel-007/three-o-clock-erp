@@ -24,8 +24,43 @@ function escapeHtml(text) {
   return String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-/** Lets the frame's content paint before measuring or printing. */
-const nextFrame = (win) => new Promise((resolve) => win.requestAnimationFrame(() => setTimeout(resolve, 30)));
+/**
+ * Lets the frame's content paint before measuring or printing.
+ *
+ * A browser runs no animation frame for a tab that is not showing, so waiting
+ * on one alone hung every print from a till whose cashier had opened another
+ * tab: a captain's bill sat unprinted until someone came back (Z Chaat,
+ * 2026-10-19). A timer ends the wait too; layout is still worked out when
+ * measured, shown or not.
+ */
+const nextFrame = (win) =>
+  new Promise((resolve) => {
+    let waited = false;
+    const done = () => {
+      if (waited) return;
+      waited = true;
+      setTimeout(resolve, 30);
+    };
+    win.requestAnimationFrame(done);
+    setTimeout(done, 100);
+  });
+
+/** The longest a print waits for its images and fonts before measuring anyway. */
+const CONTENT_WAIT_MS = 3000;
+
+/**
+ * Waits for the frame's images (the logo) and fonts before the bill is
+ * measured. An image not yet decoded lays out with no height, so the page was
+ * written shorter than the bill and the printer cut it off before the end: on
+ * the cafe PC, slower than a developer's machine (Z Chaat, 2026-10-22). Never
+ * waits more than CONTENT_WAIT_MS, so a broken image cannot stop a print.
+ */
+function contentLoaded(doc) {
+  const images = Array.from(doc.images).map((image) => image.decode().catch(() => {}));
+  const fonts = doc.fonts?.ready ?? Promise.resolve();
+  const loaded = Promise.all([...images, fonts]);
+  return Promise.race([loaded, new Promise((resolve) => setTimeout(resolve, CONTENT_WAIT_MS))]);
+}
 
 /**
  * Prints an HTML body on this device's printer. `bodyHtml` is trusted markup
@@ -33,7 +68,8 @@ const nextFrame = (win) => new Promise((resolve) => win.requestAnimationFrame(()
  * Resolves once print() has been called; rejects if the browser refused, so a
  * caller can say "Not printed" rather than believing it worked.
  */
-export async function printDocument({ printer: chosen, bodyHtml, styles = '' }) {
+// `paper`: paperLength, edgeMargin and printWidth for this print only, over This device (2026-10-22, the cafe PC's printer window).
+export async function printDocument({ printer: chosen, bodyHtml, styles = '', paper = null }) {
   // P21. The browser tests record the words that would print. Only a test's init script sets this.
   if (typeof window.__E2E_PRINT__ === 'function') {
     const holder = document.createElement('div');
@@ -42,7 +78,7 @@ export async function printDocument({ printer: chosen, bodyHtml, styles = '' }) 
     return;
   }
   const printer = PRINTERS[chosen] ? chosen : 'THERMAL_80';
-  const { paperLength, edgeMargin, printWidth } = readDeviceSettings();
+  const { paperLength, edgeMargin, printWidth } = { ...readDeviceSettings(), ...(paper ?? {}) };
   const widthMm = contentWidthMm(printer, edgeMargin, printWidth);
   /**
    * The content gets its width in millimetres, not the page's. Without it,
@@ -78,6 +114,7 @@ export async function printDocument({ printer: chosen, bodyHtml, styles = '' }) 
   ${styles}
 </style></head><body><div id="print-root" style="${rootStyle}">${bodyHtml}</div></body></html>`);
     doc.close();
+    await contentLoaded(doc);
     await nextFrame(frame.contentWindow);
 
     // Measured after layout at the printed width, then the page is written: see pageCss.

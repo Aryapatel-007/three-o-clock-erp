@@ -14,6 +14,7 @@
 import { IntegrationJob, JOB_STATUSES } from '../../models/IntegrationJob.js';
 import { logger } from '../../config/logger.js';
 import { nowUtc } from '../../utils/time.js';
+import { mayRunWriterLoops } from '../replication/writerState.js';
 
 export const RETRY_DELAYS_MS = Object.freeze([30_000, 120_000, 600_000, 1_800_000, 7_200_000]);
 /** How long a claimed job is held before another runner may take it again. */
@@ -120,6 +121,9 @@ export function startJobLoop() {
   let busy = false;
   loop = setInterval(async () => {
     if (busy) return;
+    // P62. Only the writer sends: never a read-only mirror, never a box that
+    // stood down, or the same refund would go out from two machines.
+    if (!mayRunWriterLoops()) return;
     busy = true;
     try {
       await runDueJobs();

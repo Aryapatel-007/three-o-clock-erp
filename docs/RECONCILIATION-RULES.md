@@ -112,6 +112,7 @@ Each of these grouped totals equals the ungrouped total for the same range:
 5. Hours: sum of hourly net sales equals net sales.
 6. Days: sum of daily bill totals equals the range bill total.
 7. Tax rates: sum of slab net sales equals net sales.
+8. HSN or SAC codes: sum of net sales by code and rate equals net sales (R20, P65). Lines with no code count under "Not recorded"; a line with no share (before P03) counts as zero, which fails the check on purpose.
 
 Message: "C5 Totals: the {grouping} totals add up to {sum}, but the whole is {total}. {difference} is missing from one of the groups."
 
@@ -243,6 +244,7 @@ Message: "C12 Closed day: {date} was closed at {closedAt} with bill total {store
 | R17 On Hold Accounts | C10 |
 | R18 Activity Log | None. It is M8's read. |
 | R19 Bill List | C1, C2, C4 for each bill shown |
+| R20 CA Pack | C1, C3, C4, C5.7, C5.8, C6, C13, and the pack refuses to build if any ERROR check fails |
 
 ---
 

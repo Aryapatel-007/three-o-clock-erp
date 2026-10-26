@@ -16,7 +16,9 @@ import { ROLES } from '../config/roles.js';
 import { AUDIT_ACTIONS, AUDIT_ENTITY_TYPES } from '../models/AuditLog.js';
 import { Bill, BILL_STATUSES } from '../models/Bill.js';
 import { DAY_STATUSES, DayClosure } from '../models/DayClosure.js';
-import { OCCUPYING_ORDER_STATUSES, Order } from '../models/Order.js';
+import { OCCUPYING_ORDER_STATUSES, Order, ORDER_LINE_STATUSES, ORDER_STATUSES } from '../models/Order.js';
+import { ORDER_OPENED_BY_MISTAKE } from '../config/cancelReasons.js';
+import { applyVersionedUpdate } from './orderService.js';
 import { PlatformOrder } from '../models/PlatformOrder.js';
 import { TerminalTransaction } from '../models/TerminalTransaction.js';
 import { User } from '../models/User.js';
@@ -41,6 +43,8 @@ const opts = (session) => (session ? { session } : {});
 /** Whether this caller sees expected cash and the difference. */
 async function seesCash(req) {
   if (req.user.role === ROLES.OWNER) return true;
+  // P61. A cashier closes the day blind, always.
+  if (req.user.role !== ROLES.MANAGER) return false;
   return Boolean(await getSetting(req.restaurantId, 'dayClose.showCashDifferenceToManager', { req }));
 }
 
@@ -66,6 +70,69 @@ function blind(view) {
   return copy;
 }
 
+/**
+ * P61. An open order with no bill, none of whose lines was ever sent: opened
+ * by a tap on the floor and left, or dishes added and never sent. P50's rule.
+ */
+function neverSent(order) {
+  return (
+    order.status === ORDER_STATUSES.OPEN &&
+    !order.billId &&
+    order.lines.every((line) => !line.firedAt && [ORDER_LINE_STATUSES.PENDING, ORDER_LINE_STATUSES.CANCELLED].includes(line.status))
+  );
+}
+
+/** P61. The open orders of the date that Day Close closes as opened by mistake. */
+async function ordersClosingOnClose(req, businessDate, { session = null } = {}) {
+  const startMinutes = await getSetting(req.restaurantId, 'business.businessDayStartsAtMinutes', { req });
+  const { start, end } = businessDateRangeToUtc(businessDate, businessDate, startMinutes);
+  const orders = await Order.find({ ...scoped(req), status: ORDER_STATUSES.OPEN, billId: null, openedAt: { $gte: start, $lt: end } })
+    .select('orderNumber tableName orderType status billId version lines.status lines.firedAt')
+    .setOptions(opts(session))
+    .lean();
+  return orders.filter(neverSent);
+}
+
+function presentUnsent(order) {
+  return {
+    orderId: String(order._id),
+    orderNumber: order.orderNumber,
+    tableName: order.tableName ?? null,
+    orderType: order.orderType,
+    dishesNotSent: order.lines.filter((line) => line.status === ORDER_LINE_STATUSES.PENDING).length,
+  };
+}
+
+/**
+ * P61. Closes those orders exactly as P50's Close table does: the not-sent
+ * dishes removed, the order cancelled as opened by mistake, by the person
+ * closing the day. No audit line; they count nowhere.
+ */
+async function closeUnsentOrders(req, businessDate, session) {
+  const orders = await ordersClosingOnClose(req, businessDate, { session });
+  for (const order of orders) {
+    await applyVersionedUpdate(req, {
+      orderId: order._id,
+      version: order.version,
+      update: {
+        $pull: { lines: { status: ORDER_LINE_STATUSES.PENDING } },
+        $set: {
+          status: ORDER_STATUSES.CANCELLED,
+          isCancelled: true,
+          cancelledAt: nowUtc(),
+          cancelledBy: req.user.id,
+          cancelReasonCode: ORDER_OPENED_BY_MISTAKE,
+          cancelReason: null,
+        },
+      },
+      session,
+    });
+  }
+  if (orders.length > 0) {
+    req.log?.info({ businessDate, orders: orders.map((order) => order.orderNumber) }, 'Day Close closed orders nothing was sent from.');
+  }
+}
+
 /** Everything that stops a date being closed, reported together. */
 async function blockersFor(req, businessDate, checks, { session = null } = {}) {
   const startMinutes = await getSetting(req.restaurantId, 'business.businessDayStartsAtMinutes', { req });
@@ -77,7 +144,7 @@ async function blockersFor(req, businessDate, checks, { session = null } = {}) {
       status: { $in: [...OCCUPYING_ORDER_STATUSES] },
       openedAt: { $gte: start, $lt: end },
     })
-      .select('orderNumber tableName orderType')
+      .select('orderNumber tableName orderType status billId lines.status lines.firedAt')
       .setOptions(opts(session))
       .lean(),
     Bill.find({ ...scoped(req), businessDate, isVoided: false, status: BILL_STATUSES.UNPAID })
@@ -104,7 +171,8 @@ async function blockersFor(req, businessDate, checks, { session = null } = {}) {
   const billedOrders = new Set(unpaidBills.map((bill) => String(bill.orderId)));
 
   return [
-    ...openOrders.filter((order) => !billedOrders.has(String(order._id))).map((order) => ({
+    // P61. An order nothing was sent from closes itself at Day Close: listed apart, never a blocker.
+    ...openOrders.filter((order) => !billedOrders.has(String(order._id)) && !neverSent(order)).map((order) => ({
       kind: 'OPEN_ORDER',
       message: `Order ${order.orderNumber}${order.tableName ? ` on ${order.tableName}` : ''} is still open.`,
       ref: String(order._id),
@@ -198,7 +266,7 @@ async function keptAtClose(req, countedCashInPaise, { keptForTomorrowInPaise, ke
   };
 }
 
-/** POST /day-close. OWNER and MANAGER. */
+/** POST /day-close. OWNER, MANAGER and, from P61, CASHIER. */
 export async function closeDay(req, { businessDate, countedCashInPaise, cashCount = null, note = null, ...keptRequest }) {
   // P25 Part F. A count by notes and coins: the server totals it, and a total sent beside it must agree.
   let counted = null;
@@ -222,6 +290,9 @@ export async function closeDay(req, { businessDate, countedCashInPaise, cashCoun
     if (existing?.status === DAY_STATUSES.CLOSED) {
       throw new BusinessRuleError(`${businessDate} is already closed.`);
     }
+
+    // P61. First, the orders nothing was sent from: they close themselves, opened by mistake.
+    await closeUnsentOrders(req, businessDate, session);
 
     const figures = await computeDayFigures(req, businessDate, { session });
     const checks = await runDayChecks(req, businessDate, figures, { countedCashInPaise, session });
@@ -367,6 +438,8 @@ export async function readDayView(req, businessDate) {
       figures,
       checks,
       blockers: await blockersFor(req, businessDate, checks),
+      // P61. Orders nothing was sent from: closed by the close, not blocking it.
+      closesOnClose: (await ordersClosingOnClose(req, businessDate)).map(presentUnsent),
       closedBy: null,
       closedAt: null,
       history: closure ? closure.toJSON().history : [],

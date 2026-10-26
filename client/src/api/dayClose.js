@@ -35,8 +35,8 @@ export function getCashBook(date) {
   return api.get(`/cash-book${date ? `?date=${date}` : ''}`);
 }
 
-export function voidCashMovement(movementId, reason) {
-  return api.post(`/cash-movements/${movementId}/void`, { reason });
+export function voidCashMovement(movementId, reason, extra = {}) {
+  return api.post(`/cash-movements/${movementId}/void`, { reason, ...extra });
 }
 
 /** P44. The day-end message: `{ businessDate, subject, text }`. Cash in hand reads "—" for a blind manager. */

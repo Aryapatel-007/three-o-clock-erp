@@ -168,6 +168,18 @@ export default function SettingsPage() {
           </Link>
         </Section>
 
+        <Section title="Invoice layout" description="The invoice theme, what a printed bill shows, the HSN/SAC code, the PAN, the terms and the signature, with a preview of a real bill.">
+          <Link to="/settings/invoice-layout" className="type-button flex min-h-12 w-fit items-center rounded-lg border border-ink bg-surface px-4 hover:bg-sunken">
+            Open Invoice layout
+          </Link>
+        </Section>
+
+        <Section title="CA reports" description="Your chartered accountant's details, and the month's pack sent to them by email on the 1st.">
+          <Link to="/settings/ca-reports" className="type-button flex min-h-12 w-fit items-center rounded-lg border border-ink bg-surface px-4 hover:bg-sunken">
+            Open CA reports
+          </Link>
+        </Section>
+
         {/* P30. The free server's starts, the owner's to read; this page is the owner's alone. */}
         <ServerCard />
 
@@ -362,12 +374,6 @@ export default function SettingsPage() {
               checked={form.billing.printBeforePayment}
               onChange={set('billing', 'printBeforePayment')}
             />
-            <Checkbox
-              label="Counter sale: the guest pays before the kitchen makes it"
-              hint="A takeaway is billed and paid the moment it is sent, on the Counter sale screen, and the kitchen makes it after. Off: a takeaway waits until every item is ready before it can be billed."
-              checked={form.billing.payFirstTakeaway ?? true}
-              onChange={set('billing', 'payFirstTakeaway')}
-            />
           </Section>
         )}
 
@@ -393,6 +399,13 @@ export default function SettingsPage() {
               hint="Every round and every station on one ticket, under one KOT number; each station still sees only its own dishes. Off: a ticket for each station every time the captain sends."
               checked={form.kitchen.oneTicketPerOrder ?? true}
               onChange={set('kitchen', 'oneTicketPerOrder')}
+            />
+            {/* P58. */}
+            <Checkbox
+              label="A separate ticket for each station"
+              hint="Each station, like Chaat Counter or Beverages, gets its own ticket and the kitchen screen shows the stations. Off: every Send is one ticket with all its dishes, and the kitchen screen shows whole tickets."
+              checked={form.kitchen.splitTicketsByStation ?? true}
+              onChange={set('kitchen', 'splitTicketsByStation')}
             />
           </Section>
         )}
@@ -420,7 +433,7 @@ export default function SettingsPage() {
               maxLength={300}
               value={form.assistant.greeting ?? ''}
               onChange={(event) => set('assistant', 'greeting')(event.target.value)}
-              hint="Optional, up to 300 characters. Like: Welcome to Three O'Clock!"
+              hint="Optional, up to 300 characters. Like: Namaste from Z Chaat!"
             />
             <Input
               label="When a person replies"

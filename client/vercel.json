@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "rewrites": [
-    { "source": "/api/:path*", "destination": "https://three-o-clock-erp-api.onrender.com/api/:path*" },
+    { "source": "/api/:path*", "destination": "https://zchaat-pos-api.onrender.com/api/:path*" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }

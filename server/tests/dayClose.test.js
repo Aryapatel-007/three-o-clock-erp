@@ -11,7 +11,7 @@ import { after, afterEach, before, beforeEach, describe, it } from 'node:test';
 import { ALL_MODELS } from '../models/index.js';
 import { AuditLog } from '../models/AuditLog.js';
 import { resetClockForTests, setClockForTests } from '../utils/time.js';
-import { createTable, openOrder, readyToBillOrder, seedFloor } from './helpers/m2Fixtures.js';
+import { createTable, fireOrder, openOrder, readyToBillOrder, seedFloor } from './helpers/m2Fixtures.js';
 import { clearTestDatabase, startTestDatabase, stopTestDatabase } from './helpers/testDatabase.js';
 import { request, startTestServer, stopTestServer } from './helpers/testServer.js';
 
@@ -99,7 +99,9 @@ describe('Day Close', () => {
     const floor = await seedFloor();
     const { tokens } = floor;
     const second = (await createTable(tokens.OWNER, { name: 'T2' })).body.data;
-    await openOrder(tokens.WAITER, { tableId: second.id, lines: [{ menuItemId: floor.item.id, quantity: 1 }] });
+    // P61: sent to the kitchen, so it blocks; an order nothing was sent from closes itself.
+    const open = (await openOrder(tokens.WAITER, { tableId: second.id, lines: [{ menuItemId: floor.item.id, quantity: 1 }] })).body.data;
+    await fireOrder(tokens.WAITER, open.id, open.version);
     const ready = await readyToBillOrder(floor);
     const bill = (await request('POST', '/api/v1/bills', { token: tokens.CASHIER, body: { orderId: ready.id, version: ready.version } })).body.data;
 
@@ -160,9 +162,10 @@ describe('Day Close', () => {
     const cases = [
       ['GET', '/api/v1/cash-movements', undefined, ['OWNER', 'MANAGER', 'CASHIER']],
       ['GET', '/api/v1/day-close', undefined, ['OWNER', 'MANAGER']],
-      ['GET', `/api/v1/day-close/${DATE}`, undefined, ['OWNER', 'MANAGER']],
-      ['GET', `/api/v1/day-close/${DATE}/print`, undefined, ['OWNER', 'MANAGER']],
-      ['POST', '/api/v1/day-close', { businessDate: '2026-09-27', countedCashInPaise: 0 }, ['OWNER', 'MANAGER']],
+      // P61: the cashier reads and closes the day, blind.
+      ['GET', `/api/v1/day-close/${DATE}`, undefined, ['OWNER', 'MANAGER', 'CASHIER']],
+      ['GET', `/api/v1/day-close/${DATE}/print`, undefined, ['OWNER', 'MANAGER', 'CASHIER']],
+      ['POST', '/api/v1/day-close', { businessDate: '2026-09-27', countedCashInPaise: 0 }, ['OWNER', 'MANAGER', 'CASHIER']],
       ['POST', `/api/v1/day-close/${DATE}/reopen`, { reason: 'x' }, ['OWNER']],
     ];
     for (const [method, path, body, allowed] of cases) {

@@ -58,6 +58,8 @@ export async function reserveBillNumber({ restaurantId, branchId, at, invoice = 
 
   const financialYear = financialYearFor(at);
 
+  // 2026-10-22, Arya: the website bills in the same series as the cafe PC, and only while the PC is off.
+
   if (invoice?.mode === INVOICE_MODES.PREFIX) {
     return reservePrefixNumber({ restaurantId, branchId, financialYear, invoice }, session);
   }
@@ -123,4 +125,27 @@ async function reservePrefixNumber({ restaurantId, branchId, financialYear, invo
   };
 }
 
-export default { formatBillNumber, formatPrefixBillNumber, reserveBillNumber };
+/**
+ * P63. The website's own series while the cafe PC and the website both bill:
+ * `2026-27/W00001`, or the prefix plus W (`ZC/W1`). Gap-free in the same
+ * transaction as every bill. Its `billSequence` is WEBSITE_SEQUENCE_BASE plus
+ * the number, so the unique index on { financialYear, billSequence } holds with
+ * the PC's series beside it and no index changes.
+ */
+export const WEBSITE_SEQUENCE_BASE = 900_000_000;
+const WEBSITE_PAD = 5;
+const FINANCIAL_YEAR_WEBSITE_SERIES = /^\d{4}-\d{2}\/W$/;
+
+export function websiteSeriesFor(financialYear, invoice) {
+  return invoice?.mode === INVOICE_MODES.PREFIX && invoice.prefix ? `${invoice.prefix}W` : `${financialYear}/W`;
+}
+
+/** A website series and a sequence as the printed number. */
+export function formatWebsiteBillNumber(series, sequence) {
+  const number = sequence - WEBSITE_SEQUENCE_BASE;
+  return FINANCIAL_YEAR_WEBSITE_SERIES.test(series)
+    ? `${series}${String(number).padStart(WEBSITE_PAD, '0')}`
+    : `${series}${number}`;
+}
+
+export default { formatBillNumber, formatPrefixBillNumber, formatWebsiteBillNumber, reserveBillNumber };

@@ -10,6 +10,7 @@ import { getMenuTree } from '../../api/menu.js';
 import { createOrder, fireOrder } from '../../api/orders.js';
 import Bilingual from '../i18n/Bilingual.jsx';
 import { errorMessage } from './errorCopy.js';
+import MenuSearch from './MenuSearch.jsx';
 import LineOptionsPanel from './LineOptionsPanel.jsx';
 import MenuPicker from './MenuPicker.jsx';
 import { PLATFORMS } from './platforms.js';
@@ -252,16 +253,7 @@ export default function DeliveryOrderPage() {
             </p>
           )}
 
-          <label className="relative block sm:max-w-sm">
-            <span className="sr-only">Search the menu</span>
-            <input
-              type="search"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search dishes"
-              className="type-body min-h-12 w-full rounded-lg border border-muted bg-surface px-4 placeholder:text-muted"
-            />
-          </label>
+          <MenuSearch value={search} onChange={setSearch} />
 
           <MenuPicker
             tree={menuQuery.data}

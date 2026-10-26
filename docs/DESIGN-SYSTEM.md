@@ -547,6 +547,15 @@ A test fails the build if any component contains a raw hex colour, or any versio
 11. **One title per screen.** The kitchen's "All caught up" was a second `title`; it is an `EmptyState`. The sign-in screen without a brand shows the name as a `heading`.
 12. **A lazy screen loads in its shape** (P32). A back-office screen arrives in its own chunk the first time it opens. While it does, `AppShell`'s `Suspense` shows `ScreenLoading`: the frame stays where it is and the content area draws `Spinner` at `lg`, still, labelled "Opening the screen". The guest's page does the same. A fallback is never `null`, which reads as a broken screen.
 
+### 13d. Sign in and Sign out, 2026-10-19
+
+Rishi asked for a sign-in screen and a Sign out that were less plain. Within the rules above:
+
+1. **The panel answers the person.** From 900px (branded) or 1024px (plain) the panel carries the time and day in India in `num-hero`, and a small floor of 12 tables, outlined in the panel's text colour. A table takes its seat, filled, for each digit or letter typed up to 10, then the password, then Sign in, over 200ms like a table tile's state (section 10, item 3). Nothing moves until a key is pressed. On a phone the brand band stays the logo alone (13c, item 3).
+2. **Fields say what they have read.** Phone or email shows a phone, an @ or a person inside the field, counts a phone's digits to 10 and ticks at 10. Password has Show and Hide, and says "Caps Lock is on". `Input` gained optional `leading` and `trailing` slots for this; a field without them is unchanged.
+3. **A refusal shakes once.** `refused` in `index.css`, 280ms, then still, and the cursor goes back to the password with it selected. It answers the press of Sign in, never loops, and is instant under reduced motion. It is the only motion in the product that answers a failure.
+4. **Sign out is held.** `components/AccountMenu.jsx`: the initials in the accent, in the top bar, open a floating card with name, role, restaurant, This device (not for the kitchen login) and Sign out. Sign out fills in `alert-tint` while held for 0.7s; a tap says to hold. From the keyboard, or with reduced motion, it asks "Sign out now?" with Sign out and Stay. The More sheet uses the same button. After it, the sign-in screen says once, "Abhay, you are signed out. See you next shift."
+
 ## 14. How to check a screen
 
 Before calling a screen done:

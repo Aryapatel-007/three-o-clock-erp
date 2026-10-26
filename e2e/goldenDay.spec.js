@@ -471,7 +471,7 @@ test('the golden day, through the screens', async ({ browser }) => {
 
   await test.step('9:00 AM, 27 Sep: R3 as Excel, and R11 Pizza drills to five bills', async () => {
     let page = await report(`sales-by-day?${range}`);
-    const [download] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: 'Excel' }).click()]);
+    const [download] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: 'Excel', exact: true }).click()]);
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.readFile(await download.path());
     const sheet = workbook.getWorksheet('Report');

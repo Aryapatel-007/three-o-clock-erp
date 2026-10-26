@@ -14,6 +14,7 @@ import { isDatabaseConnected } from '../config/database.js';
 import { WAKE_MAX_PER_MINUTE } from '../middleware/rateLimit.js';
 import { BackupRun } from '../models/BackupRun.js';
 import { BackupState } from '../models/BackupState.js';
+import { ReplicationState } from '../models/ReplicationState.js';
 import { ALL_MODELS, SERVER_MODELS } from '../models/index.js';
 import { ServerStart } from '../models/ServerStart.js';
 import { purgePlan } from '../scripts/purgeRestaurant.js';
@@ -97,8 +98,8 @@ describe('the record of server starts', () => {
   });
 
   it('belongs to the server: no restaurantId, and the purge tool leaves it alone', () => {
-    // P54: the backups' runs and state are the server's too, on purpose.
-    assert.deepEqual(SERVER_MODELS, [ServerStart, BackupRun, BackupState]);
+    // P54: the backups' runs and state are the server's too, on purpose. P62: so is replication's state.
+    assert.deepEqual(SERVER_MODELS, [ServerStart, BackupRun, BackupState, ReplicationState]);
     assert.equal(ServerStart.schema.path('restaurantId'), undefined);
     assert.ok(purgePlan().every((step) => step.model !== ServerStart));
     const ttl = ServerStart.schema.indexes().find(([keys]) => keys.startedAt === -1);

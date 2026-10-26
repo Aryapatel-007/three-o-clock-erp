@@ -1,52 +1,45 @@
 import { useState } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 
-import { TriangleIcon } from '../../components/ui/icons/index.jsx';
 import Input from '../../components/ui/Input.jsx';
 import Money from '../../components/ui/Money.jsx';
 import Spinner from '../../components/ui/Spinner.jsx';
 import StateChip from '../../components/ui/StateChip.jsx';
 import Toast from '../../components/ui/Toast.jsx';
 import { emailDay, getCashBook, getDay, getDayMessage } from '../../api/dayClose.js';
-import { useAuth } from '../../context/AuthContext.jsx';
 import { businessDateToday, formatBusinessDate, formatTimeIst } from '../../utils/formatDate.js';
+import { copyText } from '../../utils/copyText.js';
 import { errorMessage } from '../billing/errorCopy.js';
 import CashFlow from './cashbook/CashFlow.jsx';
-import CloseDaySheet from './cashbook/CloseDaySheet.jsx';
-
-const STEPS = [
-  { key: 'overview', label: 'Overview' },
-  { key: 'cash', label: 'Cash' },
-  { key: 'close', label: 'Close' },
-];
+import SimpleClose from './SimpleClose.jsx';
 
 const ORDER_TYPE_WORDS = { DINE_IN: 'Dine-in', TAKEAWAY: 'Takeaway', DELIVERY: 'Delivery' };
 const PLATFORM_WORDS = { SWIGGY: 'Swiggy', ZOMATO: 'Zomato' };
 
 /**
- * Day End. P44, OWNER and MANAGER.
+ * Day End. P44; P61 made it one screen, for the owner, the manager and the
+ * cashier.
  *
- * The day in three steps, as on PetPooja, which Z Chaat's manager knew:
- * Overview (cards, then the details), Cash (the cash book's sum), Close (the
- * cash book's own close). Every figure is GET /day-close/:date's, the same as
- * Day Close and R2; this page only lays them out. The day-end message sits
- * under every step, to copy or email.
+ * An open day shows the close (SimpleClose): the day in one line, what stops
+ * the close with Open beside each, the cash in the drawer, Close. A closed day
+ * shows what was counted and the day-end message. The day's full figures and
+ * the cash flow stay below, folded, under "Day's details". Every figure is
+ * GET /day-close/:date's, the same as Day Close and R2.
  */
 export default function DayEndPage() {
   const [params, setParams] = useSearchParams();
   const today = businessDateToday();
   const businessDate = params.get('date') ?? today;
-  const step = STEPS.some((entry) => entry.key === params.get('step')) ? params.get('step') : 'overview';
-  const go = (next) => setParams({ date: businessDate, step: next });
 
-  const query = useQuery({ queryKey: ['day-close', businessDate], queryFn: () => getDay(businessDate) });
+  // Read fresh every time: people come back here from paying a bill or cancelling an order.
+  const query = useQuery({ queryKey: ['day-close', businessDate], queryFn: () => getDay(businessDate), refetchOnMount: 'always' });
   const day = query.data;
 
   return (
     <main className="v2 min-h-full bg-ground text-ink">
       <header className="px-4 pt-4">
-        <div className="mx-auto flex max-w-5xl flex-wrap items-end justify-between gap-3">
+        <div className="mx-auto flex max-w-3xl flex-wrap items-end justify-between gap-3">
           <div>
             <h1 className="type-title">Day End</h1>
             <p className="type-caption text-muted">
@@ -59,46 +52,30 @@ export default function DayEndPage() {
             type="date"
             max={today}
             value={businessDate}
-            onChange={(event) => event.target.value && setParams({ date: event.target.value, step })}
+            onChange={(event) => event.target.value && setParams({ date: event.target.value })}
           />
         </div>
-        <nav aria-label="Day End steps" className="mx-auto mt-4 flex max-w-5xl gap-1 border-b border-line" role="tablist">
-          {STEPS.map((entry, index) => (
-            <button
-              key={entry.key}
-              type="button"
-              role="tab"
-              aria-selected={step === entry.key}
-              onClick={() => go(entry.key)}
-              className={[
-                'type-label min-h-12 border-b-2 px-4',
-                step === entry.key ? 'border-ink text-ink' : 'border-transparent text-muted hover:text-ink',
-              ].join(' ')}
-            >
-              <span className="type-num-meta mr-1">{index + 1}</span>
-              {entry.label}
-            </button>
-          ))}
-        </nav>
       </header>
 
-      <div className="mx-auto grid max-w-5xl gap-6 px-4 py-6">
+      <div className="mx-auto grid max-w-3xl gap-6 px-4 py-6">
         {query.isPending && <Spinner label="Working out the day" />}
         {query.isError && <p className="type-body text-alert">{errorMessage(query.error)}</p>}
-        {day && step === 'overview' && <Overview day={day} />}
-        {day && step === 'cash' && <CashStep businessDate={businessDate} />}
-        {day && step === 'close' && <CloseStep day={day} businessDate={businessDate} />}
-        {day && <DayEndMessage businessDate={businessDate} />}
-        {day && step !== 'close' && (
-          <div className="flex justify-end">
-            <button
-              type="button"
-              onClick={() => go(STEPS[STEPS.findIndex((entry) => entry.key === step) + 1].key)}
-              className="type-button min-h-12 rounded-lg bg-accent px-6 text-on-accent hover:brightness-110"
-            >
-              Next
-            </button>
-          </div>
+        {day && !day.isClosed && <SimpleClose key={businessDate} day={day} businessDate={businessDate} />}
+        {day && day.isClosed && (
+          <>
+            <ClosedDay day={day} businessDate={businessDate} />
+            <DayEndMessage businessDate={businessDate} />
+          </>
+        )}
+        {day && (
+          <details className="rounded-[10px] border border-line bg-surface">
+            <summary className="type-button flex min-h-12 cursor-pointer items-center px-4">Day's details</summary>
+            <div className="grid gap-6 border-t border-line p-4">
+              <Overview day={day} />
+              <CashStep businessDate={businessDate} />
+              {!day.isClosed && <DayEndMessage businessDate={businessDate} />}
+            </div>
+          </details>
         )}
       </div>
     </main>
@@ -217,77 +194,24 @@ function CashStep({ businessDate }) {
   );
 }
 
-function CloseStep({ day, businessDate }) {
-  const queryClient = useQueryClient();
-  const { features } = useAuth();
-  const [closing, setClosing] = useState(false);
-  const [toast, setToast] = useState(null);
-
-  if (day.isClosed) {
-    return (
-      <section className="flex flex-col gap-2 rounded-[10px] border border-line bg-surface p-4">
-        <StateChip state="ok" word="Closed" />
-        <p className="type-body">
-          Closed at {day.closedAt ? formatTimeIst(day.closedAt) : '—'}. Counted <Money paise={day.countedCashInPaise ?? 0} />
-          {day.keptForTomorrowInPaise !== null && day.keptForTomorrowInPaise !== undefined && (
-            <>
-              , kept for tomorrow <Money paise={day.keptForTomorrowInPaise} />
-            </>
-          )}
-          .
-        </p>
-        {day.dayEndEmail?.sentAt && <p className="type-caption text-muted">Day-end email sent to {day.dayEndEmail.to.join(', ')}.</p>}
-        {day.dayEndEmail?.error && <p className="type-caption text-alert">The day-end email did not go: {day.dayEndEmail.error}</p>}
-        <Link to={`/day-close?date=${businessDate}`} className="type-label inline-flex min-h-12 items-center self-start text-accent underline-offset-4 hover:underline">
-          Day Close history and reopening
-        </Link>
-      </section>
-    );
-  }
-
+function ClosedDay({ day, businessDate }) {
   return (
-    <section className="flex flex-col gap-4">
-      {day.blockers.length > 0 && (
-        <div className="rounded-[10px] border border-line border-l-[3px] border-l-alert bg-surface p-4">
-          <h2 className="type-heading mb-2 flex items-center gap-2 text-alert">
-            <TriangleIcon />
-            Sort these out first
-          </h2>
-          <ul className="type-body flex flex-col gap-1">
-            {day.blockers.map((blocker) => (
-              <li key={`${blocker.kind}-${blocker.ref}`}>
-                {blocker.kind === 'OPEN_ORDER' && <Link className="text-accent underline underline-offset-4" to={`/orders/${blocker.ref}`}>{blocker.message}</Link>}
-                {blocker.kind === 'UNPAID_BILL' && <Link className="text-accent underline underline-offset-4" to={`/bills/${blocker.ref}`}>{blocker.message}</Link>}
-                {!['OPEN_ORDER', 'UNPAID_BILL'].includes(blocker.kind) && <span className="text-alert">{blocker.message}</span>}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-      <p className="type-body text-muted">Count the drawer, say how much stays for tomorrow, and close the day. The day-end message is emailed once it is closed.</p>
-      <button
-        type="button"
-        disabled={day.blockers.length > 0}
-        onClick={() => setClosing(true)}
-        className="type-button min-h-14 self-start rounded-lg bg-accent px-6 text-on-accent hover:brightness-110 disabled:opacity-50"
-      >
-        Count and close the day
-      </button>
-      {closing && (
-        <CloseDaySheet
-          businessDate={businessDate}
-          denominations={features?.cash?.denominations ?? []}
-          usualFloatInPaise={features?.cash?.usualFloatInPaise ?? 200000}
-          onCancel={() => setClosing(false)}
-          onDone={() => {
-            setClosing(false);
-            queryClient.invalidateQueries({ queryKey: ['day-close'] });
-            queryClient.invalidateQueries({ queryKey: ['day-end-message'] });
-            setToast({ tone: 'success', message: `${formatBusinessDate(businessDate)} is closed.` });
-          }}
-        />
-      )}
-      <Toast tone={toast?.tone} message={toast?.message} onDismiss={() => setToast(null)} />
+    <section className="flex flex-col gap-2 rounded-[10px] border border-line bg-surface p-4">
+      <StateChip state="ok" word="Closed" />
+      <p className="type-body">
+        Closed at {day.closedAt ? formatTimeIst(day.closedAt) : '—'}. Counted <Money paise={day.countedCashInPaise ?? 0} />
+        {day.keptForTomorrowInPaise !== null && day.keptForTomorrowInPaise !== undefined && (
+          <>
+            , kept for tomorrow <Money paise={day.keptForTomorrowInPaise} />
+          </>
+        )}
+        .
+      </p>
+      {day.dayEndEmail?.sentAt && <p className="type-caption text-muted">Day-end email sent to {day.dayEndEmail.to.join(', ')}.</p>}
+      {day.dayEndEmail?.error && <p className="type-caption text-alert">The day-end email did not go: {day.dayEndEmail.error}</p>}
+      <Link to={`/day-close?date=${businessDate}`} className="type-label inline-flex min-h-12 items-center self-start text-accent underline-offset-4 hover:underline">
+        Day Close history and reopening
+      </Link>
     </section>
   );
 }
@@ -303,7 +227,7 @@ function DayEndMessage({ businessDate }) {
   });
   const copy = async () => {
     try {
-      await navigator.clipboard.writeText(query.data.text);
+      await copyText(query.data.text);
       setToast({ tone: 'success', message: 'Copied. Paste it into WhatsApp.' });
     } catch {
       setToast({ tone: 'error', message: 'Could not copy on this device. Select the text and copy it.' });

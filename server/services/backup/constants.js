@@ -3,8 +3,14 @@
  * Each is named here once, with why, so a change is one line in one place.
  */
 
-/** Never copied, never in the diary: sessions must not come back after a restore, and the backups' own records would record themselves. */
-export const EXCLUDED_COLLECTIONS = Object.freeze(['refreshtokens', 'backupruns', 'backupstate']);
+/**
+ * Never copied, never in the diary: sessions must not come back after a restore, and the backups' own records would record themselves.
+ * P62: nor replication's own state, which belongs to one machine. The changelog itself stays in the copy (it is the box's history)
+ * but out of the diary, where every entry would only repeat a change the diary already holds.
+ */
+export const EXCLUDED_COLLECTIONS = Object.freeze(['refreshtokens', 'backupruns', 'backupstate', 'replicationstate']);
+/** P62. Left out of the change diary only. */
+export const DIARY_ONLY_EXCLUDED = Object.freeze(['changelog', 'changelogcounters']);
 
 /** The file format, written in every snapshot's manifest and every file's header. */
 export const FORMAT_VERSION = 1;
@@ -28,6 +34,12 @@ export const FLUSH_AT_BYTES = 5 * 1024 ** 2;
 export const MAX_WAITING_BYTES = 20 * 1024 ** 2;
 /** A failed upload is tried again after these, then every 10 minutes. */
 export const FLUSH_RETRY_MS = Object.freeze([30_000, 2 * 60_000, 10 * 60_000]);
+/**
+ * After a failed full copy, the wait before the next: every try reads the
+ * whole database, which counts against Atlas M0's weekly read limit, so a
+ * wrong key must not read it once a minute until someone notices.
+ */
+export const SNAPSHOT_RETRY_MS = Object.freeze([2 * 60_000, 10 * 60_000, 30 * 60_000, 60 * 60_000]);
 
 /** How long the bucket keeps each folder (its lifecycle rules, DEPLOYMENT.md section 8). Null is forever. */
 export const KEEP_DAYS = Object.freeze({ '6h': 11, daily: 91, monthly: null, journal: null });

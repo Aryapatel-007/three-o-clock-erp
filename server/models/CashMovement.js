@@ -68,6 +68,8 @@ const cashMovementSchema = new mongoose.Schema({
   isVoided: { type: Boolean, required: true, default: false },
   voidedAt: { type: Date, default: null },
   voidedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+  // 2026-10-17. The owner or manager whose PIN approved a cashier's void.
+  voidApprovedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
   voidReason: { type: String, trim: true, maxlength: 200, default: null },
 
   /** P25 Part F. An opening float counted by notes and coins: [{ valueInPaise, kind, count }]. */

@@ -205,3 +205,34 @@ export const GlobeIcon = (props) => (
     <path d="M2.5 10h15M10 2.5c2.2 2.4 2.2 12.6 0 15M10 2.5c-2.2 2.4-2.2 12.6 0 15" />
   </Svg>
 );
+
+/* Sign in and the account menu. */
+export const PhoneIcon = (props) => (
+  <Svg {...props}>
+    <rect x="5.5" y="2" width="9" height="16" rx="2" />
+    <path d="M9 15h2" />
+  </Svg>
+);
+export const AtIcon = (props) => (
+  <Svg {...props}>
+    <circle cx="10" cy="10" r="3" />
+    <path d="M13 10v1.5a2.5 2.5 0 0 0 5 0V10a8 8 0 1 0-3.2 6.4" />
+  </Svg>
+);
+export const PersonIcon = (props) => (
+  <Svg {...props}>
+    <circle cx="10" cy="6.5" r="3.5" />
+    <path d="M3 18a7 7 0 0 1 14 0" />
+  </Svg>
+);
+export const EyeOffIcon = (props) => (
+  <Svg {...props}>
+    <path d="M7.5 4.4A8.8 8.8 0 0 1 10 4c5.5 0 8.5 6 8.5 6a14 14 0 0 1-2 2.8M5 5.8C2.8 7.4 1.5 10 1.5 10s3 6 8.5 6a8 8 0 0 0 3.7-.9" />
+    <path d="M2.5 2.5l15 15" />
+  </Svg>
+);
+export const ChevronDownIcon = (props) => (
+  <Svg {...props}>
+    <path d="m5 7.5 5 5 5-5" />
+  </Svg>
+);

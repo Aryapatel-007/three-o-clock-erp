@@ -58,6 +58,7 @@ import {
   listRefundsSchema,
   refundDoneSchema,
   invoiceSchema,
+  markPrintedSchema,
   printQueueSchema,
   receiptSchema,
   recordPaymentSchema,
@@ -108,7 +109,7 @@ router.get('/bills/:billId/invoice', ...anySignedIn, validate(invoiceSchema), ge
 
 router.post('/bills/:billId/payments', ...tillAndCaptains, validate(recordPaymentSchema), postPayment);
 router.post('/bills/:billId/print-request', ...anySignedIn, validate(billOnlySchema), postPrintRequest);
-router.post('/bills/:billId/printed', ...anySignedIn, validate(billOnlySchema), postPrinted);
+router.post('/bills/:billId/printed', ...anySignedIn, validate(markPrintedSchema), postPrinted);
 
 router.post(
   '/bills/:billId/payments/:paymentId/correct',

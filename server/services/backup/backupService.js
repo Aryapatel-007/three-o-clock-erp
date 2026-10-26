@@ -15,7 +15,7 @@ import { config } from '../../config/env.js';
 import { logger } from '../../config/logger.js';
 import { BACKUP_STATE_IDS, BackupState } from '../../models/BackupState.js';
 import { ChangeDiary } from './journalService.js';
-import { maybeRunSnapshot, runSnapshot } from './snapshotService.js';
+import { maybeRunSnapshot, runSnapshot, waitingAfterFailure } from './snapshotService.js';
 import { serverStorage } from './storage.js';
 
 const TICK_MS = 60_000;
@@ -69,6 +69,7 @@ async function tick() {
   try {
     const state = await BackupState.findById(BACKUP_STATE_IDS.JOURNAL).lean();
     if (copyWanted || state?.gapSince) {
+      if (await waitingAfterFailure()) return;
       const copy = await runSnapshot(ctx, { reason: 'GAP' });
       if (copy?.status === 'OK') {
         await diary.recoverFrom(copy);

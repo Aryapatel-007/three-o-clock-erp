@@ -10,9 +10,9 @@ import mongoose from 'mongoose';
 
 import { COUNTER_NAMES } from '../models/Counter.js';
 import { Kot, KOT_LINE_STATUSES } from '../models/Kot.js';
-import { Order, ORDER_LINE_STATUSES, ORDER_STATUSES } from '../models/Order.js';
+import { Order, ORDER_LINE_STATUSES, ORDER_STATUSES, ORDER_TYPES } from '../models/Order.js';
 import { AUDIT_ACTIONS, AUDIT_ENTITY_TYPES } from '../models/AuditLog.js';
-import { BusinessRuleError, NotFoundError, OrderAlreadyBilledError } from '../utils/errors.js';
+import { BusinessRuleError, NotFoundError, OrderAlreadyBilledError, ValidationError } from '../utils/errors.js';
 import { recordAudit } from './auditService.js';
 import { scoped } from '../utils/scopedQuery.js';
 import { nowUtc } from '../utils/time.js';
@@ -104,6 +104,10 @@ export async function loadKotInTenant(req, kotId) {
  * one new ticket per station on every Send, which is how a table that ordered
  * mains later got a second ticket.
  *
+ * P58. With `kitchen.splitTicketsByStation` off, a Send's lines are not split:
+ * one new ticket per Send (or the order's one ticket), with no station of its
+ * own. Each line still keeps its station, for R13.
+ *
  * A KOT number is reserved before the transaction, so an aborted fire leaves a
  * gap in the sequence rather than reusing a number. Kitchen tickets tolerate
  * gaps; see models/Counter.js for why bills will not.
@@ -119,12 +123,29 @@ export async function fireOrder(req, { orderId, version }) {
   }
 
   /**
+   * P59. Covers feed average per cover, so a restaurant can require them. P19
+   * asked at opening; the count is now asked with the guest's details on the
+   * first Send, so that is where it is required. A later Send never is.
+   */
+  if (
+    order.orderType === ORDER_TYPES.DINE_IN &&
+    order.guestCount == null &&
+    order.lines.every((line) => !line.firedAt) &&
+    (await getSetting(req.restaurantId, 'floor.requireGuestCount', { req }))
+  ) {
+    throw new ValidationError('How many guests? Enter the number before sending to the kitchen.', {
+      guestCount: 'How many guests?',
+    });
+  }
+
+  /**
    * P05. Each line goes to its category's current station, and anything
    * unroutable to the default station. With no active stations this is a
    * single group with no station, exactly as before.
    */
   const groups = await routeLinesToStations(req, pending);
   const oneTicket = (await getSetting(req.restaurantId, 'kitchen.oneTicketPerOrder', { req })) !== false;
+  const splitByStation = (await getSetting(req.restaurantId, 'kitchen.splitTicketsByStation', { req })) !== false;
   const firedAt = nowUtc();
 
   // P36. The order's ticket, when it already has one and the restaurant keeps one per order.
@@ -156,12 +177,13 @@ export async function fireOrder(req, { orderId, version }) {
    */
   const reserve = () => nextNumber({ restaurantId: req.restaurantId, branchId: req.branchId, name: COUNTER_NAMES.KOT });
   const tickets = [];
-  if (oneTicket) {
+  if (oneTicket || !splitByStation) {
     tickets.push({
       kotId: existing?._id ?? new mongoose.Types.ObjectId(),
       kotNumber: existing ? existing.kotNumber : await reserve(),
       append: Boolean(existing),
-      station: groups.length === 1 ? groups[0].station : null,
+      // P58. Not split: the ticket has no station of its own, even if every line went to one.
+      station: splitByStation && groups.length === 1 ? groups[0].station : null,
       lines: groups.flatMap((group) => group.lines.map((line) => ticketLine(line, group.station))),
     });
   } else {

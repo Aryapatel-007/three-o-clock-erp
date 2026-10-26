@@ -48,6 +48,8 @@ const setInvoice = (token, invoice, reason = 'CA agreed the series') =>
 
 const prefixSeries = (prefix, startingNumber) => ({ mode: 'PREFIX', prefix, startingNumber });
 const FINANCIAL_YEAR = { mode: 'FINANCIAL_YEAR', prefix: null, startingNumber: null };
+// P64, changed on purpose: the invoice group also carries the default SAC code, which is not part of the series.
+const seriesOf = ({ defaultSacCode: _sac, ...series }) => series;
 
 /** A bill for a fresh table, through the real API. */
 let tableCounter = 0;
@@ -117,14 +119,14 @@ describe('validating the invoice group', () => {
     const { tokens } = await seedFloor();
     const response = await setInvoice(tokens.OWNER, prefixSeries('CFA/C-1', 999_999_999));
     assert.equal(response.status, 200, JSON.stringify(response.body));
-    assert.deepEqual(response.body.data.invoice, prefixSeries('CFA/C-1', 999_999_999));
+    assert.deepEqual(seriesOf(response.body.data.invoice), prefixSeries('CFA/C-1', 999_999_999));
   });
 
   it('reads the stored series back from GET /settings', async () => {
     const { tokens } = await seedFloor();
     await setInvoice(tokens.OWNER, prefixSeries('CFA/C/', 22442));
     const response = await request('GET', '/api/v1/settings', { token: tokens.OWNER });
-    assert.deepEqual(response.body.data.invoice, prefixSeries('CFA/C/', 22442));
+    assert.deepEqual(seriesOf(response.body.data.invoice), prefixSeries('CFA/C/', 22442));
   });
 });
 
@@ -297,7 +299,7 @@ describe('the three invoice series rules', () => {
 
     const response = await setInvoice(floor.tokens.OWNER, FINANCIAL_YEAR);
     assert.equal(response.status, 200);
-    assert.deepEqual(response.body.data.invoice, FINANCIAL_YEAR);
+    assert.deepEqual(seriesOf(response.body.data.invoice), FINANCIAL_YEAR);
   });
 
   it('refuses a manager, because the series is an owner decision', async () => {

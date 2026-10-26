@@ -27,13 +27,14 @@ import BillStatusBadge from './BillStatusBadge.jsx';
 import ChargeToAccountPanel from './ChargeToAccountPanel.jsx';
 import CorrectPaymentPanel from './CorrectPaymentPanel.jsx';
 import DiscountPanel from './DiscountPanel.jsx';
+import CounterNotPrinting from './CounterNotPrinting.jsx';
 import { discountReasonLabel } from './discountReasons.js';
 import { errorMessage } from './errorCopy.js';
 import InlinePayment from './InlinePayment.jsx';
 import { methodsForBill, paymentMethodName } from './paymentMethodsForBill.js';
 import { printBill } from '../printing/printBill.js';
 import { useTheme } from '../../context/ThemeProvider.jsx';
-import { useDeviceSettings } from '../printing/useDeviceSettings.js';
+import { billsPrintAtCounter, useDeviceSettings } from '../printing/useDeviceSettings.js';
 import VoidBillPanel from './VoidBillPanel.jsx';
 import AddItemsPanel from './AddItemsPanel.jsx';
 import CancelItemsPanel from './CancelItemsPanel.jsx';
@@ -77,7 +78,7 @@ export default function BillScreenPage() {
     queryKey: ['bill', billId],
     queryFn: () => getBill(billId),
     // P29 Part D. A captain waiting on the counter's print sees it land.
-    refetchInterval: (query) => (query.state.data?.printRequestedAt && !(query.state.data?.printCount > 0) ? 5_000 : false),
+    refetchInterval: (query) => (waitingAtCounter(query.state.data) ? 5_000 : false),
   });
 
   const bill = billQuery.data;
@@ -183,9 +184,16 @@ export default function BillScreenPage() {
 
   const voidMutation = useMutation({
     mutationFn: (reason) => voidBill(billId, reason),
-    onSuccess: (updated) => {
+    onSuccess: (updated, reason) => {
       invalidate(updated);
       setPanel(null);
+      // P59, then 2026-10-22: the order is closed and the table free, so back to the floor.
+      if (reason?.closeOrder) {
+        queryClient.invalidateQueries({ queryKey: ['tables'] });
+        queryClient.invalidateQueries({ queryKey: ['order', updated.orderId] });
+        navigate(updated.orderType === 'DINE_IN' ? '/floor' : '/bills', { replace: true });
+        return;
+      }
       setToast({ tone: 'success', message: 'Bill voided.' });
     },
     onError: (error) => setToast({ tone: 'error', message: errorMessage(error) }),
@@ -194,7 +202,10 @@ export default function BillScreenPage() {
   // P25 Part D. A captain's phone has no printer: the counter prints it.
   const printRequest = useMutation({
     mutationFn: () => requestBillPrint(billId),
-    onSuccess: () => setToast({ tone: 'success', message: 'Sent to the counter. It prints there.' }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['bill', billId] });
+      setToast({ tone: 'success', message: 'Sent to the counter. It prints there.' });
+    },
     onError: (error) => setToast({ tone: 'error', message: errorMessage(error) }),
   });
 
@@ -217,20 +228,20 @@ export default function BillScreenPage() {
   };
 
   /**
-   * P29 Part D. A bill just made on this counter prints at once when this
-   * device asks for it. Once, and only for the till: a captain's bill goes to
-   * the counter's queue as before.
+   * P57. Save & Print on the order screen: the bill just made prints here, on
+   * this device, once. Save prints nothing. A captain's goes to the counter's
+   * queue instead, sent before arriving here.
    */
-  const justMade = Boolean(location.state?.justMade);
+  const printNow = Boolean(location.state?.printNow);
   const tillRole = [ROLES.OWNER, ROLES.MANAGER, ROLES.CASHIER].includes(user?.role);
   useEffect(() => {
-    if (!justMade || autoPrinted.current || !bill || !device.printBillOnCreate || !tillRole) return;
+    if (!printNow || autoPrinted.current || !bill || !tillRole) return;
     if ((bill.printCount ?? 0) > 0 || bill.isVoided) return;
     autoPrinted.current = true;
     navigate(location.pathname, { replace: true, state: null });
     print();
     // print reads the device's printer; whether to print at all is decided by the values above.
-  }, [justMade, bill, device.printBillOnCreate, tillRole]);
+  }, [printNow, bill, tillRole]);
 
   if (billQuery.isPending) {
     return (
@@ -258,6 +269,15 @@ export default function BillScreenPage() {
   const isCaptain = user?.role === ROLES.WAITER;
   // P39. Once the bill has printed, a captain changes no item on it; the counter does.
   const captainLockedOut = isCaptain && (bill.printCount ?? 0) > 0;
+  // P59. While the counter has not printed the captain's request, a second tap would only print it again.
+  const sentToCounter = waitingAtCounter(bill);
+  /**
+   * 2026-10-25. A manager's or cashier's phone has no printer either: on the
+   * cafe PC its bill goes to the counter, as a captain's (billsPrintAtCounter).
+   * Anywhere but the counter printer itself, the till may also send it there.
+   */
+  const atCounter = isCaptain || (isTill && billsPrintAtCounter(device, features));
+  const offersCounter = isCaptain || (isTill && !device.printCaptainBills);
   const captainMayTakePayment =
     isCaptain && features?.billing?.captainsMayBill && features?.billing?.captainsMayTakePayment && bill.orderType !== 'DELIVERY';
   const canTakePayment = isTill || Boolean(captainMayTakePayment);
@@ -356,16 +376,20 @@ export default function BillScreenPage() {
               </ActionButton>
             )}
             {canCharge && <ActionButton onClick={() => setPanel('charge')}>Charge to account</ActionButton>}
-            {isCaptain && !bill.isVoided && !asksForPrint && (
-              <ActionButton primary onClick={() => printRequest.mutate()} disabled={printRequest.isPending}>
+            {offersCounter && !bill.isVoided && !asksForPrint && (
+              <ActionButton
+                primary={isCaptain || (atCounter && printIsPrimary)}
+                onClick={() => printRequest.mutate()}
+                disabled={printRequest.isPending || sentToCounter}
+              >
                 <PrintIcon />
-                Print at counter
+                {sentToCounter ? 'Sent to the counter' : 'Print at counter'}
               </ActionButton>
             )}
             {!asksForPrint && (
-              <ActionButton primary={printIsPrimary && !isCaptain} onClick={() => print()} disabled={printing}>
+              <ActionButton primary={printIsPrimary && !atCounter} onClick={() => print()} disabled={printing}>
                 <PrintIcon />
-                {isCaptain ? 'Print here' : <Bilingual k="printReceipt" />}
+                {atCounter ? 'Print here' : <Bilingual k="printReceipt" />}
               </ActionButton>
             )}
             <Link
@@ -374,6 +398,7 @@ export default function BillScreenPage() {
             >
               Receipt preview
             </Link>
+            {offersCounter && sentToCounter && !asksForPrint && <CounterNotPrinting requestedAt={bill.printRequestedAt} />}
             {captainLockedOut && !bill.isVoided && (
               <p className="type-caption flex min-h-12 items-center px-3 text-muted">This bill has been printed. Only the counter or a manager can change it now.</p>
             )}
@@ -569,14 +594,35 @@ export default function BillScreenPage() {
                   size="lg"
                   fullWidth
                   className="mt-4"
-                  isLoading={isCaptain ? printRequest.isPending : printing}
-                  onClick={() => (isCaptain ? printRequest.mutate() : print())}
+                  isLoading={atCounter ? printRequest.isPending : printing}
+                  disabled={atCounter && sentToCounter}
+                  onClick={() => (atCounter ? printRequest.mutate() : print())}
                 >
                   <PrintIcon />
-                  {isCaptain ? 'Print at counter' : reprintAfterRevision ? 'Print the revised bill' : 'Print bill'}
+                  {atCounter
+                    ? sentToCounter
+                      ? 'Sent to the counter'
+                      : 'Print at counter'
+                    : reprintAfterRevision
+                      ? 'Print the revised bill'
+                      : 'Print bill'}
                 </Button>
-                {isCaptain && bill.printRequestedAt && (
+                {atCounter && sentToCounter && (
                   <p className="type-caption mt-2 text-muted">Sent to the counter. Payment opens once it has printed.</p>
+                )}
+                {atCounter && sentToCounter && (
+                  <CounterNotPrinting requestedAt={bill.printRequestedAt} />
+                )}
+                {/* 2026-10-25. The till can print either way; This device says which comes first. */}
+                {isTill && (atCounter || offersCounter) && (
+                  <button
+                    type="button"
+                    disabled={atCounter ? printing : printRequest.isPending || sentToCounter}
+                    onClick={() => (atCounter ? print() : printRequest.mutate())}
+                    className="type-label mt-3 min-h-12 w-full rounded-lg text-accent underline-offset-4 hover:underline disabled:opacity-50"
+                  >
+                    {atCounter ? 'Print on this device instead' : 'Print at counter instead'}
+                  </button>
                 )}
                 <button
                   type="button"
@@ -780,4 +826,10 @@ function ActionButton({ primary = false, disabled = false, onClick, children }) 
       {children}
     </button>
   );
+}
+
+/** P59. A print request the counter has not printed yet. */
+function waitingAtCounter(bill) {
+  if (!bill?.printRequestedAt) return false;
+  return !bill.lastPrintedAt || new Date(bill.lastPrintedAt) < new Date(bill.printRequestedAt);
 }

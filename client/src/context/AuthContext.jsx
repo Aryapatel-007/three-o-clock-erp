@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 
 import * as authApi from '../api/authApi.js';
 import { setAccessToken, setSessionHandlers } from '../api/client.js';
+import { applyCafePcPrintSetup } from '../features/printing/useDeviceSettings.js';
 
 /**
  * The session.
@@ -71,8 +72,6 @@ const fromMe = (me) => ({
     // P29. Revise an unpaid bill rather than void it, and print it before taking payment.
     reviseUnpaidBills: me.billing?.reviseUnpaidBills ?? true,
     printBeforePayment: me.billing?.printBeforePayment ?? true,
-    // Counter Sale: a sent takeaway is billed and paid before the kitchen is done.
-    payFirstTakeaway: me.billing?.payFirstTakeaway ?? true,
   },
   // P33. The live channel: on or off, and the address to open it on (null: this page's own).
   live: { enabled: Boolean(me.live?.enabled), origin: me.live?.origin ?? null },
@@ -84,7 +83,8 @@ const fromMe = (me) => ({
     revisePrintedBill: me.approvals?.revisePrintedBill ?? true,
   },
   // P29 Part C. The kitchen's ready also serves the dish.
-  kitchen: { readyMeansServed: me.kitchen?.readyMeansServed ?? true },
+  // P58. Off: one ticket per Send with every dish, and no station chips on the kitchen screen.
+  kitchen: { readyMeansServed: me.kitchen?.readyMeansServed ?? true, splitTicketsByStation: me.kitchen?.splitTicketsByStation ?? true },
   // P47. The modes Other offers one tap each.
   payments: { otherModes: me.payments?.otherModes ?? null },
   // P25 Part F. The active notes and coins, for the cash counter.
@@ -104,6 +104,8 @@ const fromMe = (me) => ({
   restaurantName: me.restaurant?.name ?? null,
   // P23. Online orders: whether this role hears the alert, and the page address.
   online: { ...DEFAULT_ONLINE, ...(me.online ?? {}) },
+  // P63. Two-way sync, and the conflicts waiting for an owner or manager.
+  sync: { mode: me.sync?.mode ?? 'ONE_WAY', server: me.sync?.server ?? 'CLOUD', conflictsUnseen: me.sync?.conflictsUnseen ?? null },
 });
 
 export function AuthProvider({ children }) {
@@ -114,6 +116,12 @@ export function AuthProvider({ children }) {
   // True until we know whether there is a session to restore. Starting at
   // false would flash the login screen at someone who is already signed in.
   const [isRestoring, setIsRestoring] = useState(true);
+
+  // 2026-10-22. Signed in on the cafe PC's own server: this device prints as the website's counter does.
+  const onCafePc = features.sync?.server === 'BOX';
+  useEffect(() => {
+    if (onCafePc) applyCafePcPrintSetup();
+  }, [onCafePc]);
 
   const clearSession = useCallback(() => {
     setUser(null);

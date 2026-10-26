@@ -50,6 +50,7 @@ const cancelOrder = (token, orderId, body) =>
   request('POST', `/api/v1/orders/${orderId}/cancel`, { token, body });
 const voidBill = (token, billId, body) =>
   request('POST', `/api/v1/bills/${billId}/void`, { token, body });
+const pay = (token, billId, body) => request('POST', `/api/v1/bills/${billId}/payments`, { token, body });
 
 const noteFor = (code) => (code === 'OTHER' ? 'Something else happened' : null);
 
@@ -203,7 +204,9 @@ describe('voiding a bill takes a reason code', () => {
     const floor = await seedFloor();
     let order = await readyToBillOrder(floor);
 
-    for (const code of serverReasons.BILL_VOID_REASON_CODES) {
+    // Guest left closes the order, so it goes last: the others re-bill the same order.
+    const codes = [...serverReasons.BILL_VOID_REASON_CODES].sort((a, b) => (a === 'GUEST_LEFT') - (b === 'GUEST_LEFT'));
+    for (const code of codes) {
       const bill = (
         await request('POST', '/api/v1/bills', {
           token: floor.tokens.CASHIER,
@@ -221,6 +224,69 @@ describe('voiding a bill takes a reason code', () => {
 
       order = (await readOrder(floor.tokens.CASHIER, order.id)).body.data;
     }
+  });
+
+  // 2026-10-22. A void that closes the table, for any reason (14.6 closeOrder).
+  it('closes the order and frees the table with closeOrder, for any reason', async () => {
+    const floor = await seedFloor();
+    const order = await readyToBillOrder(floor);
+    const bill = (
+      await request('POST', '/api/v1/bills', { token: floor.tokens.CASHIER, body: { orderId: order.id, version: order.version } })
+    ).body.data;
+
+    const response = await voidBill(floor.tokens.MANAGER, bill.id, { reasonCode: 'OTHER', note: 'test', closeOrder: true });
+    assert.equal(response.status, 200, JSON.stringify(response.body));
+    assert.equal(response.body.data.isVoided, true);
+
+    const closed = (await readOrder(floor.tokens.CASHIER, order.id)).body.data;
+    assert.equal(closed.status, 'CANCELLED');
+    assert.equal(closed.cancelReasonCode, 'OTHER');
+    const table = (await request('GET', '/api/v1/tables', { token: floor.tokens.OWNER })).body.data.find((entry) => entry.id === floor.table.id);
+    assert.equal(table.occupancy.state, 'FREE');
+    const [entry] = await AuditLog.find({ restaurantId: order.restaurantId, action: 'ORDER_CANCELLED' });
+    assert.match(entry.reason, new RegExp(`bill ${bill.billNumber.replace('/', '\\/')}`));
+  });
+
+  it('gives a bill reason the order list lacks as Other, with its label', async () => {
+    const floor = await seedFloor();
+    const order = await readyToBillOrder(floor);
+    const bill = (
+      await request('POST', '/api/v1/bills', { token: floor.tokens.CASHIER, body: { orderId: order.id, version: order.version } })
+    ).body.data;
+
+    const response = await voidBill(floor.tokens.MANAGER, bill.id, { reasonCode: 'WRONG_TABLE', closeOrder: true });
+    assert.equal(response.status, 200, JSON.stringify(response.body));
+    const closed = (await readOrder(floor.tokens.CASHIER, order.id)).body.data;
+    assert.equal(closed.cancelReasonCode, 'OTHER');
+    assert.equal(closed.cancelReason, 'Billed to the wrong table');
+  });
+
+  it('keeps the order waiting with closeOrder false, or left out for a reason other than Guest left', async () => {
+    const floor = await seedFloor();
+    let order = await readyToBillOrder(floor);
+    for (const body of [{ reasonCode: 'OTHER', note: 'x', closeOrder: false }, { reasonCode: 'DISCOUNT_CHANGED' }]) {
+      const bill = (
+        await request('POST', '/api/v1/bills', { token: floor.tokens.CASHIER, body: { orderId: order.id, version: order.version } })
+      ).body.data;
+      assert.equal((await voidBill(floor.tokens.MANAGER, bill.id, body)).status, 200);
+      order = (await readOrder(floor.tokens.CASHIER, order.id)).body.data;
+      assert.equal(order.status, 'READY_TO_BILL', JSON.stringify(body));
+      assert.equal(order.billId, null);
+    }
+  });
+
+  it('refuses to close the order when the bill has money on it, and voids nothing', async () => {
+    const floor = await seedFloor();
+    const order = await readyToBillOrder(floor);
+    const bill = (
+      await request('POST', '/api/v1/bills', { token: floor.tokens.CASHIER, body: { orderId: order.id, version: order.version } })
+    ).body.data;
+    const paid = await pay(floor.tokens.CASHIER, bill.id, { method: 'CASH', amountInPaise: 100 });
+    assert.equal(paid.status, 200, JSON.stringify(paid.body));
+
+    const response = await voidBill(floor.tokens.MANAGER, bill.id, { reasonCode: 'OTHER', note: 'x', closeOrder: true });
+    assert.equal(response.status, 422);
+    assert.equal((await Bill.findOne({ _id: bill.id, restaurantId: order.restaurantId })).isVoided, false);
   });
 
   it('refuses an unknown code, OTHER with no note, a long note, and the old field', async () => {

@@ -86,7 +86,15 @@ const VOID_NOTE_MAX_LENGTH = 500;
  */
 export const createBillSchema = z.object({
   body: z
-    .object({ orderId: objectId, version })
+    .object({
+      orderId: objectId,
+      version,
+      // P57. The discount chosen before the bill is made, and the totals shown before Save.
+      discount: z.lazy(() => discountBody).optional(),
+      preview: z.boolean({ error: 'Must be true or false.' }).optional(),
+      // P60. The counter bills dishes not yet sent, without a KOT.
+      withoutKot: z.boolean({ error: 'Must be true or false.' }).optional(),
+    })
     .strict('Is not a field you can set here. The server bills from the order.'),
 });
 
@@ -118,34 +126,36 @@ export const billSummarySchema = z.object({
  * `rateBps` is a validation error naming the field, not a value quietly
  * dropped that leaves a manager thinking they gave ten percent.
  */
+const discountBody = z.discriminatedUnion('kind', [
+  z
+    .object({
+      kind: z.literal(DISCOUNT_KINDS.FLAT),
+      valueInPaise: paise.refine((value) => value > 0, 'Must be more than zero.'),
+      rateBps: z.never({ error: 'A flat discount is an amount, not a rate.' }).optional(),
+      ...discountReason,
+    })
+    .strict('Is not a field you can set here.')
+    .superRefine(refineDiscountReason),
+  z
+    .object({
+      kind: z.literal(DISCOUNT_KINDS.PERCENT),
+      rateBps: z
+        .number({ error: 'Must be a whole number of basis points.' })
+        .int('Must be a whole number. Ten percent is 1000.')
+        .min(1, 'Must be more than zero.')
+        .max(MAX_BASIS_POINTS, 'Cannot be more than 10000, which is one hundred percent.'),
+      valueInPaise: z
+        .never({ error: 'A percentage discount is a rate, not an amount.' })
+        .optional(),
+      ...discountReason,
+    })
+    .strict('Is not a field you can set here.')
+    .superRefine(refineDiscountReason),
+]);
+
 export const applyDiscountSchema = z.object({
   params: billIdParam,
-  body: z.discriminatedUnion('kind', [
-    z
-      .object({
-        kind: z.literal(DISCOUNT_KINDS.FLAT),
-        valueInPaise: paise.refine((value) => value > 0, 'Must be more than zero.'),
-        rateBps: z.never({ error: 'A flat discount is an amount, not a rate.' }).optional(),
-        ...discountReason,
-      })
-      .strict('Is not a field you can set here.')
-      .superRefine(refineDiscountReason),
-    z
-      .object({
-        kind: z.literal(DISCOUNT_KINDS.PERCENT),
-        rateBps: z
-          .number({ error: 'Must be a whole number of basis points.' })
-          .int('Must be a whole number. Ten percent is 1000.')
-          .min(1, 'Must be more than zero.')
-          .max(MAX_BASIS_POINTS, 'Cannot be more than 10000, which is one hundred percent.'),
-        valueInPaise: z
-          .never({ error: 'A percentage discount is a rate, not an amount.' })
-          .optional(),
-        ...discountReason,
-      })
-      .strict('Is not a field you can set here.')
-      .superRefine(refineDiscountReason),
-  ]),
+  body: discountBody,
 });
 
 /** POST /bills/:billId/payments */
@@ -193,7 +203,8 @@ export const correctPaymentSchema = z.object({
 export const voidBillSchema = z.object({
   params: billIdParam,
   body: z
-    .object({ ...reasonFields(BILL_VOID_REASON_CODES, VOID_NOTE_MAX_LENGTH), approval: approval.optional() })
+    // 2026-10-22. closeOrder: cancel the order too, so the table is free (14.6).
+    .object({ ...reasonFields(BILL_VOID_REASON_CODES, VOID_NOTE_MAX_LENGTH), approval: approval.optional(), closeOrder: z.boolean().optional() })
     .strict('Is not a field you can set here.')
     .superRefine(requireNoteForOther),
 });
@@ -276,6 +287,15 @@ export const refundDoneSchema = z.object({
 
 /** POST /bills/:billId/print-request and /printed. P25 Part D. No body. */
 export const billOnlySchema = z.object({ params: billIdParam, body: z.object({}).strict().optional() });
+
+/** POST /bills/:billId/printed. P59: a counter device claims a captain's request with its time. */
+export const markPrintedSchema = z.object({
+  params: billIdParam,
+  body: z
+    .object({ forRequestAt: z.coerce.date({ error: 'Must be the request time from the print queue.' }).optional() })
+    .strict('Is not a field you can set here.')
+    .optional(),
+});
 
 /** GET /bills/print-queue. P25 Part D. */
 export const printQueueSchema = z.object({ query: z.object({}).strict() });

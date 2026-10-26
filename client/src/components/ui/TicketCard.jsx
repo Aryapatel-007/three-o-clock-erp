@@ -54,6 +54,8 @@ export default function TicketCard({
   onLineUndo = null,
   onAllReady,
   onReprint,
+  // 2026-10-21. Small tiles, chosen on the kitchen screen for a rush: narrower and tighter, the switch without its word.
+  compact = false,
 }) {
   const outstanding = lines.filter((line) => line.status === 'PENDING');
   const { isLate } = useElapsed(firedAt, targetMinutes);
@@ -65,13 +67,13 @@ export default function TicketCard({
         isLate ? 'border-[3px] border-alert' : 'border border-line',
       ].join(' ')}
     >
-      <header className="flex items-start justify-between gap-2 border-b border-line px-3 py-2">
+      <header className={['flex items-start justify-between gap-2 border-b border-line', compact ? 'px-2 py-1' : 'px-3 py-2'].join(' ')}>
         <div className="min-w-0">
           <p className="flex flex-wrap items-baseline gap-x-3">
             <span className="type-num font-semibold">KOT {kotNumber}</span>
             <span className="type-label truncate">{place}</span>
           </p>
-          {subtitle && <p className="type-caption text-muted">{subtitle}</p>}
+          {subtitle && <p className={['type-caption text-muted', compact ? 'truncate' : ''].join(' ')}>{subtitle}</p>}
         </div>
         {onReprint && (
           <button type="button" onClick={onReprint} className="type-label min-h-12 flex-none rounded-lg px-2 text-muted hover:bg-sunken hover:text-ink">
@@ -103,7 +105,7 @@ export default function TicketCard({
             )}
             <li className="flex items-center gap-1 rounded-lg px-1">
               <div className={['flex min-w-0 flex-1 items-baseline gap-2', isDone ? 'opacity-60' : ''].join(' ')}>
-                <span className="type-num w-7 flex-none text-right font-semibold">{line.quantity}</span>
+                <span className={['type-num flex-none text-right font-semibold', compact ? 'w-5' : 'w-7'].join(' ')}>{line.quantity}</span>
                 <span className="min-w-0 flex-1">
                   <span
                     title={line.variantName ? `${line.itemName} · ${line.variantName}` : line.itemName}
@@ -125,6 +127,7 @@ export default function TicketCard({
                 </span>
               ) : (
                 <ReadySwitch
+                  compact={compact}
                   name={line.itemName}
                   isReady={isDone}
                   disabled={isBusy || (isDone && !onLineUndo)}
@@ -140,8 +143,16 @@ export default function TicketCard({
       <footer className="border-t border-line">
         <HoldToConfirm count={outstanding.length} total={lines.length} disabled={isBusy || outstanding.length === 0} onConfirm={onAllReady}>
           <ElapsedTime since={firedAt} targetMinutes={targetMinutes} />
-          <span className="type-button flex items-center gap-2">
-            {outstanding.length === 0 ? 'All ready' : outstanding.length === lines.length ? 'Hold for all ready' : `Hold: ${outstanding.length} left ready`}
+          <span className={[compact ? 'type-label whitespace-nowrap' : 'type-button', 'flex items-center gap-2'].join(' ')}>
+            {outstanding.length === 0
+              ? 'All ready'
+              : compact
+                ? outstanding.length === lines.length
+                  ? 'Hold: all ready'
+                  : `Hold: ${outstanding.length} left`
+                : outstanding.length === lines.length
+                  ? 'Hold for all ready'
+                  : `Hold: ${outstanding.length} left ready`}
             <TickIcon />
           </span>
         </HoldToConfirm>
@@ -157,7 +168,7 @@ export default function TicketCard({
  * relies on colour. P41: the word sits under the knob, so the switch is
  * narrow and the dish name gets the width. The knob slides; nothing loops.
  */
-function ReadySwitch({ name, isReady, disabled, onChange }) {
+function ReadySwitch({ name, isReady, disabled, onChange, compact = false }) {
   return (
     <button
       type="button"
@@ -166,7 +177,7 @@ function ReadySwitch({ name, isReady, disabled, onChange }) {
       aria-label={`${name} ready`}
       disabled={disabled}
       onClick={onChange}
-      className="flex min-h-12 w-12 flex-none flex-col items-center justify-center rounded-lg disabled:opacity-50"
+      className={['flex min-h-12 flex-none flex-col items-center justify-center rounded-lg disabled:opacity-50', compact ? 'w-11' : 'w-12'].join(' ')}
     >
       <span
         aria-hidden="true"
@@ -176,7 +187,8 @@ function ReadySwitch({ name, isReady, disabled, onChange }) {
           className={['absolute top-0.5 size-4 rounded-full bg-surface shadow transition-transform duration-150', isReady ? 'translate-x-[1.1rem]' : 'translate-x-0.5'].join(' ')}
         />
       </span>
-      <span className={`type-caption ${isReady ? 'text-ok' : 'text-muted'}`}>{isReady ? 'Ready' : 'Cooking'}</span>
+      {/* Small tiles drop the word to save height; the name's strike-through still says ready without colour. */}
+      {!compact && <span className={`type-caption ${isReady ? 'text-ok' : 'text-muted'}`}>{isReady ? 'Ready' : 'Cooking'}</span>}
     </button>
   );
 }

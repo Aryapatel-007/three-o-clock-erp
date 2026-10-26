@@ -18,7 +18,7 @@
  */
 import { isPlatformDiscountReason } from '../config/discountReasons.js';
 import { ROLES } from '../config/roles.js';
-import { ORDER_LINE_STATUSES, ORDER_STATUSES, ORDER_TYPES } from '../models/Order.js';
+import { ORDER_STATUSES } from '../models/Order.js';
 import { BusinessRuleError, EntryVoidedError, ForbiddenError } from '../utils/errors.js';
 
 /** Discounting and voiding are manager work. Everything else a cashier can do. */
@@ -132,15 +132,8 @@ export function assertCanVoid(actor) {
  *
  * Not from OPEN: a bill printed while the kitchen is still cooking is a bill
  * that will be wrong. Not from BILLED or CANCELLED for the obvious reasons.
- *
- * Counter Sale, with `billing.payFirstTakeaway` on: an OPEN takeaway is
- * billable once every live dish on it has been sent. At a cafe counter the
- * guest pays first and waits for the drink; the kitchen still makes and marks
- * each dish as before, and a dish that cannot be made is cancelled from the
- * bill. Nothing unsent is ever billed, so the kitchen never misses a dish.
  */
-export function assertOrderIsBillable(order, { payFirstTakeaway = false } = {}) {
-  if (payFirstTakeaway && isSentTakeaway(order)) return;
+export function assertOrderIsBillable(order) {
   if (order.status !== ORDER_STATUSES.READY_TO_BILL) {
     throw new BusinessRuleError(
       order.status === ORDER_STATUSES.OPEN
@@ -148,13 +141,6 @@ export function assertOrderIsBillable(order, { payFirstTakeaway = false } = {}) 
         : 'This order cannot be billed.',
     );
   }
-}
-
-/** An OPEN takeaway with at least one live dish, every one of them sent to the kitchen. */
-export function isSentTakeaway(order) {
-  if (order.status !== ORDER_STATUSES.OPEN || order.orderType !== ORDER_TYPES.TAKEAWAY) return false;
-  const live = order.lines.filter((line) => line.status !== ORDER_LINE_STATUSES.CANCELLED);
-  return live.length > 0 && live.every((line) => line.status !== ORDER_LINE_STATUSES.PENDING);
 }
 
 /** A bill with nothing on it is not a bill. */
@@ -238,6 +224,5 @@ export default {
   assertNotPaid,
   assertNotVoided,
   assertOrderIsBillable,
-  isSentTakeaway,
   assertPaymentFits,
 };

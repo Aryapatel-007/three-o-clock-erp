@@ -284,6 +284,12 @@ Added by P44:
 EMAIL_SEND_FAILED          502  Resend refused or could not be reached
 ```
 
+Added by P63:
+
+```
+CLOSE_ON_CAFE_PC           422  Day Close on the cloud while two-way sync is on
+```
+
 ### Paging
 
 Every list endpoint takes `?page=1&limit=50`.

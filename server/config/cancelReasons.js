@@ -57,6 +57,8 @@ export const BILL_VOID_REASONS = freezeList([
   { code: 'GUEST_DISPUTE', label: 'Guest disputed the bill' },
   // P25 Part H. Appended only.
   { code: 'PLATFORM_CANCELLED', label: 'Cancelled by the platform' },
+  // P59. Voids the bill and cancels the order, so the table is free. Appended only.
+  { code: 'GUEST_LEFT', label: 'Guest left' },
   { code: 'OTHER', label: 'Other' },
 ]);
 

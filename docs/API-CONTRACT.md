@@ -1733,7 +1733,8 @@ P19: when `settings.floor.requireGuestCount` is true, a `DINE_IN` order without
 `guestCount` is 400 `VALIDATION_FAILED`, with `fields.guestCount` and the message
 "How many guests? Enter the number before opening the table." Takeaway and
 delivery orders never take one. No endpoint changes `guestCount` once the order
-is open.
+is open. P59 changes both: the rule moves to the first Send, and
+`PATCH /orders/:orderId/customer` sets the count.
 
 Takeaway:
 
@@ -2402,6 +2403,9 @@ like `"2026-27"`, in `FINANCIAL_YEAR` mode, and the prefix, like `"CFA/C/"`, in
 `PREFIX` mode. Bills created before P02 have `null`, which means the financial
 year series.
 
+From P57 the request may also carry a `discount` and `preview: true`; see "P57
+The bill in one place".
+
 ### 14.2 Read one bill
 
 ```
@@ -2584,6 +2588,20 @@ The old `reason` field is refused with a 400. The code is stored in
 Sets `isVoided`, `voidedAt`, `voidedBy`, `voidReasonCode`, `voidReason`. Returns the order to
 `READY_TO_BILL`, clears `orders.billId`, and **re-occupies the table**, so the
 order can be billed again correctly.
+
+**`closeOrder`** (2026-10-22, optional boolean). `true`: the bill is voided and
+its order cancelled in one transaction, and the table is free, as P59's Guest
+left does: the order's live lines are cancelled, its kitchen lines marked
+prepared (the food was served, so no stock comes back), its kitchen ticket
+lines cancelled, and `ORDER_CANCELLED` is audited with the bill number. The
+order's `cancelReasonCode` is the bill's code when the order list has it
+(`GUEST_LEFT`, `PLATFORM_CANCELLED`, `OTHER`), else `OTHER` with the bill
+reason's label as its note. Refused with 422 when the bill has money on it or is
+On Hold: that money is dealt with first. `false`: the order waits for a new
+bill, as above. Left out: `true` for `GUEST_LEFT`, `false` for every other
+code, as before. The screen always sends it: "Close the table" is its default,
+except for Billed to the wrong table, Items need changing and Discount needs
+changing, which are corrections billed again.
 
 Voiding an `ON_ACCOUNT` bill is allowed and writes a `CHARGE_REVERSED` account
 entry in the same transaction (M16). Voiding a bill of a closed business date
@@ -2791,7 +2809,6 @@ code and "Scan to review us", drawn on the client.
 |---|---|---|
 | `captainsMayBill` | `true` | A `WAITER` may create the bill for a dine-in or takeaway order |
 | `captainsMayTakePayment` | `false` | A `WAITER` may also record payments, count notes and send a payment to the card machine on those bills |
-| `payFirstTakeaway` | `true` | Counter Sale. An OPEN `TAKEAWAY` order is billable once every live line on it has been sent (none `PENDING`), and its bill takes money at once, before the kitchen has made it. Off: a takeaway waits for READY_TO_BILL like any order. Dine-in and delivery never change. |
 
 1. `POST /bills` lets `WAITER` through the route; `billPermissionService.assertCanBill(actor, order, settings)` decides. A `WAITER` is refused 403 when `captainsMayBill` is off, and 403 for a `DELIVERY` order whatever the setting: platform orders are billed by the integration (M21).
 2. `POST /bills/:billId/payments` and `POST /bills/:billId/terminal-payments` (M21) let `WAITER` through; `assertCanTakePayment(actor, bill, settings)` refuses 403 unless both settings are on and the bill is not a delivery bill.
@@ -2822,7 +2839,16 @@ client records the print, and print "Duplicate" when it is already 1 or more.
 The counter device's "Print bills sent by captains" setting is a device setting
 (no endpoint): it polls the queue every 5 seconds, prints each bill once, calls
 `printed`, and remembers the ids it printed in the device's storage so a reload
-never prints twice.
+never prints twice. P59: it claims each request with `printed` and
+`forRequestAt` before printing, so only one device prints it.
+
+2026-10-25: any role may send a bill to the counter, not only a captain (the
+endpoint was always open to all six). A device's "Bills print" setting (This
+device, no endpoint) is Automatic, On this device or At the counter. Automatic
+is At the counter on a cafe PC's server (`/auth/me` `sync.server` BOX) for every
+device but the till window and a device printing captains' bills, and On this
+device everywhere else. A manager's or cashier's phone on the cafe PC printed
+nothing before this, because it has no bill printer.
 
 ### 16.4 Cancelling an item after the bill is made (P25 Part E)
 
@@ -3969,7 +3995,7 @@ Both default to `true`, so nothing changes for an existing restaurant. Switching
 |---|---|---|---|
 | `sectionOrder` | [String] | `[]` | Section names in the order the floor shows them. Sections not listed follow, by name. At most 40 names, each at most 40 characters. |
 | `longOpenMinutes` | Number | 90 | Integer 15 to 600. A table open longer is marked as running long. |
-| `requireGuestCount` | Boolean | false | When true, a dine-in order cannot be opened without a guest count. On for Caffeza. |
+| `requireGuestCount` | Boolean | false | When true, a dine-in order cannot be opened without a guest count. On for Caffeza. From P59: cannot be sent to the kitchen the first time without one. |
 
 `GET /auth/me` returns `floor` beside `features` and `discounts`, so every role's
 floor screen knows the section order, the long-open threshold and whether
@@ -4067,7 +4093,6 @@ schema default, so a restaurant saved before P25 reads back complete.
 | `receipt.reviewLinkUrl` | String or null | null | An `https` address up to 300 characters. When set, every printed bill, thermal and full page, ends with a QR code for it and "Scan to review us". `http`, anything that is not a web address, and anything longer are 400. |
 | `billing.captainsMayBill` | Boolean | true | M3 section 16.2 |
 | `billing.captainsMayTakePayment` | Boolean | false | M3 section 16.2 |
-| `billing.payFirstTakeaway` | Boolean | true | M3 section 16.2: Counter Sale, a sent takeaway billed and paid before it is ready |
 | `cash.denominations` | List | India, M16 section 8.1 | Notes and coins to count. A PATCH replaces the list. |
 | `payments.requireTerminalForLinkedMethods` | Boolean | true | M10 section 5.2 |
 | `approvals.*` | Booleans | true | Added by P28, see the P28 section at the end of this file |
@@ -5357,7 +5382,7 @@ Stored in `cashmovements`, DB-SCHEMA section 24.
 |---|---|
 | `GET /api/v1/cash-movements?date=YYYY-MM-DD` | OWNER, MANAGER, CASHIER. Default today's business date. |
 | `POST /api/v1/cash-movements` | `OPENING_FLOAT` and `PAID_IN`: OWNER, MANAGER, CASHIER. `PAID_OUT`: OWNER, MANAGER, and writes `CASH_PAID_OUT`, entity `CASH`, with the amount and reason. |
-| `POST /api/v1/cash-movements/:id/void` | OWNER, MANAGER. Body `{ reason }`. |
+| `POST /api/v1/cash-movements/:id/void` | OWNER, MANAGER, CASHIER. Body `{ reason, approval? }`. From 2026-10-17 a CASHIER may void with an owner's or manager's PIN, as for a paid out (P28 `approverForManagerTask`): `approval` is required for a cashier, and a cashier is refused with 403 when `approvals.managerTasks` is off. The approver is stored as `voidApprovedBy`. |
 
 Body `{ type, amountInPaise, reason? }`. `reason` 1 to 200 characters, required
 for `PAID_IN` and `PAID_OUT`. The business date is always today's; no request can
@@ -5532,7 +5557,7 @@ once per write:
 | GET /cash-movements | yes | yes | yes | no | no | no |
 | POST /cash-movements, float or paid in | yes | yes | yes | no | no | no |
 | POST /cash-movements, paid out | yes | yes | no | no | no | no |
-| POST /cash-movements/:id/void | yes | yes | no | no | no | no |
+| POST /cash-movements/:id/void | yes | yes | with a manager's PIN | no | no | no |
 | POST /cash-movements, cash taken out (P29) | yes | yes | no | no | no | no |
 | POST /cash-movements, cash check (P29) | yes | yes | yes | no | no | no |
 | GET /cash-book (P29) | yes | yes | yes | no | no | no |
@@ -9007,6 +9032,11 @@ No other role sees it, and R1's figures and checks do not change.
    from an empty database still refuses a time inside it.
 4. The tools read with the drill key from `BACKUP_DRILL_KEY_ID` and
    `BACKUP_DRILL_SECRET`, which the server never needs.
+5. After a failed full copy the next waits 2 minutes, then 10, then 30, then
+   every hour, until one succeeds (`SNAPSHOT_RETRY_MS`). Every try reads the
+   whole database against Atlas M0's weekly read limit, and the first live
+   deploy, with a wrong secret, tried once a minute. Added 2026-10-15.
+
 # P55 The owner's dashboard
 
 `docs/prompts/P55-owner-dashboard.md`. No new endpoint and no change to any. The
@@ -9115,3 +9145,640 @@ screen, the Day End page and the printed Day Close stop showing them.
 ## Error codes
 
 None new.
+
+# P57 The bill in one place
+
+Asked for by Rishi, 2026-10-17. The prompt is `docs/prompts/P57-bill-in-one-place.md`.
+
+## 1. `POST /bills` takes a discount and a preview
+
+```
+POST /api/v1/bills
+```
+
+```json
+{
+  "orderId": "652f...",
+  "version": 9,
+  "discount": { "kind": "PERCENT", "rateBps": 1000, "reasonCode": "REGULAR_GUEST", "note": null },
+  "preview": true
+}
+```
+
+Both new fields are optional; without them the endpoint is exactly M3 14.1.
+
+`discount` is the body of `POST /bills/:billId/discount` (14.4): `kind`
+`FLAT` with `valueInPaise`, or `PERCENT` with `rateBps`, `reasonCode`, `note`
+(required for `OTHER`) and `fundedBy` (default `RESTAURANT`; `PLATFORM` only for
+a platform reason). It is applied to the new bill inside the creating
+transaction, stored exactly as 14.4 stores it, with `appliedBy` the caller, and
+writes the same `DISCOUNT_APPLIED` audit line once the transaction commits.
+
+- 403 `FORBIDDEN` when the caller may not give that discount
+  (`billPermissionService.assertCanDiscount`, as 14.4): a captain never; a
+  cashier only a platform discount, and only when
+  `discounts.cashierMayApplyPlatformDiscounts` is on.
+- 422 `BUSINESS_RULE_VIOLATED` when a flat discount is more than the item total.
+- 422 `BUSINESS_RULE_VIOLATED`, "This order carries its last bill's discount.
+  Change it on the new bill.", on an order with `reopenedFromBillId` (P26).
+
+`preview: true` runs the whole creation, discount included, inside its
+transaction and rolls it back. Nothing is written: no bill, no bill number used
+(the counter is untouched), no change to the order or its version, no audit
+line, no live-channel announcement. Response 200:
+
+```json
+{ "preview": true, "billNumber": null, "subtotalInPaise": 42000, "discount": { "amountInPaise": 4200 }, "taxBreakdown": [], "roundOffInPaise": 0, "grandTotalInPaise": 39700, "lines": [] }
+```
+
+the bill as it would be, every figure from `utils/tax.js` as on a real bill,
+with `billNumber` null and no `id`. Every refusal a real creation makes (order
+not ready, stale version, closed day, wrong restaurant, a captain not allowed to
+bill) a preview makes too.
+
+## 2. Roles
+
+Unchanged from 14.1 and P25 Part D for creating; `discount` adds 14.4's rule.
+
+## Error codes
+
+None new.
+
+# P58 One kitchen ticket per Send, not per station
+
+Asked for by Arya on 2026-10-17. `docs/prompts/P58-one-ticket-per-send.md`.
+Additive: with the new setting at its default, every endpoint behaves exactly
+as before.
+
+## 1. The setting
+
+`settings.kitchen.splitTicketsByStation`, Boolean, default `true`, on `GET` and
+`PATCH /settings` in the `kitchen` group (M7), OWNER to change, with the usual
+reason and audit line. `GET /auth/me` `kitchen` gains `splitTicketsByStation`
+beside `readyMeansServed`.
+
+## 2. Firing (changes M18 section 2 and P36 section 2)
+
+With the setting off, `POST /orders/:orderId/fire`:
+
+1. Routes every pending line to its station exactly as M18 section 2, and each
+   ticket line freezes `stationId` and `stationName` as P36 says.
+2. With `kitchen.oneTicketPerOrder` off, makes one new ticket for the Send,
+   holding every pending line, with a newly reserved `kotNumber`. A later Send
+   makes another ticket with the next number.
+3. With `kitchen.oneTicketPerOrder` on, adds to the order's one ticket as P36.
+4. The ticket's own `stationId` and `stationName` are null, even when every
+   line went to one station. The printed ticket's heading is therefore
+   `KITCHEN` (M18 3.1).
+
+The response shape is unchanged: `{ kot, kots: [kot], order, round }`.
+
+With the setting on, firing is exactly as before.
+
+## 3. Reading, marking ready, printing, reports
+
+Unchanged. A screen that shows whole tickets reads them without `stationId`,
+marks them ready without it, and prints them without it (P36 sections 3 to 5).
+R13 still groups by each line's own station.
+
+## Error codes
+
+None new.
+
+# P59 A captain's bill prints once, and the guest count moves to the first Send
+
+Asked for by Rishi on 2026-10-21. `docs/prompts/P59-print-once-guests-before-kot.md`.
+No new field and no new endpoint; two endpoints take one more optional field.
+
+## 1. One print per request (changes M3 16.3)
+
+Z Chaat's live bills showed many captain bills with `printCount` 2 or 3, the
+second print recorded 1 to 4 seconds after the first. The 2026-10-19 lock stops
+two tabs of one browser profile only; a second profile (the silent-printing
+launcher's beside an everyday Chrome window) or a second till device with
+"Print bills sent by captains" on printed the same request again.
+
+`POST /bills/:billId/print-request`: while an earlier request is still waiting
+(`lastPrintedAt` is null or before `printRequestedAt`), the request changes
+nothing and answers 200 with the bill, so a second tap by the captain is not a
+second print. Otherwise as before.
+
+`POST /bills/:billId/printed` takes an optional body:
+
+```json
+{ "forRequestAt": "2026-10-20T16:38:03.539Z" }
+```
+
+With it, the print is recorded in one conditional write that matches only when
+`printRequestedAt` equals `forRequestAt` and the bill has not been printed since
+(`lastPrintedAt` null or before it). When nothing matches, another device has
+taken that request: 409 `DUPLICATE`, "Another device has printed this bill.",
+and nothing changes. Without it, as before.
+
+The counter device reads the bill's invoice data first (so the print says
+Duplicate only when it is one), then calls `printed` with `forRequestAt`, and
+prints only when that answers 200. Exactly one device prints each request,
+whatever the number of devices, profiles or tabs. If the browser then fails to
+print, the bill counts as printed; the cashier prints it from the bill screen.
+
+The captain's bill screen shows "Sent to the counter" in place of Print at
+counter while their request is waiting.
+
+## 2. The guest count is asked with the guest's details (changes 12.1, P19 and P56)
+
+Tapping a free table opens its order at once, with no guest count. A table with
+a booking soon still offers to seat the booking first.
+
+`PATCH /orders/:orderId/customer` (P56 section 2) also takes `guestCount`, an
+integer 1 to 100, on a `DINE_IN` order only; on any other order it is 400. At
+least one of `customerName`, `customerPhone` and `guestCount` is required. The
+same rules on bills and closed orders apply. A new count replaces the old one
+until the order is billed.
+
+`settings.floor.requireGuestCount` moves from opening to the first Send:
+`POST /orders` no longer refuses a dine-in order without `guestCount`, and
+`POST /orders/:orderId/fire` refuses a `DINE_IN` order whose `guestCount` is
+null and none of whose lines was ever sent, with 400 `VALIDATION_FAILED`,
+`fields.guestCount`, "How many guests? Enter the number before sending to the
+kitchen." A later Send is never refused for it.
+
+The order screen's Guest details sheet, on a table's first Send, asks "How many
+guests?" first, then the name and mobile. With `requireGuestCount` off the count
+is optional and Skip sends without anything.
+
+## Error codes
+
+None new.
+
+# P60 Bill without KOT
+
+Asked for by Rishi on 2026-10-21. `docs/prompts/P60-bill-without-kot.md`.
+DB-SCHEMA section 59. One endpoint takes one more optional field.
+
+## 1. `POST /bills` with `withoutKot`
+
+```json
+{ "orderId": "652f...", "version": 4, "withoutKot": true }
+```
+
+`withoutKot: true` may sit beside `discount` and `preview` (P57). Roles:
+OWNER, MANAGER, CASHIER; a WAITER sending it is 403 FORBIDDEN, "Only the counter
+can bill without sending to the kitchen."
+
+Inside the bill's own transaction, before the bill is made:
+
+1. The order must be `DINE_IN` or `TAKEAWAY` with no platform; otherwise 422
+   `BUSINESS_RULE_VIOLATED`, "Only a table or a takeaway can be billed without
+   a KOT."
+2. An order already `READY_TO_BILL` is billed as without the field.
+3. Otherwise the order must be `OPEN`, every live line not sent (`PENDING`) or
+   served, and at least one not sent. A line with the kitchen (`FIRED` or
+   `READY`) is 422, "Some dishes are with the kitchen. Bill once they are
+   served."
+4. With `settings.floor.requireGuestCount` on, a dine-in order without
+   `guestCount` is 400 `VALIDATION_FAILED`, as the first Send is (P59).
+5. Every not-sent line becomes `SERVED`, with `servedAt` now and
+   `billedWithoutKot: true`; `firedAt` and `kotId` stay null. The order becomes
+   `READY_TO_BILL` in the same versioned write, so `version` must be current;
+   a stale one is 409 `VERSION_CONFLICT`.
+6. With inventory on, stock is deducted for those lines exactly as a Send
+   deducts it (M4), keyed on the line, so it is never deducted twice.
+
+No KOT is made, nothing reaches the kitchen screen or a kitchen printer, and
+R13 counts none of these dishes. The bill is then made exactly as P57 makes it,
+and each bill line carries `billedWithoutKot`. A preview rolls all of it back.
+
+After this, the order is an ordinary billed order: removing a dish, cancelling
+after billing, reopening and paying all work as before, and a dish billed
+without a KOT counts as served (made) for those rules.
+
+## 2. The order screen
+
+For OWNER, MANAGER and CASHIER, an open table or takeaway order with dishes not
+yet sent, and none with the kitchen, shows **Bill without KOT** beside Send.
+It opens the Bill box (P57) for the order, with the discount, the totals from a
+preview, Save and Save & Print. A table's first time asks the Guest details
+sheet first, as the first Send does.
+
+## Error codes
+
+None new.
+
+# P61 A simple Day Close
+
+Asked for by Rishi on 2026-10-21. `docs/prompts/P61-simple-day-close.md`.
+No new field and no new endpoint. Changes M16 section 6.
+
+## 1. Orders nothing was sent from close themselves
+
+Live Z Chaat on 2026-10-21: Day Close was refused for an order on Table 4 with
+no dishes and nothing sent, opened by a tap on the floor. Since P59 a tap opens
+a free table at once, so a stray tap or a table opened and left leaves an open
+order with nothing in the kitchen.
+
+An order of the business date that is `OPEN`, has no bill, and none of whose
+lines was ever sent (every line `PENDING` or `CANCELLED`, none with `firedAt`)
+is no longer an `OPEN_ORDER` blocker. `GET /day-close/:businessDate` lists them
+apart, as `closesOnClose: [{ orderId, orderNumber, tableName, orderType,
+dishesNotSent }]`, `dishesNotSent` the count of not-sent lines.
+
+`POST /day-close` closes each of them first, inside its own transaction,
+exactly as P50's Close table does: the not-sent lines are removed, and the order
+becomes `CANCELLED` with `cancelReasonCode: ORDER_OPENED_BY_MISTAKE`, by the
+person closing the day. No audit line, and they count nowhere (P50). An order
+with any dish sent is still a blocker.
+
+## 2. The cashier closes the day
+
+`POST /day-close`, `GET /day-close/:businessDate`, `GET
+/day-close/:businessDate/message`, `POST /day-close/:businessDate/email` and
+`GET /day-close/:businessDate/print` are open to OWNER, MANAGER and CASHIER.
+The count is blind for a cashier always: expected cash and the difference are
+never shown to one. `GET /day-close` (the history) and reopening are unchanged.
+
+## 3. The Day End screen
+
+One screen, in this order: the day's bill total and bills, with money by
+payment method; **Before you close**, listing only what stops the close, each
+with Open (an open order also with **Cancel order**, which opens the order
+screen with the manager's whole-order cancel, 12.7, and comes back to Day End;
+it stays in the cancellations report), and the not-sent orders that will close
+themselves; **Cash in the
+drawer**, one amount (or Count by notes); **Close the day**. Keeping cash for
+tomorrow and taking the rest out are optional, behind "Taking cash out of the
+drawer?"; without them the whole count stays in the drawer as tomorrow's float.
+A note is asked only when the server says the count needs one. The day's full
+figures, the cash flow and the day-end message stay below, under "Day's
+details". The cashier's menu gains Day End.
+
+## Error codes
+
+None new.
+
+---
+
+# P62. The cafe box, the cloud mirror and the network
+
+Built 2026-10-21. Design: `docs/REPLICATION.md`. Every route below exists on
+every deployment; what it does depends on `DEPLOYMENT_ROLE`.
+
+## 1. Writes refused by role
+
+Before any route, `middleware/writerGate.js`:
+
+| When | Status | `error.code` | Message (shown to the person) |
+|---|---|---|---|
+| MIRROR, not promoted, any write outside the allowlist | 503 | `MIRROR_READ_ONLY` | "This is the read-only copy in the cloud. Changes are made on the cafe's own server." |
+| BOX that stood down (a higher epoch exists) | 503 | `WRITER_FENCED` | "This server has handed over to the cloud copy. Sign in at the cloud address the manager gives you." |
+| BOX whose clock is behind its newest record | 503 | `CLOCK_BEHIND` | "The cafe server's clock is behind the last sale, so nothing can be saved until it is set right. ..." |
+
+The mirror's allowlist is exactly `MIRROR_WRITE_ALLOWLIST`: `POST /auth/login`,
+`/auth/refresh`, `/auth/logout`, `/public/:slug/quote`, the six public intake
+routes of section 3, `/public/:slug/payments/webhook`, `/hooks/:provider/:webhookKey`,
+and the four `/replication/*` routes. A box always answers sign-in and
+`/network/report`. These three 503s are the only 5xx whose message reaches the
+client.
+
+## 2. Replication (mirror only; 404 elsewhere)
+
+Body: canonical EJSON. Header `X-Replication-Signature: sha256=<hex HMAC of the
+body under REPLICATION_SECRET>`; a bad one is `401 REPLICATION_SIGNATURE`.
+
+| Route | Body | 200 `data` | Other answers |
+|---|---|---|---|
+| `POST /replication/batches` | `{ restaurantId, epoch, entries: [{ seq, epoch, coll, documentId, op, doc, capturedAt }] }` | `{ appliedThrough, applied, skipped, gap, position }` | `409 REPLICATION_GAP { expectedSeq, gotSeq }`, `409 STALE_EPOCH { currentEpoch, sentEpoch }` |
+| `POST /replication/intake/claim` | `{ restaurantIds, limit }` (1 to 100, default 20) | `{ items: [intake item] }`, oldest first, each held 2 minutes | |
+| `POST /replication/intake/result` | `{ restaurantId, intakeId, status: APPLIED or REJECTED, reasonCode, reasonMessage, result, statusToken }` | `{ recorded }` | |
+| `POST /replication/reconcile` | `{ restaurantId, businessDate }` | `{ collections: { <name>: { count, sha256 } }, bills, businessDate }` | |
+
+## 3. Intake on the public routes
+
+On a read-only mirror, these answer `202` and store an intake item instead of
+acting: `POST /public/:slug/orders`, `/reservations` (each with
+`data.intake = { id, status: 'RECEIVED', secret }`, the secret only on the
+first delivery), `/orders/:id/cancel`, `/reservations/:id/cancel`,
+`/orders/:id/payment-return`, `/reservations/:id/payment-return`. A new order or
+booking is refused with `ONLINE_CLOSED` while the box has not checked in for 5
+minutes. `POST /public/:slug/payments/webhook` and `POST /hooks/:provider/:key`
+verify the signature as before, store, and answer as before.
+
+`GET /public/:slug/intake/:id?secret=<secret>` (mirror only) gives
+`{ id, status, reasonCode, reasonMessage, result, statusToken }`. `result` is
+`{ onlineOrderId, reference }` or `{ reservationId, reference }`. The status
+token is given once, then null. Wrong secret: 404.
+
+## 4. The network
+
+| Route | Who | Answer |
+|---|---|---|
+| `GET /network/ping` | anyone, no database | `{ ok: true }`, `no-store`. Devices time it every 5 s |
+| `GET /network/setup` | anyone | `{ role, boxUrl, localNameUrl, wifiName }`. Never a password |
+| `POST /network/report` | any signed-in role | body `{ deviceId (8-64), deviceName?, page?, pingsMs: [ms or null] (max 30), effectiveType?, downlinkMbps? }`; `data { bars, word }`. Kept in memory only |
+| `GET /network/self` | any signed-in role | `{ role, serverTime, writer { epoch, fenced, readOnly, promoted }, clock { refusing }, sync }`. For roles other than OWNER and MANAGER, `sync` is `{ state, entriesWaiting }` only, and `NOT_SYNCED` reads as `WAITING` |
+| `GET /network/status` | OWNER, MANAGER | `self` plus `box` (the server's WiFi: `ssid`, `signalPercent`, `signal { bars, word }`, `wired`, `addresses`, `canChange`), `boxUrl`, `localNameUrl`, `staffWifi { ssid, password }`, `devices [{ deviceId, name, userName, role, address, bars, word, medianMs, jitterMs, lossPercent, connected, secondsSinceSeen }]` |
+| `GET /network/wifi/networks` | OWNER, box only | `{ networks: [{ ssid, signalPercent, secured, inUse }] }` |
+| `POST /network/wifi/connect` | OWNER, box only | body `{ ssid (1-32), password (0-63) }`; `data { box }`. `422 WIFI_CONTROL_OFF` unless `BOX_WIFI_CONTROL=on`; `422 WIFI_CHANGE_FAILED` when the join failed (the box stays where it was). Audited `BOX_WIFI_CHANGED`, never with the password |
+| `PUT /network/staff-wifi` | OWNER, MANAGER | body as above; saved in a file on the box, never in the database |
+
+`sync.state`: `SYNCED`, `WAITING` (entries waiting, under 3 hours), `NOT_SYNCED`
+(3 hours or more), `LOCAL_ONLY` (no mirror configured); on a mirror `MIRROR` or
+`GAP` with `figuresAsOf`, `ageSeconds`, `stale` (over 15 minutes).
+
+Strength (`bars`, `word`) from the median of the last 12 pings and the share
+unanswered: Excellent ≤ 40 ms and none lost; Good ≤ 100 ms and ≤ 5 %; Fair
+≤ 250 ms and ≤ 15 %; Weak otherwise; No connection when none answered.
+
+# P63. Two-way sync
+
+Spec 2026-10-21, `docs/prompts/P63-two-way-sync.md`, design `docs/REPLICATION.md`
+section 13. Everything here applies only while `SYNC_MODE=TWO_WAY`; with the
+default `ONE_WAY`, P62 is unchanged.
+
+## 1. Replication (cloud, `TWO_WAY`; signed as P62 section 2)
+
+| Route | Body | 200 `data` | Other answers |
+|---|---|---|---|
+| `POST /replication/pull` | `{ restaurantId, afterSeq (int >= 0), limit (1-500, default 200) }` | `{ entries: [{ seq, coll, documentId, op, doc, capturedAt }], newestSeq }`, oldest first, seq contiguous from `afterSeq + 1` | |
+| `POST /replication/batches` | P62's body plus `seenPeerSeq` (int >= 0, how far the box has pulled) | `{ appliedThrough, applied, skipped, conflicts, gap, position }` | `409 REPLICATION_GAP` as P62. Epochs are not compared while `TWO_WAY` |
+
+On a box or a mirror `/replication/pull` is 404.
+
+## 2. Numbers on the cloud
+
+One series (2026-10-22, Arya; made safe 2026-10-25): while `TWO_WAY` the cloud
+issues bill, order, KOT, online order and booking numbers from the same counters
+as the box, so the website continues the PC's series. Bills from before
+2026-10-22 numbered `2026-27/W00001` keep their numbers.
+
+A `counters` document changed on both sides keeps the higher `value`, so a
+counter never goes back and neither side hands out a number again.
+
+Two records holding one number (both sides numbered while apart) are a clash:
+the PC's keeps the number, and the website's takes the next free one in the same
+series, on both sides, with its copies (`kots.orderNumber` and
+`bills.orderNumber` for an order; `accountentries`, `refunds` and
+`terminaltransactions` `billNumber` for a bill), and a `SAME_SLOT` sync conflict
+naming the old and new number. A bill renumbered this way must be reprinted for
+the guest; the conflict says so. An incoming KOT, bill or bill copy carries the
+number its order or bill has here.
+
+## 3. Day Close
+
+`POST /day-close`, `POST /day-close/:date/reopen` on the cloud while `TWO_WAY`:
+`422 CLOSE_ON_CAFE_PC`, "Close the day on the cafe PC. The website and the PC
+share the day, and only the PC closes it." Reads are unchanged.
+
+## 4. Sync
+
+| Route | Who | Answer |
+|---|---|---|
+| `GET /sync/status` | OWNER, MANAGER | `{ mode, node (BOX or CLOUD), peerUrl (box only), pushed { shippedSeq, newestSeq, waiting }, pulled { seq, at }, lastError, lastErrorAt, conflictsUnseen }` |
+| `GET /sync/conflicts?seen=true|false&page&limit` | OWNER, MANAGER | paged list, newest first: `{ id, coll, documentId, kind (EDITED_BOTH, SAME_SLOT, DELETED_HERE), title, detail, fields, keptFrom (BOX or CLOUD), detectedOn, detectedAt, seenAt, seenByName, link }` |
+| `POST /sync/conflicts/:conflictId/seen` | OWNER, MANAGER | body `{}`; `data` the conflict with `seenAt` and `seenBy` |
+| `POST /sync/conflicts/:conflictId/keep` | OWNER, MANAGER | 2026-10-22. body `{ version: "LOCAL" \| "INCOMING" \| "RESULT" }`: that version is written here with a new `updatedAt` (RESULT changes nothing), then the conflict is seen. Each conflict lists `versions: [{ key, from }]` |
+| `POST /sync/now` | OWNER, MANAGER | 2026-10-22. body `{}`. On the box a whole round (pull, then push) at once, or a push when one-way; on the cloud its changelog is brought up to date for the box's next pull. `data`: `{ did, failed, status, changes }` |
+| `GET /sync/changes` | OWNER, MANAGER | 2026-10-22. The last 100 changes the other side's sync made here, newest first: `{ id, coll, documentId, title, outcome, from, at, wasNew, canUndo, undoBlocked, undoneAt, link }`. Kept on this side only |
+| `POST /sync/changes/:changeId/undo` | OWNER, MANAGER | 2026-10-22. Puts this side's version from before that change back, with a new `updatedAt`, so the next sync takes it to the other side. Refused (422) for a record the other side made new, or one already undone |
+
+`GET /auth/me` gains `sync: { mode, server, conflictsUnseen }`: `server` is the
+answering server's `DEPLOYMENT_ROLE` (`CLOUD` is the website; the P62 connection
+bar and banner show only off it), and `conflictsUnseen` is for OWNER and MANAGER
+(null for other roles).
+
+# P64 Invoice themes, and what prints on a bill
+
+Spec 2026-10-25, `docs/prompts/P64-invoice-themes-and-print-fields.md`. Changes
+M3 section 16.1 (the invoice read), M2 12.x (order lines), M1 (menu items), M7
+(settings), M0 2.2 (`PATCH /restaurant`) and M20 P22 (logo slots). No figure
+moves: `utils/tax.js`, `computeBillTotals` and the invoice series are untouched.
+
+## 1. HSN and SAC codes
+
+`POST` and `PATCH /menu-items` take `hsnCode`: a string of 4 to 8 digits after
+trimming, or null (`""` is stored as null). Anything else is 400.
+
+`settings.invoice.defaultSacCode`, a string of 4 to 8 digits, default `"996331"`
+(restaurant service). It may be sent on its own: the mode, prefix and starting
+number rule (send all three together) is about those three only.
+
+When a line is added to an order, its `hsnCode` is frozen from the item's own
+code, else the restaurant's `defaultSacCode` at that moment. The bill line copies
+it. A line or bill line from before P64 has `hsnCode: null`; it is never filled
+in later, and prints blank. Changing an item's code changes only lines added
+afterwards.
+
+## 2. `settings.invoiceLayout` (OWNER, through `PATCH /settings`)
+
+```json
+{
+  "invoiceLayout": {
+    "theme": "CLASSIC",
+    "useBrandAccent": false,
+    "show": {
+      "time": true, "captain": true, "cashier": false, "covers": true, "table": true,
+      "orderType": true, "customerName": false, "customerMobileMasked": false,
+      "itemNote": false, "hsn": false, "paymentBreakdown": true, "onHoldOutstanding": false,
+      "amountInWords": false, "declaration": false, "signatureLine": false, "reviewQr": true,
+      "pan": true, "msme": true, "terms": true, "copyMarking": false
+    },
+    "thermalShow": {
+      "time": true, "cashier": true, "covers": false, "table": true, "orderType": true,
+      "customerName": true, "customerMobileMasked": true, "itemNote": false,
+      "paymentBreakdown": true, "onHoldOutstanding": false, "amountInWords": false, "reviewQr": true
+    }
+  }
+}
+```
+
+- `theme`: `CLASSIC`, `GST_DETAILED`, `MODERN`, `COMPACT`. Anything else is 400.
+- Every field has a default, so a restaurant written before P64 reads back the
+  whole group. The defaults print exactly what CLASSIC and the thermal bill
+  printed before P64.
+- `useBrandAccent: true` draws the accent the restaurant chose on Appearance
+  (M7 P20A). It is checked again with `utils/colour.js` `checkAccent` when it is
+  switched on; a colour that fails is 422 `BUSINESS_RULE_VIOLATED` with the
+  rule's sentence. No colour is stored in this group.
+- The mandatory core of a tax invoice (CGST Rule 46) is not a switch: the
+  supplier's name, address and GSTIN, TAX INVOICE, the invoice number and its
+  date, each line's value, each rate's taxable value, CGST and SGST, and the
+  bill total print on every theme with every switch off. The GSTIN still follows
+  `receipt.showGstin`, which is the restaurant's own declaration that it has one
+  to print; the date prints even when `show.time` is off, without the time.
+- `settings.receipt.showGstin`, `showFssai` and `showServerName` stay where
+  they are and are read by every theme and the thermal bill. `show.captain`
+  only adds a second choice for the full page: a captain prints there when both
+  are on.
+- Each changed field is one `SETTINGS_CHANGED` line, as every setting is.
+
+`settings.receipt.termsText`: up to 600 characters, `""` and null both clear it,
+the M7 rule for the receipt text fields.
+
+## 3. The restaurant's PAN and Udyam number
+
+`PATCH /restaurant` takes `panNumber` (`AAAAA9999A`, uppercased) and
+`msmeNumber` (an Udyam number, `UDYAM-GJ-01-0012345`, uppercased); null clears
+either. Both are returned with the restaurant.
+
+## 4. The signature image (changes M20 P22)
+
+A third slot, `SIGNATURE`, beside `LIGHT_GROUND` and `DARK_GROUND`, through the
+same three endpoints with every rule P22 settled: PNG, WebP or JPEG read from
+the file's own bytes, SVG refused, 200 KB, 128 to 1024 pixels a side, the bytes
+`select: false`, audited as `BRAND_LOGO_SET` and `BRAND_LOGO_REMOVED` with
+`slot: "SIGNATURE"`. `GET /auth/me` `appearance.logos` is unchanged and does not
+list it. It prints above the signature line.
+
+## 5. The invoice read gains (M3 16.1)
+
+```json
+{
+  "restaurant": { "…": "…", "panNumber": null, "msmeNumber": null, "termsText": null },
+  "lines": [ { "…": "…", "hsnCode": "996331", "notes": "Less spicy" } ],
+  "itemRows": [ { "…": "…", "hsnCode": "996331", "notes": ["Less spicy"] } ],
+  "billTotalInWords": "Rupees Five Hundred Ten Only",
+  "onHoldOutstandingInPaise": null,
+  "signature": null,
+  "layout": {
+    "theme": "CLASSIC", "accent": null,
+    "show": { "…": "…" }, "thermalShow": { "…": "…" }
+  }
+}
+```
+
+- `hsnCode` is the frozen code, or null. `itemRows` keep lines with different
+  codes apart.
+- `notes` is the order line's note, read from the order the bill belongs to;
+  an item row lists each line's note once.
+- `billTotalInWords` is written by `paiseToIndianWords` in `utils/money.js`,
+  the one place a number is spelled, in the Indian system (lakh, crore).
+- `onHoldOutstandingInPaise` is the account's outstanding now, from
+  `accountService.outstandingFor`, on an On Hold bill only; null otherwise.
+- `signature` is `{ hash, contentType }` when the slot is set, else null. The
+  client reads the bytes from `GET /restaurant/logo/SIGNATURE`.
+- `layout` is `settings.invoiceLayout` with `accent` resolved: the Appearance
+  accent when `useBrandAccent` is on, else null.
+
+`renderReceipt` (the receipt text endpoint, M3 15) is unchanged.
+
+## 6. The themes, on the client
+
+`client/src/features/printing/themes/` holds one file per theme, registered in
+`themes/index.js`, each `{ id, title, paper, styles, render(data, options) }`.
+`render` is a pure function of the invoice data: it queries nothing and
+computes no amount. `CLASSIC` is the full-page invoice as it printed before P64.
+
+| Theme | What it is |
+|---|---|
+| `CLASSIC` | The P25 full-page invoice |
+| `GST_DETAILED` | An HSN column, a rate summary (taxable value, CGST and SGST rate and amount per slab), the amount in words, the declaration and a signature line |
+| `MODERN` | CLASSIC with an accent band and lighter rules |
+| `COMPACT` | A5 first, tighter leading, the same content |
+
+Choosing a theme on the screen proposes its usual switches (GST_DETAILED turns
+on `hsn`, `amountInWords`, `declaration`, `signatureLine` and `copyMarking`); the
+owner may change any of them before saving.
+
+The copy marking (CGST Rule 48(2), a supply of services in duplicate) prints
+"ORIGINAL FOR RECIPIENT" by default and "DUPLICATE FOR SUPPLIER" when the
+supplier's copy is chosen at print time; it is on the full page only, never on
+the roll.
+
+The screen is `/settings/invoice-layout`, OWNER only, with three tabs:
+Invoice settings (the full-page theme and its switches), Print settings (the
+paper the preview is drawn on, and the copy), Thermal settings (`thermalShow`).
+Each previews a real bill without saving, and saves through `PATCH /settings`
+with a reason.
+
+## Error codes
+
+None new.
+
+# P65 The CA's month, sent by itself
+
+Spec 2026-10-25, `docs/prompts/P65-ca-reports-sharing.md`. R20 in
+`docs/REPORT-SPEC.md`, DB-SCHEMA section 61, GLOSSARY section 49. Read-only
+over frozen records: no figure is worked out again.
+
+## 1. `settings.reports.ca` (OWNER, through `PATCH /settings`)
+
+```json
+{ "reports": { "ca": { "enabled": true, "name": "Mehta & Co", "email": "ca@example.com", "whatsapp": "9876543210" } } }
+```
+
+- `enabled` defaults to false; `name`, `email` and `whatsapp` to null. `""`
+  clears a field. `name` is up to 80 characters, `email` an email address
+  (lowercased), `whatsapp` a 10-digit Indian mobile.
+- Switching `enabled` on without an email (sent now or stored) is 422
+  `BUSINESS_RULE_VIOLATED`, "Add the CA's email first: the pack goes by email."
+  The WhatsApp number is stored for a later prompt; nothing is sent to it.
+- The three contact fields are recorded without their values: their
+  `SETTINGS_CHANGED` line has `details: { field, valueRecorded: false }` and no
+  `previousValue` or `newValue`. They never reach `/auth/me`, a report or a log.
+
+## 2. R20 CA Pack, `GET /api/v1/reports/v2/ca-pack?month=2026-10&format=json|xlsx`
+
+OWNER only. One calendar month of business dates, through the report engine.
+
+- Every business date of the month must be closed, else 422 `DAY_NOT_CLOSED`
+  with `details.businessDates`, "Close the day first: … The CA pack covers whole
+  months of closed days."
+- Any failing ERROR check refuses it with 422 `CHECK_FAILED`, as R9.
+- On a read-only mirror, and on the cloud while `SYNC_MODE=TWO_WAY`, the copy
+  must hold the month's last change: the restaurant's `replicacursors` row has
+  no gap and its `lastCapturedAt` is at or after the latest `closedAt` of the
+  month's closes. Otherwise 422 `BUSINESS_RULE_VIOLATED`, "This copy has not
+  received the whole month yet. Figures are as of …".
+
+Sections, in order, `sheetPerSection` in the workbook: `cover`, `outward`
+(rate-wise, the platform's section 9(5) supplies on their own rows), `hsn`
+(by HSN or SAC code and rate; lines with no code as "Not recorded"), `documents`
+(R10's register, voided and missing numbers included), `money` (R5's totals
+by method, then On Hold, Unpaid, Collections), `onHold` (per account: opening,
+charged, collected, adjusted, closing), `cash` (expenses by category, bank
+deposits, cash to the owner), `checks`. No customer field appears anywhere.
+
+Checks: C1, C5.7, C5.8 (HSN or SAC codes add up to net sales), C6, C13, C3, C4.
+
+## 3. The monthly send
+
+A ticker started with the server, every hour, wherever the job loop runs
+(`mayRunWriterLoops`). For each restaurant with `reports.ca.enabled` and an
+email, from the 1st of a month (by business date) it acts on the previous
+month when that month has no `careportsends` row, or one that is `FAILED` or
+`REFUSED`. It claims the row first (insert, or `FAILED`/`REFUSED` to `SENDING`),
+so two machines or a restart never send one month twice; a `SENT` or `SENDING`
+month is left alone. Then:
+
+- a day open, a failing check, or a copy behind: `REFUSED` with the reason,
+  `openDates` and `failedChecks`; tried again on a later tick;
+- built: the workbook and, when Tally is connected with every ledger mapped,
+  the month's Tally XML from the export service, emailed to `reports.ca.email`;
+  `SENT` and `CA_PACK_SENT` audited;
+- Resend refused: `FAILED` with the error, tried again on the next tick.
+
+`emailService.sendEmail` takes an optional `attachments: [{ filename, content }]`
+(`content` base64), passed to Resend as it is.
+
+## 4. Endpoints (OWNER)
+
+| Route | Body or query | Answer |
+|---|---|---|
+| `GET /reports/ca/sends` | | `{ ca: { enabled, hasEmail }, sends: [last 12, newest period first: { period, status, refusedReason, openDates, failedChecks, sentAt, to, files, checks: { passed, failed }, trigger, attempts, lastError }] }` |
+| `POST /reports/ca/send` | `{ month: "2026-10" }` | Sends now (trigger `MANUAL`), even a month already `SENT`. 200 the send row; a month `SENDING` is 409 `DUPLICATE`; a refusal is 422 with its reason, and the row is `REFUSED` |
+| `GET /reports/ca/tally-xml?month=2026-10` | | The month's Tally XML file, built by the export service and recorded nowhere. 422 `INTEGRATION_NOT_ACTIVE` without Tally, `TALLY_MAPPING_INCOMPLETE` with a ledger missing |
+
+Audit `CA_PACK_SENT` (entity `REPORT`, label the period), OWNER only on the
+activity log, with `details: { period, trigger, files }`: never the address.
+
+The owner's dashboard shows the last month's send when it is `REFUSED` or
+`FAILED`, with its reason.
+
+## 5. What the pack does not carry
+
+Printed on its cover: no purchases (so no input GST, no GSTR-2B), every sale
+is B2C (accounts carry no GSTIN), no credit notes, no e-invoicing, and no guest
+personal data.
+
+## Error codes
+
+None new. `DAY_NOT_CLOSED` takes the sentence for its purpose.

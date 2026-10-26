@@ -41,9 +41,7 @@ const UNASSIGNED = 'Unassigned';
 export default function FloorViewPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { user, features } = useAuth();
-  // Counter Sale, for the till.
-  const counterSale = ['OWNER', 'MANAGER', 'CASHIER'].includes(user?.role) && features?.billing?.payFirstTakeaway !== false;
+  const { features } = useAuth();
   const floor = features?.floor ?? { sectionOrder: [], requireGuestCount: false };
   const [toast, setToast] = useState(null);
   const [section, setSection] = useState(ALL);
@@ -62,8 +60,8 @@ export default function FloorViewPage() {
   });
 
   const open = useMutation({
-    // P56. Only the guests here; their name and mobile are asked on the first Send.
-    mutationFn: ({ tableId, guestCount }) => createOrder({ orderType: 'DINE_IN', tableId, ...(guestCount ? { guestCount } : {}) }),
+    // P59. Nothing asked here: the guests, name and mobile are asked together on the first Send.
+    mutationFn: ({ tableId }) => createOrder({ orderType: 'DINE_IN', tableId }),
     onSuccess: (order) => {
       queryClient.invalidateQueries({ queryKey: ['tables'] });
       navigate(`/orders/${order.id}`);
@@ -139,9 +137,15 @@ export default function FloorViewPage() {
     .filter((table) => table.occupancy.state === 'BILL_PRINTED')
     .sort((a, b) => new Date(b.occupancy.openedAt) - new Date(a.occupancy.openedAt));
 
+  /**
+   * P59. A free table opens at once. Only a table held for a booking soon asks
+   * first, whether these are the booking's guests. A table opened by mistake
+   * closes from the order screen with Close table (P50).
+   */
   const tapTable = (table) => {
     if (table.occupancy.isOccupied) navigate(`/orders/${table.occupancy.orderId}`);
-    else setSeating(table);
+    else if (table.occupancy.upcomingReservation) setSeating(table);
+    else if (!open.isPending) open.mutate({ tableId: table.id });
   };
 
   return (
@@ -156,11 +160,6 @@ export default function FloorViewPage() {
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            {counterSale && (
-              <Link to="/orders/counter" className="type-button flex min-h-12 items-center rounded-lg bg-accent px-4 text-on-accent hover:brightness-110">
-                Counter sale
-              </Link>
-            )}
             <Link to="/orders/takeaway" className="type-button flex min-h-12 items-center rounded-lg border border-ink bg-surface px-4 hover:bg-sunken">
               Takeaway
             </Link>
@@ -179,7 +178,7 @@ export default function FloorViewPage() {
               {waiting.map((table) => (
                 <li key={table.id} className="flex-none">
                   <Link
-                    to={`/orders/${table.occupancy.orderId}`}
+                    to={`/bills/${table.occupancy.billId}`}
                     className="relative flex min-h-16 items-center gap-4 overflow-hidden rounded-[10px] border-[3px] border-bill bg-surface px-4 pb-3 pt-2 hover:bg-sunken"
                   >
                     <span className="type-tile-name">{table.name}</span>
@@ -256,10 +255,9 @@ export default function FloorViewPage() {
       {seating && (
         <SeatTablePanel
           table={seating}
-          isBusy={open.isPending}
-          allowSkip={!floor.requireGuestCount}
+          isBusy={open.isPending || seatBooking.isPending}
           onCancel={() => setSeating(null)}
-          onConfirm={(guestCount) => open.mutate({ tableId: seating.id, guestCount })}
+          onSeatOthers={() => open.mutate({ tableId: seating.id })}
           reservation={seating.occupancy.upcomingReservation}
           onSeatReservation={(reservation) => seatBooking.mutate({ reservation, table: seating })}
         />
@@ -403,10 +401,10 @@ function TableMenu({ table, onMove, small = false }) {
             <button
               type="button"
               role="menuitem"
-              onClick={() => navigate(`/orders/${table.occupancy.orderId}`)}
+              onClick={() => navigate(`/bills/${table.occupancy.billId}`)}
               className="type-body block min-h-12 w-full px-4 text-left hover:bg-sunken"
             >
-              Take payment
+              View bill
             </button>
           )}
         </div>

@@ -80,7 +80,8 @@ describe('itemRows on the bill', () => {
     const invoice = ok(await request('GET', `/api/v1/bills/${bill.id}/invoice`, { token: floor.tokens.CASHIER }), 'invoice');
     assert.deepEqual(read.itemRows, bill.itemRows);
     assert.deepEqual(
-      invoice.itemRows.map(({ orderLineIds, ...rest }) => ({ ...rest, orderLineIds: orderLineIds.map(String) })),
+      // P64, changed on purpose: the invoice's rows also carry each line's note.
+      invoice.itemRows.map(({ orderLineIds, notes: _notes, ...rest }) => ({ ...rest, orderLineIds: orderLineIds.map(String) })),
       read.itemRows,
     );
 

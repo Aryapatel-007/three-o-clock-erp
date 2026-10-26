@@ -1,7 +1,7 @@
 # Caffeza Build Plan
 
 Written for Cafezza, the first client, and kept as the history of P00 to P24.
-The live client is now Z Chaat: see `docs/archive/zchaat/PROFILE.md`.
+The live client is now Z Chaat: see `docs/clients/zchaat/PROFILE.md`.
 
 This file is the plan for taking the existing ERP live at Caffeza, our first paying client.
 It sits next to `docs/BUILD-PLAN.md`, it does not replace it.
@@ -126,6 +126,15 @@ Each prompt names its model at the top.
 | P54 | Constant backups | Phase 2 operations | P43 | Arya | Opus, high |
 | P55 | The owner's dashboard, beside the ERP | M19, M20 | P18, P44 | Rishi | Opus, high |
 | P56 | A note for every dish, the guest's details before the first KOT, and only whole voids in the void lists | M2, M3, M18, M19, M22 | P27, P36, P50 | Rishi | Opus, high |
+| P57 | The bill in one place: review, discount, then Save or Save & Print | M3, M2 | P29, P42, P48 | Rishi | Opus, high |
+| P58 | One kitchen ticket per Send, not per station | M18, M7 | P36, P48 | Arya | Opus, high |
+| P59 | A captain's bill prints once, and the guest count moves to the first Send | M3, M2 | P25, P56, P57 | Rishi | Opus, high |
+| P60 | Bill without KOT | M3, M2 | P57, P59 | Rishi | Opus, high |
+| P61 | A simple Day Close | M16 | P29, P44, P50, P59 | Rishi | Opus, high |
+| P62 | The cafe box, the cloud mirror and the network | Hosting, M0, M20 | P61 | Rishi | Opus, high |
+| P63 | Two-way sync: the cafe PC and the website both take bills | Hosting, M3, M16 | P62 | Rishi | Opus, high |
+| P64 | Invoice themes, and what prints on a bill | M3, M7, M20 | P57, P59, P60 | Rishi | Opus, high |
+| P65 | The CA's month, sent by itself | M19, M7 | P64 | Rishi | Opus, high |
 
 P04, P05 and P19 do not depend on the billing chain, so they can run in parallel with it.
 The owners follow the rule "one module, one owner". Change any of them, and record the change in the decision log.
@@ -180,6 +189,7 @@ M8 reads them all.
 | `PLATFORM_PAYOUT_RECORDED` | `PAYOUT` | M17, from P09 | Platform money arriving |
 | `BRAND_LOGO_SET` | `SETTINGS` | M20, from P22 | The restaurant's logo changed |
 | `BRAND_LOGO_REMOVED` | `SETTINGS` | M20, from P22 | The restaurant's logo was removed |
+| `CA_PACK_SENT` | `REPORT` | M19, from P65 | The month's figures left the restaurant for its CA |
 
 ---
 

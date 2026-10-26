@@ -10,7 +10,7 @@
  */
 import assert from 'node:assert/strict';
 
-import { DEFAULT_DENOMINATIONS, DEFAULT_EXPENSE_CATEGORIES } from '../models/Restaurant.js';
+import { DEFAULT_DENOMINATIONS, DEFAULT_EXPENSE_CATEGORIES, INVOICE_SHOW_DEFAULTS, THERMAL_SHOW_DEFAULTS } from '../models/Restaurant.js';
 import { after, before, beforeEach, describe, it } from 'node:test';
 
 import { AuditLog } from '../models/AuditLog.js';
@@ -51,19 +51,28 @@ const DEFAULTS = {
     showFssai: true,
     showServerName: false,
     reviewLinkUrl: null,
+    // P64.
+    termsText: null,
   },
   inventory: { lowStockAlertsEnabled: true },
   // P02.
   features: { inventory: true, attendance: true, online: false },
-  invoice: { mode: 'FINANCIAL_YEAR', prefix: null, startingNumber: null },
+  invoice: { mode: 'FINANCIAL_YEAR', prefix: null, startingNumber: null, defaultSacCode: '996331' },
+  // P64. Changed on purpose: the defaults print what CLASSIC and the thermal bill printed before.
+  invoiceLayout: {
+    theme: 'CLASSIC',
+    useBrandAccent: false,
+    show: { ...INVOICE_SHOW_DEFAULTS },
+    thermalShow: { ...THERMAL_SHOW_DEFAULTS },
+  },
   // P06.
   delivery: { platformCollectsGst: true },
   discounts: { cashierMayApplyPlatformDiscounts: false },
   // P29 added reviseUnpaidBills, printBeforePayment, revisePrintedBill, the kitchen group and the cash book fields.
-  billing: { captainsMayBill: true, captainsMayTakePayment: false, reviseUnpaidBills: true, printBeforePayment: true, payFirstTakeaway: true },
+  billing: { captainsMayBill: true, captainsMayTakePayment: false, reviseUnpaidBills: true, printBeforePayment: true },
   // P28.
   approvals: { lineCancel: true, paidIn: true, managerTasks: true, revisePrintedBill: true },
-  kitchen: { readyMeansServed: true, oneTicketPerOrder: true },
+  kitchen: { readyMeansServed: true, oneTicketPerOrder: true, splitTicketsByStation: true },
   // P51.
   assistant: { enabled: false, bookingsEnabled: true, greeting: null, handoffHours: null, dailyAiLimit: 500 },
   dayClose: { showCashDifferenceToManager: false },
@@ -77,7 +86,8 @@ const DEFAULTS = {
   payments: { requireTerminalForLinkedMethods: true, otherModes: ['Swiggy Dineout', 'Zomato Dineout', 'EazyDiner', 'Cheque', 'Bank transfer', 'Coupon'] },
   // P25 Part J.
   // P44 added dayEndEmails.
-  reports: { onHoldTallyCode: null, dayEndEmails: [] },
+  // P65, changed on purpose: the CA's details, off and empty.
+  reports: { onHoldTallyCode: null, dayEndEmails: [], ca: { enabled: false, name: null, email: null, whatsapp: null } },
   // P19.
   floor: { sectionOrder: [], longOpenMinutes: 90, requireGuestCount: false },
   // P20A.
