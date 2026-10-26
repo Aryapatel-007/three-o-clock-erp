@@ -416,7 +416,7 @@ describe("Three O'Clock's own files", () => {
     const { client } = await ownerClient();
     const setupSteps = await planSetup(client, config, { toConfirm });
     const tables = setupSteps.filter((step) => step.section === 'Tables');
-    assert.equal(tables.length, 18);
+    assert.equal(tables.length, 50);
     assert.ok(tables.every((step) => step.action === 'create'));
     const menuSteps = await planMenu(client, menu, { config });
     assert.equal(menuSteps.filter((step) => step.section === 'Items' && step.action === 'create').length, 139);
@@ -427,15 +427,19 @@ describe("Three O'Clock's own files", () => {
     assert.equal(menuSteps.find((step) => step.section === 'Categories' && step.name === 'Neapolitan Pizza').detail, 'station Kitchen');
   });
 
-  it('applied to a fresh restaurant: tables in two sections, Indoor then Outdoor, in file order', async () => {
+  it('applied to a fresh restaurant: tables in four sections, Indoor to Garden, in file order', async () => {
     const { client, restaurant } = await ownerClient();
     const { config, toConfirm } = validateSetupConfig({ tables: threeOClockConfig().tables });
     await applySetup(await planSetup(client, config, { toConfirm }));
     const tables = await Table.find({ restaurantId: restaurant._id, isActive: true }).sort({ displayOrder: 1 }).lean();
-    assert.equal(tables.length, 18);
-    assert.equal(tables.filter((table) => table.section === 'Indoor').length, 10);
-    assert.deepEqual([tables[0].name, tables[0].section], ['Table 1', 'Indoor']);
-    assert.deepEqual([tables[10].name, tables[10].section], ['Outdoor 1', 'Outdoor']);
+    assert.equal(tables.length, 50);
+    assert.deepEqual(
+      ['Indoor', 'Umbrella Side', 'Smoking Zone', 'Garden'].map((section) => tables.filter((table) => table.section === section).length),
+      [10, 6, 14, 20],
+    );
+    assert.deepEqual([tables[0].name, tables[0].section], ['T-1', 'Indoor']);
+    assert.deepEqual([tables[10].name, tables[10].section], ['T-11', 'Umbrella Side']);
+    assert.deepEqual([tables[49].name, tables[49].section], ['T-50', 'Garden']);
   });
 
   it('refuses a table name used in two sections, pointing at the second', () => {

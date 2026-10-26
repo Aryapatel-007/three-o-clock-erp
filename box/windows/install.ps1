@@ -50,9 +50,19 @@ function New-Secret([int]$bytes) {
   [System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($buffer)
   return [Convert]::ToBase64String($buffer)
 }
-function Winget-Install($id, $label) {
+function Winget-Install($id, $label, $note) {
   Write-Host "Installing $label..."
-  winget install --id $id --exact --silent --accept-package-agreements --accept-source-agreements | Out-Host
+  if ($note) { Write-Host $note -ForegroundColor Yellow }
+  # 2026-10-26. Straight to this window, never through a pipe: winget draws its
+  # download progress bar only when it writes to the console itself. Piped, a
+  # large download (MongoDB) sat on "Downloading" with no sign it was moving.
+  $wingetArgs = @('install', '--id', $id, '--exact', '--silent', '--accept-package-agreements', '--accept-source-agreements')
+  try {
+    $process = Start-Process -FilePath 'winget' -ArgumentList $wingetArgs -NoNewWindow -Wait -PassThru -ErrorAction Stop
+    if ($process.ExitCode -ne 0) { Write-Host "winget finished with code $($process.ExitCode) for $label." -ForegroundColor Yellow }
+  } catch {
+    & winget @wingetArgs
+  }
   Refresh-Path
 }
 
@@ -83,7 +93,7 @@ if (-not (Get-Command node -ErrorAction SilentlyContinue)) { Fail 'Node.js did n
 Write-Host "Node.js $(node -v)"
 
 $mongoService = Get-Service -Name 'MongoDB' -ErrorAction SilentlyContinue
-if (-not $mongoService) { Winget-Install 'MongoDB.Server' 'MongoDB'; $mongoService = Get-Service -Name 'MongoDB' -ErrorAction SilentlyContinue }
+if (-not $mongoService) { Winget-Install 'MongoDB.Server' 'MongoDB' 'About 700 MB to download: this can take 5 to 30 minutes. Watch the progress bar; do not close this window.'; $mongoService = Get-Service -Name 'MongoDB' -ErrorAction SilentlyContinue }
 if (-not $mongoService) { Fail 'MongoDB did not install as a service. Install MongoDB Community Server (MSI, "Install as a Service"), then run this again.' }
 if (-not (Get-Command mongodump -ErrorAction SilentlyContinue)) { Winget-Install 'MongoDB.DatabaseTools' 'MongoDB tools (for the hourly snapshot)' }
 $toolsBin = Get-ChildItem 'C:\Program Files\MongoDB\Tools\*\bin' -ErrorAction SilentlyContinue | Sort-Object Name -Descending | Select-Object -First 1

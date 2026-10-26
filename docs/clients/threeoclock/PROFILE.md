@@ -79,17 +79,18 @@ links Swiggy Dineout, and the cafe is listed on Zomato and District.
 
 ## 6. Floor
 
-Not seen yet. `setup/threeoclock.json` starts with a guess from the listing
-photos, which show an indoor hall of four-seat tables and an outdoor terrace:
+From the cafe's own POS, 26 October 2026 (Rishi's screenshot of its areas):
 
 | Section | Tables | Seats |
 |---|---|---|
-| Indoor | Table 1 to Table 10 | 4 |
-| Outdoor | Outdoor 1 to Outdoor 8 | 4 |
+| Indoor ("In door" there) | T-1 to T-10 | 4 |
+| Umbrella Side ("UMBRELA SIDE") | T-11 to T-16 | 4 |
+| Smoking Zone ("SMOKING ZONE") | T-17 to T-30 | 4 |
+| Garden | T-31 to T-50 | 4 |
 
-`TO CONFIRM`: how many tables each side really has, their names, and seats.
-Change the file and run the setup again; a table never used can be deleted in
-Table setup, and each is placed on the plan in More, Table setup, Arrange tables.
+Their "Home Delivery" area has no tables; here delivery is its own order type.
+`TO CONFIRM`: seats per table (4 is a guess). Each table is placed on the
+plan in More, Table setup, Arrange tables.
 
 ## 7. Menu
 
