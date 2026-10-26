@@ -109,7 +109,7 @@ Environment variables for staging and production:
 | `INTEGRATION_SECRETS_KEY` | P25. `openssl rand -base64 32`. Different in every environment. **Required**: the server refuses to start without it. Encrypts every partner credential (Pine Labs, Swiggy, Zomato). Losing this key makes every saved partner credential unreadable, and they must be entered again. |
 | `PAYMENT_SECRETS_KEY` | P24. `openssl rand -base64 32`. Different in every environment. Encrypts each restaurant's Razorpay secrets. Optional: without it, connecting a gateway is refused. Losing it means every restaurant connects Razorpay again. |
 | `RESEND_API_KEY` | P44. The Resend API key, for the day-end email. Optional: without it nothing is emailed and the Day End page says so. A secret: set it in Render's dashboard, never in a file in git. |
-| `DAY_END_EMAIL_FROM` | P44. Who the day-end email is from. Default `Restaurant ERP <onboarding@resend.dev>`, which delivers only to the Resend account's own address; once a domain is verified in Resend, an address at it, e.g. `Z Chaat <reports@zchaat.in>`. |
+| `DAY_END_EMAIL_FROM` | P44. Who the day-end email is from. Default `Dakaar <onboarding@resend.dev>`, which delivers only to the Resend account's own address; once a domain is verified in Resend, an address at it, e.g. `Z Chaat <reports@zchaat.in>`. |
 | `LOGIN_RATE_LIMIT_WINDOW_MINUTES`, `LOGIN_RATE_LIMIT_MAX_ATTEMPTS` | As in `.env.example` |
 | `DISPLAY_TIMEZONE` | `Asia/Kolkata` |
 | `TRUST_PROXY` | Added by P01. Set to what the host's documentation says for its proxy. |
@@ -924,7 +924,7 @@ Vercel rebuilds the screens from the same push. This repository has merged that
 3. A secret: `openssl rand -base64 48`.
 4. Render, Environment: add `SYNC_MODE=TWO_WAY` and `REPLICATION_SECRET`, Save,
    deploy, wait for Live. It takes a changelog baseline of every document once.
-5. The PC's `C:\CafePOS\.env`: the PC rows of the table above. Restart it.
+5. The PC's `C:\Dakaar\.env`: the PC rows of the table above. Restart it.
 6. The owner on the PC: **Sync** says "In step" within two minutes. From now on
    bill on the PC.
 

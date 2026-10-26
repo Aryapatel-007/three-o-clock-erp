@@ -12,11 +12,11 @@
 #
 # P63: this test service is also the website half of two-way sync. SYNC_MODE is
 # TWO_WAY; REPLICATION_SECRET is asked for, and the same value goes in the cafe
-# PC's .env with SYNC_MODE=TWO_WAY and MIRROR_URL=https://zchaat-pos-test.onrender.com.
+# PC's .env with SYNC_MODE=TWO_WAY and MIRROR_URL=https://three-o-clock-erp-test.onrender.com.
 # docs/DEPLOYMENT.md section 19.
 services:
   - type: web
-    name: zchaat-pos-test
+    name: three-o-clock-erp-test
     runtime: docker
     plan: free
     region: singapore
@@ -30,7 +30,7 @@ services:
         value: production
       # The screens are served by this same service, so the app's own address.
       - key: CLIENT_ORIGIN
-        value: https://zchaat-pos-test.onrender.com
+        value: https://three-o-clock-erp-test.onrender.com
       # Only Render's proxy in front: no Vercel here.
       - key: TRUST_PROXY
         value: '1'

@@ -17,7 +17,7 @@
 #
 # The address comes from the repository variable KEEP_AWAKE_URL (Settings,
 # Secrets and variables, Actions, Variables), for example
-# https://zchaat-pos-api.onrender.com/api/v1/wake. No secret is needed: the
+# https://three-o-clock-erp-api.onrender.com/api/v1/wake. No secret is needed: the
 # address is public anyway.
 
 name: Keep the server awake

@@ -1,7 +1,7 @@
-# Cafe POS: keeps the till open on the cafe PC. 2026-10-22, at Rishi's word: a
+# Dakaar: keeps the till open on the cafe PC. 2026-10-22, at Rishi's word: a
 # captain's one tap prints the bill, with nobody at the counter.
 #
-# Run hidden (print-agent.vbs) by the "CafePOS Printer" task when anyone signs in to
+# Run hidden (print-agent.vbs) by the "Dakaar Printer" task when anyone signs in to
 # Windows, and again every minute. If the till is not open and the server answers,
 # it opens the till (start-till.ps1) with --kiosk-printing. The till prints every
 # captain's bill on this PC's default printer (the Rugtek) with no dialog. It may sit

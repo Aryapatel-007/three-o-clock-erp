@@ -1,4 +1,4 @@
-' Cafe POS print window. Runs print-agent.ps1 with no window, for the "CafePOS Printer" task.
+' Dakaar print window. Runs print-agent.ps1 with no window, for the "Dakaar Printer" task.
 Dim shell, folder
 Set shell = CreateObject("WScript.Shell")
 folder = CreateObject("Scripting.FileSystemObject").GetParentFolderName(WScript.ScriptFullName)

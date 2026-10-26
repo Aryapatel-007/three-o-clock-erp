@@ -6,7 +6,7 @@
 # the secrets marked generateValue; it asks for MONGO_URI, which is never in git.
 services:
   - type: web
-    name: zchaat-pos-api
+    name: three-o-clock-erp-api
     runtime: docker
     plan: free
     region: singapore
@@ -21,7 +21,7 @@ services:
       # The screens' address on Vercel. Vercel forwards /api here, so to the
       # browser the app and the API are one address (client/vercel.json).
       - key: CLIENT_ORIGIN
-        value: https://zchaat-pos.vercel.app
+        value: https://three-o-clock-erp.vercel.app
       # Vercel's edge, then Render's proxy: two in front of the server.
       - key: TRUST_PROXY
         value: '2'

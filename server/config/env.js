@@ -272,7 +272,7 @@ const envSchema = z
      * account's own address.
      */
     RESEND_API_KEY: z.preprocess((value) => (value === undefined || value === '' ? null : value), z.string().nullable()),
-    DAY_END_EMAIL_FROM: optionalVar('DAY_END_EMAIL_FROM', 'Restaurant ERP <onboarding@resend.dev>'),
+    DAY_END_EMAIL_FROM: optionalVar('DAY_END_EMAIL_FROM', 'Dakaar <onboarding@resend.dev>'),
     RESEND_API_BASE: optionalVar('RESEND_API_BASE', 'https://api.resend.com').refine(
       whenPresent((value) => /^https?:[/][/][^/]+$/.test(value)),
       'RESEND_API_BASE must be a bare origin with no trailing slash.',

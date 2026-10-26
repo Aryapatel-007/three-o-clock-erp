@@ -1,7 +1,7 @@
 @echo off
-rem Cafe POS: set up printing once, for the print window (default) or the till.
-rem   printer-setup.cmd           the "Cafe POS printer" window, which prints captains' bills
-rem   printer-setup.cmd Till      the "Cafe POS - Till" window
+rem Dakaar: set up printing once, for the print window (default) or the till.
+rem   printer-setup.cmd           the "Dakaar printer" window, which prints captains' bills
+rem   printer-setup.cmd Till      the "Dakaar - Till" window
 rem box\windows\printer-setup.ps1 says why.
 set WINDOW=Printer
 if /i "%~1"=="Till" set WINDOW=Till

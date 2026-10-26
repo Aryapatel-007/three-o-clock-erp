@@ -1,15 +1,15 @@
 /**
- * Cafe POS updater for the cafe's Windows PC. P62, docs/WINDOWS-INSTALL.md section 6.
+ * Dakaar updater for the cafe's Windows PC. P62, docs/WINDOWS-INSTALL.md section 6.
  *
  *   node box\windows\update.mjs check      is there a newer version? changes nothing
- *   node box\windows\update.mjs run        what the "CafePOS Update" task runs every
+ *   node box\windows\update.mjs run        what the "Dakaar Update" task runs every
  *                                          15 minutes: acts only inside UPDATE_WINDOW
  *                                          and only while UPDATE_AUTO is on
  *   node box\windows\update.mjs now        apply the newest version now (outside service)
  *   node box\windows\update.mjs rollback   put the version before the last update back
  *
  * A version is a GitHub release made by `bash box/windows/make-package.sh --publish`:
- * CafePOS.zip and manifest.json, the manifest signed with the release key. This PC
+ * Dakaar.zip and manifest.json, the manifest signed with the release key. This PC
  * trusts only a manifest signed by the key in box\windows\release-public-key.pem of
  * the version it is running, so a GitHub account alone cannot push code onto it.
  *
@@ -33,7 +33,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 /** What stays where it is when one version replaces another. */
 export const KEEP = new Set(['data', '.env']);
-export const SERVER_TASK = 'CafePOS Server';
+export const SERVER_TASK = 'Dakaar Server';
 const DEFAULT_WINDOW = '04:00-05:00';
 const HEALTH_TIMEOUT_MS = 120_000;
 const LOCK_STALE_MS = 3 * 60 * 60 * 1000;
@@ -151,7 +151,7 @@ function githubHeaders(token, accept) {
 
 /** The newest release's manifest and zip. A private repository needs a read-only token. */
 export async function findLatestRelease({ repo, token, fetchImpl = fetch }) {
-  if (!/^[\w.-]+\/[\w.-]+$/.test(repo || '')) throw new Error('UPDATE_REPO must be owner/name, for example riship-17/Cafezza-Offline.');
+  if (!/^[\w.-]+\/[\w.-]+$/.test(repo || '')) throw new Error('UPDATE_REPO must be owner/name, for example Aryapatel-007/three-o-clock-erp.');
   const response = await fetchImpl(`https://api.github.com/repos/${repo}/releases/latest`, {
     headers: githubHeaders(token, 'application/vnd.github+json'),
     signal: AbortSignal.timeout(30_000),
@@ -493,12 +493,12 @@ export async function updateCommand({ command, root, now = new Date(), fetchImpl
     await fs.rm(staging, { recursive: true, force: true });
     await fs.mkdir(staging, { recursive: true });
     await steps.extract(zip, staging);
-    const newRoot = path.join(staging, 'CafePOS');
+    const newRoot = path.join(staging, 'Dakaar');
     const unpacked = await readInstalled(newRoot);
     if (unpacked.commit !== payload.commit
       || !(await exists(path.join(newRoot, 'server', 'server.js')))
       || !(await exists(path.join(newRoot, 'client', 'dist', 'index.html')))) {
-      throw new Error('The package is not a complete Cafe POS of the signed version. Not installing it.');
+      throw new Error('The package is not a complete Dakaar of the signed version. Not installing it.');
     }
 
     const result = await applyVersion({ root, newRoot, release: payload.commit, oldRelease: installed.commit, steps, log });

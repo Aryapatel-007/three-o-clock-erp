@@ -1,4 +1,4 @@
-' Cafe POS desktop icon. Runs open.ps1 with no window. P62.
+' Dakaar desktop icon. Runs open.ps1 with no window. P62.
 Dim shell, folder, page
 Set shell = CreateObject("WScript.Shell")
 folder = CreateObject("Scripting.FileSystemObject").GetParentFolderName(WScript.ScriptFullName)

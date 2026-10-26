@@ -120,7 +120,7 @@ export async function readBundle({ sourceDb, source, withStaff = false }) {
 }
 
 export async function writeBundle({ targetDb, bundle, targetPhone, apply, log = console.log }) {
-  if (bundle?.kind !== 'cafe-pos-setup') throw new Error('That file is not a Cafe POS setup export.');
+  if (bundle?.kind !== 'cafe-pos-setup') throw new Error('That file is not a Dakaar setup export.');
   const owner = await targetDb.collection('users').findOne({ phone: targetPhone, role: 'OWNER' });
   if (!owner) throw new Error(`No owner with phone ${targetPhone} in this database.`);
   const to = { restaurantId: owner.restaurantId, branchId: owner.branchId, ownerId: owner._id };

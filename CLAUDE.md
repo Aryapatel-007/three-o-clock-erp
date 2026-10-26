@@ -1,8 +1,9 @@
-# Restaurant ERP
+# Dakaar
 
 MERN stack. REST API. Multi-tenant SaaS for restaurants in Ahmedabad.
 Two developers: Arya and Rishi. One person owns one module fully.
-The live client is Z Chaat, an Indian street food restaurant in Gandhinagar. Its setup is in `docs/clients/zchaat/PROFILE.md`.
+The live client is Three O'Clock Cafe, a Vietnamese coffee cafe on PDPU Road, Gandhinagar. Its setup is in `docs/clients/threeoclock/PROFILE.md`, `setup/threeoclock.json` and `setup/threeoclock-menu.csv`.
+This repository was started again on 26 October 2026 from Z Chaat's code (riship-17/Cafezza-Offline, with the live website merged in); Z Chaat's own client files are still in `docs/clients/zchaat/` and `setup/zchaat*`. Never deploy to or sync with Z Chaat's servers from here.
 The first client, Cafezza, is archived in `docs/archive/caffeza/`.
 
 ## Loaded every session
@@ -23,7 +24,7 @@ These are long. Read the section your task touches, not the whole file.
 | `docs/REPORT-SPEC.md` | Before any report work |
 | `docs/RECONCILIATION-RULES.md` | Before any report, billing, payment or Day Close work |
 | `docs/TEST-DATA.md` | Before writing any report or money test |
-| `docs/clients/zchaat/PROFILE.md` | Before building anything for the live client, Z Chaat |
+| `docs/clients/threeoclock/PROFILE.md` | Before building anything for the live client, Three O'Clock |
 | `docs/DESIGN-SYSTEM.md` | Before any screen work |
 | `docs/BUILD-PLAN.md` | Section 13 before calling a module done. Sections 11 and 12 for security and common mistakes. |
 | `docs/DEPLOYMENT.md` | Before touching startup, environment variables or deployment |
@@ -62,7 +63,7 @@ The golden day in `docs/TEST-DATA.md` must still produce every expected number a
 
 ## Rules for a live restaurant
 
-The server runs in the cloud, next to a separate Atlas cluster (`DEPLOYMENT_ROLE=CLOUD`, the default). In this repository (Cafezza-Offline) it can also run on a box inside the cafe, the only writer, with Atlas as a read-only mirror (P62, `docs/REPLICATION.md`). Anything new must work in all three roles; anything that writes must respect `writerGate` and the writer guard.
+The server runs in the cloud, next to a separate Atlas cluster (`DEPLOYMENT_ROLE=CLOUD`, the default). In this repository it can also run on a box inside the cafe, the only writer, with Atlas as a read-only mirror (P62, `docs/REPLICATION.md`). Anything new must work in all three roles; anything that writes must respect `writerGate` and the writer guard.
 Every new model is classified in `server/config/replication.js`, or the tripwire test fails.
 Printing happens from the browser on a device in the restaurant. The server never talks to a printer.
 Never create a bill in production to test something. Every production bill uses a real GST invoice number.

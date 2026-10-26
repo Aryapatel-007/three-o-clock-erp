@@ -12,7 +12,7 @@
  */
 
 /** The product's own name, for a device that has never seen a restaurant. */
-export const PRODUCT_NAME = 'Restaurant ERP';
+export const PRODUCT_NAME = 'Dakaar';
 
 export const EMPTY_BRAND = Object.freeze({
   wordmark: null,

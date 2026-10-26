@@ -1,7 +1,9 @@
-# Restaurant ERP
+# Dakaar
 
 
-## Cafezza-Offline: the box in the cafe (P62)
+## Three O'Clock: the website and the cafe PC in one repository (P62, P63)
+
+One codebase: the website (Render and Vercel, `DEPLOYMENT_ROLE=CLOUD`) and the cafe PC over WiFi (`DEPLOYMENT_ROLE=BOX`), with two-way sync between them. Started on 2026-10-26 from Z Chaat's code; the client's menu and details are in `setup/threeoclock*` and `docs/clients/threeoclock/`.
 
 This repository is the local-first build: the same product, able to run on a
 small server **inside the cafe** so billing, KOTs and printing never wait on
@@ -9,7 +11,7 @@ the internet, with Atlas as a read-only cloud mirror, backup, and the intake
 for online orders and partner webhooks.
 
 - How it works: [`docs/REPLICATION.md`](docs/REPLICATION.md)
-- **Windows cafe PC:** `bash box/windows/make-package.sh` makes `release/CafePOS.zip`; on the PC, extract to `C:\CafePOS` and double-click **Install Cafe POS**. [`docs/WINDOWS-INSTALL.md`](docs/WINDOWS-INSTALL.md)
+- **Windows cafe PC:** `bash box/windows/make-package.sh` makes `release/Dakaar.zip`; on the PC, extract to `C:\Dakaar` and double-click **Install Dakaar**. [`docs/WINDOWS-INSTALL.md`](docs/WINDOWS-INSTALL.md)
 - Ubuntu mini PC: `sudo LAN_IP=192.168.1.10 bash box/install-ubuntu.sh`, then [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) sections 17 and 18
 - **Staff: connecting a tablet, which WiFi, which link:** [`docs/STAFF-SETUP.md`](docs/STAFF-SETUP.md), or open `/connect` on the system
 - When something is wrong: [`docs/RUNBOOK.md`](docs/RUNBOOK.md)

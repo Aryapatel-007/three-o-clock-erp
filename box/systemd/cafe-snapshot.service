@@ -2,7 +2,7 @@
 # P62 section 4.2. Run by cafe-snapshot.timer, not by the server, so a server
 # that is down still gets its snapshot.
 [Unit]
-Description=Cafe POS local snapshot (mongodump --oplog)
+Description=Dakaar local snapshot (mongodump --oplog)
 After=mongod.service
 Requires=mongod.service
 

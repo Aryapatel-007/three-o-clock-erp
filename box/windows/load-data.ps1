@@ -1,7 +1,7 @@
-# Cafe POS: load an exact copy of the cloud's data onto this PC. P62, docs/WINDOWS-INSTALL.md section 5b.
+# Dakaar: load an exact copy of the cloud's data onto this PC. P62, docs/WINDOWS-INSTALL.md section 5b.
 #
-# Run by double-clicking "Load cafe data.bat" in C:\CafePOS, after Install Cafe POS.
-# The copy is a cafe-data-*.archive.gz made by box/export-cloud.sh, put in C:\CafePOS.
+# Run by double-clicking "Load cafe data.bat" in C:\Dakaar, after Install Dakaar.
+# The copy is a cafe-data-*.archive.gz made by box/export-cloud.sh, put in C:\Dakaar.
 #
 # It replaces everything in this PC's database with the copy: every order, bill,
 # guest, closed day, setting and login from the cloud, with their own ids, so the
@@ -19,7 +19,7 @@ trap {
 $Root = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 $EnvFile = Join-Path $Root '.env'
 $SnapDir = Join-Path $Root 'data\snapshots'
-$TaskName = 'CafePOS Server'
+$TaskName = 'Dakaar Server'
 
 function Fail($text) {
   Write-Host ''
@@ -42,9 +42,9 @@ $principal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.
 if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
   Fail 'Run this as Administrator: double-click "Load cafe data.bat", and say Yes when Windows asks.'
 }
-if (-not (Test-Path $EnvFile)) { Fail 'Cafe POS is not installed here yet. Double-click "Install Cafe POS" first.' }
+if (-not (Test-Path $EnvFile)) { Fail 'Dakaar is not installed here yet. Double-click "Install Dakaar" first.' }
 Refresh-Path
-if (-not (Get-Command mongorestore -ErrorAction SilentlyContinue)) { Fail 'mongorestore is missing. Run "Install Cafe POS" again: it installs the MongoDB tools.' }
+if (-not (Get-Command mongorestore -ErrorAction SilentlyContinue)) { Fail 'mongorestore is missing. Run "Install Dakaar" again: it installs the MongoDB tools.' }
 
 $archive = Get-ChildItem -Path $Root -Filter '*.archive.gz' -File | Sort-Object LastWriteTime -Descending | Select-Object -First 1
 if (-not $archive) { Fail "No copy found. Put the cafe-data-....archive.gz file in $Root, then run this again." }
@@ -90,7 +90,7 @@ Write-Host '== Loading the copy'
 Push-Location $Root
 try {
   node (Join-Path $PSScriptRoot 'drop-local-database.mjs') $mongoUri
-  if ($LASTEXITCODE -ne 0) { Fail 'Could not empty the database. Nothing else was changed; double-click "Install Cafe POS" to start the server again.' }
+  if ($LASTEXITCODE -ne 0) { Fail 'Could not empty the database. Nothing else was changed; double-click "Install Dakaar" to start the server again.' }
   $restoreLog = Invoke-Tool { mongorestore "--uri=$serverUri" "--nsInclude=$dbName.*" --gzip "--archive=$($archive.FullName)" }
   $restoreExit = $LASTEXITCODE
   $summary = ($restoreLog | Select-String -Pattern 'document\(s\) restored' | Select-Object -Last 1)
@@ -104,7 +104,7 @@ try {
   }
   Write-Host (("$summary" -split "\t")[-1])
   npm run db:indexes | Out-Host
-  if ($LASTEXITCODE -ne 0) { Fail 'Building the database indexes failed. Double-click "Install Cafe POS" to repair, then run this again.' }
+  if ($LASTEXITCODE -ne 0) { Fail 'Building the database indexes failed. Double-click "Install Dakaar" to repair, then run this again.' }
 } finally { Pop-Location }
 
 Write-Host '== Starting the server'

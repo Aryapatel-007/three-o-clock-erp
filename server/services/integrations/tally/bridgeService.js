@@ -213,7 +213,7 @@ export async function pairBridge({ code, machineName = null }) {
   // A first PING, so the owner sees the open companies at once.
   await enqueueJob(actor, { connectionId: claimed.connectionId, type: BRIDGE_JOBS.PING, forBridge: true, maxAttempts: 1 });
   const restaurant = await Restaurant.findById(found.restaurantId).select('name').lean();
-  return { token, bridgeId: String(claimed._id), serverName: restaurant?.name ?? 'Restaurant ERP' };
+  return { token, bridgeId: String(claimed._id), serverName: restaurant?.name ?? 'Dakaar' };
 }
 
 /**

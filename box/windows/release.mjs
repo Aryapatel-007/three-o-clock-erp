@@ -3,10 +3,10 @@
  *
  *   node box/windows/release.mjs keygen
  *       Makes the release key once. The private half goes to
- *       ~/.cafepos/release-signing-key.pem (never the repository); the public half
+ *       ~/.dakaar/three-o-clock-release-signing-key.pem (never the repository); the public half
  *       to box/windows/release-public-key.pem, which is committed and shipped.
  *
- *   node box/windows/release.mjs sign <CafePOS.zip> <manifest.json> --commit <sha> --built-at <iso> [--manual "<reason>"]
+ *   node box/windows/release.mjs sign <Dakaar.zip> <manifest.json> --commit <sha> --built-at <iso> [--manual "<reason>"]
  *       Writes the signed manifest make-package.sh --publish uploads beside the zip.
  *       --manual marks a version the PCs must not install by themselves.
  *
@@ -22,7 +22,7 @@ import { sha256File } from './update.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 export const PUBLIC_KEY_FILE = path.join(HERE, 'release-public-key.pem');
-export const privateKeyFile = () => process.env.CAFEPOS_RELEASE_KEY || path.join(os.homedir(), '.cafepos', 'release-signing-key.pem');
+export const privateKeyFile = () => process.env.CAFEPOS_RELEASE_KEY || path.join(os.homedir(), '.dakaar', 'three-o-clock-release-signing-key.pem');
 
 /** The signed text is kept as a string, so the PC verifies exactly what was signed. */
 export function signManifest(payload, privateKeyPem) {
