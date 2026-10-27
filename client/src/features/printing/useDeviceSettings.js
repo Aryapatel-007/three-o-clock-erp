@@ -35,13 +35,20 @@ export const THEMES = Object.freeze(['AUTO', 'DAY', 'NIGHT']);
 export const DENSITIES = Object.freeze(['COMFORTABLE', 'COMPACT']);
 export const TEXT_SIZES = Object.freeze([100, 115, 130]);
 
+/** Served over https: the website, not the cafe PC (plain http on the cafe WiFi). */
+function websitePage() {
+  return typeof window !== 'undefined' && window.location?.protocol === 'https:';
+}
+
 const DEFAULTS = Object.freeze({
   // P25. THERMAL_80, THERMAL_58, A4 or A5. Replaced P05's `paperMm`, which a
   // device that saved one is moved from on its next load.
   printer: DEFAULT_PRINTER,
   // 2026-10-09. BILL or ROLL: how long a thermal page is. printers.js says why.
-  // 2026-10-22, offline only: every device starts on what prints with no gap above on the Rugtek (CAFE_PC_PAPER).
-  paperLength: 'ROLL',
+  // 2026-10-22: on the cafe PC (plain http) every device starts on what prints with no gap above on the
+  // Rugtek (CAFE_PC_PAPER). 2026-10-27: on the website (https) a page exactly the bill's size, which any
+  // printer and Save as PDF print as the bill; the roll left it in the corner of a whole sheet there.
+  paperLength: websitePage() ? 'BILL' : 'ROLL',
   // 2026-10-09. SMALL, NORMAL or LARGE: the thermal bill's text, from invoiceHtml.js.
   billTextSize: DEFAULT_BILL_TEXT_SIZE,
   // 2026-10-09. NONE, SMALL or MORE: space kept clear at each side of a roll, from printers.js.
@@ -82,7 +89,7 @@ const DEFAULTS = Object.freeze({
   // 2026-10-21. The kitchen screen's tiles: BIG, or SMALL in a rush so more tickets fit.
   kitchenTiles: 'BIG',
   // 2026-10-27. A device made after the roll setup below needs none: it starts on that paper.
-  rollSetup: 1,
+  rollSetup: 2,
 });
 
 export const BILL_PRINT_PLACES = Object.freeze(['AUTO', 'HERE', 'COUNTER']);
@@ -215,10 +222,12 @@ function markCafeTill() {
  */
 const ROLL_SETUP = DEFAULTS.rollSetup;
 
+// 2: on the website the page is the bill's own size (paperLength BILL), the width and edge as Z Chaat's.
 function applyRollSetup() {
   const stored = readStored();
   if (!stored || (stored.rollSetup ?? 0) >= ROLL_SETUP) return;
-  write({ ...stored, ...CAFE_PC_PAPER, billTextSize: 'NORMAL', rollSetup: ROLL_SETUP });
+  const paper = websitePage() ? { ...CAFE_PC_PAPER, paperLength: 'BILL' } : CAFE_PC_PAPER;
+  write({ ...stored, ...paper, billTextSize: 'NORMAL', rollSetup: ROLL_SETUP });
 }
 
 if (typeof window !== 'undefined' && window.location) {

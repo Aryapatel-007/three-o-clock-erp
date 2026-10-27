@@ -59,8 +59,11 @@ export const THERMAL_BILL_STYLES = `
   .tb .store { font-size: 1.1em; }
   .tb .big { font-size: 1.3em; }
   .tb hr { border: 0; border-top: 1px solid black; margin: 1.2mm 0; }
-  .tb .pair { display: flex; justify-content: space-between; gap: 2mm; }
-  .tb .pair span:last-child { white-space: nowrap; text-align: right; }
+  .tb .pair { display: flex; flex-wrap: wrap; justify-content: space-between; column-gap: 2mm; }
+  /* 2026-10-27. When both sides do not fit, the right one drops to its own line, so a
+     cashier's name is never squeezed into a column beside a long bill number. */
+  .tb .pair span:first-child { flex: 1 1 auto; }
+  .tb .pair span:last-child { white-space: nowrap; text-align: right; margin-left: auto; }
   .tb table { width: 100%; border-collapse: collapse; font-size: inherit; }
   .tb th, .tb td { padding: 0.4mm 0; vertical-align: top; font-weight: 700; font-size: inherit; }
   .tb .q, .tb .p, .tb .a { padding-left: 1mm; }

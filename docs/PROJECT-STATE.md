@@ -647,6 +647,10 @@ Things not yet decided. Move them to the decision log once settled.
 
 Newest entry at the top. Keep the last ten or so, delete older ones.
 
+### 2026-10-27 Rishi with Claude Code, the website's bill is a page the bill's size
+
+Rishi's print from the website went to Save as PDF and came out in the corner of a whole sheet: "the printer's roll" (paperLength ROLL) gives Chrome no page size, so with no thermal printer chosen it uses the default sheet. On the website (https) every device now prints a page exactly the bill's size (BILL, 72 mm, 4 mm each side; `rollSetup` 2 moves devices once); the cafe PC (http) keeps the roll, which prints best on Z Chaat's Rugtek. If a real printer leaves blank paper above the bill, This device, Paper length, "The printer's roll". The thermal bill's two-sided rows wrap (`.tb .pair`), so the right side drops to its own line instead of squeezing a cashier's name into three lines beside a long bill number. Tests: invoiceThemes, printing, design guard, billPrintsAtCounter, 42 passing.
+
 ### 2026-10-27 Rishi with Claude Code, the PC and website in step, every screen on a phone, printing at the counter
 
 Three requests from Rishi, built and tested here. Pushed (`ffd3276`) at Rishi's word: Render runs `ffd3276` with the database connected. Vercel deployed the same evening at Rishi's word, from a clean `git archive` (deployment `three-o-clock-dlh1peedu`): the live script `index-kP797T7_.js` carries the counter KOT printer and the roll setup, and `/api` reaches Render on `ffd3276`. `vercel link` wrote a `.env.local` holding only Vercel's own short-lived `VERCEL_OIDC_TOKEN` into that folder before the upload; the folder was deleted after. `release/ThreeOClock.zip` rebuilt at `ffd3276` (not published: the release signing key is not on this Mac), to install on the cafe PC by hand.
