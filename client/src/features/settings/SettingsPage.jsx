@@ -158,10 +158,10 @@ export default function SettingsPage() {
         </div>
       </header>
 
-      {/* Bottom padding clears the fixed save bar, which grows by the invoice
-          warning when the series is being changed, so the last section's
-          preview line is never hidden under it. */}
-      <form onSubmit={submit} className="mx-auto grid max-w-2xl gap-6 px-4 py-6 pb-64">
+      {/* The save bar sticks to the bottom of the scrolling area, inside the
+          form, so it sits above a phone's bottom bar and never covers it, and
+          the last section scrolls clear of it with no padding to guess. */}
+      <form onSubmit={submit} className="mx-auto grid max-w-2xl gap-6 px-4 pt-6">
         <Section title="Appearance" description="The accent colour, the name in the top bar, the second language and the Today tiles, with a live preview.">
           <Link to="/settings/appearance" className="type-button flex min-h-12 w-fit items-center rounded-lg border border-ink bg-surface px-4 hover:bg-sunken">
             Open Appearance
@@ -568,8 +568,8 @@ export default function SettingsPage() {
           The reason sits with the save button rather than at the top, because
           it is part of committing the change, not part of describing it.
         */}
-        <div className="fixed inset-x-0 bottom-0 border-t border-line bg-ground px-4 py-3">
-          <div className="mx-auto grid max-w-2xl gap-3">
+        <div className="sticky bottom-0 z-10 -mx-4 border-t border-line bg-ground px-4 py-3">
+          <div className="grid gap-3">
             {patch.invoice && (
               <p className="rounded-lg border-2 border-alert px-3 py-2 type-caption text-ink">
                 Invoice numbers are a legal record. Change this only before the first bill of a new

@@ -132,7 +132,44 @@ export default function StaffListPage() {
           )}
 
           {!isLoading && !error && staff.length > 0 && (
-            <div className="overflow-x-auto rounded-lg bg-surface ring-1 ring-line">
+            <>
+            {/* On a phone each person is a card, so the actions are on screen, not past its right edge. */}
+            <ul className="divide-y divide-line rounded-lg bg-surface ring-1 ring-line sm:hidden">
+              {staff.map((member) => (
+                <li key={member.id} className={['flex flex-col gap-2 px-4 py-3', member.isActive ? '' : 'bg-sunken text-muted'].join(' ')}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="font-medium text-ink">{member.name}</p>
+                      <p className="text-sm text-muted">
+                        <span className="tabular-nums">{member.phone}</span> · {ROLE_LABELS[member.role] ?? member.role}
+                      </p>
+                    </div>
+                    <StateChip state={member.isActive ? 'ok' : 'free'} word={member.isActive ? 'Active' : 'Deactivated'} size="sm" />
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Link
+                      to={`/staff/${member.id}/edit`}
+                      className="flex min-h-12 items-center rounded-lg px-2 text-sm font-medium text-accent hover:bg-sunken"
+                    >
+                      Edit
+                    </Link>
+                    <Button size="sm" variant="ghost" onClick={() => setResetting(member)}>
+                      Reset password
+                    </Button>
+                    {member.isActive ? (
+                      <Button size="sm" variant="ghost" onClick={() => setDeactivating(member)}>
+                        Deactivate
+                      </Button>
+                    ) : (
+                      <Button size="sm" variant="ghost" onClick={() => reactivate(member)}>
+                        Reactivate
+                      </Button>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ul>
+            <div className="hidden overflow-x-auto rounded-lg bg-surface ring-1 ring-line sm:block">
               <table className="w-full text-left text-sm">
                 <thead className="border-b border-line text-muted">
                   <tr>
@@ -179,6 +216,7 @@ export default function StaffListPage() {
                 </tbody>
               </table>
             </div>
+            </>
           )}
 
           {lastPage > 1 && (

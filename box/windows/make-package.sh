@@ -42,6 +42,7 @@ mkdir -p "$STAGE/client/dist"
 cp -R client/dist/. "$STAGE/client/dist/"
 cp "box/windows/Install ThreeOClock.bat" "$STAGE/Install ThreeOClock.bat"
 cp "box/windows/Load cafe data.bat" "$STAGE/Load cafe data.bat"
+cp "box/windows/Connect to the website.bat" "$STAGE/Connect to the website.bat"
 cat > "$STAGE/READ ME FIRST.txt" <<'TXT'
 THREE O'CLOCK - SETUP ON THIS PC (once)
 
@@ -50,6 +51,12 @@ THREE O'CLOCK - SETUP ON THIS PC (once)
 3. Double-click "Install ThreeOClock" and click Yes when Windows asks.
 4. Answer the questions: cafe name, owner name, owner mobile, owner password.
 5. When it says "All done", use the "Three O'Clock" icon on the desktop.
+
+To keep this PC and the website in step (and a copy on Atlas):
+6. Put the cafe-data-....archive.gz copy in this folder, double-click
+   "Load cafe data" and type LOAD.
+7. Double-click "Connect to the website" and paste REPLICATION_SECRET from
+   Render, Environment. It checks the secret before changing anything.
 
 Tablets and phones: join the same WiFi as this PC, then open the address the
 installer showed, or open "Three O'Clock - Connect a device" and scan the QR codes.

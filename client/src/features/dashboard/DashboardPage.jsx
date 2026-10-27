@@ -34,9 +34,9 @@ function Card({ className = '', children }) {
   return <div className={`rounded-[10px] bg-surface border border-line ${className}`}>{children}</div>;
 }
 
-function Stat({ label, value, hint }) {
+function Stat({ label, value, hint, className = '' }) {
   return (
-    <Card className="@container flex min-w-0 flex-col justify-between p-4">
+    <Card className={`@container flex min-w-0 flex-col justify-between p-4 ${className}`}>
       <span className="type-label text-muted">{label}</span>
       <div className="mt-4">
         <span className="type-num-fit block">{value}</span>
@@ -124,11 +124,11 @@ export default function DashboardPage() {
         </Card>
 
         {isManager && (
-          <section aria-label="Today" className={['grid gap-4 sm:grid-cols-2 lg:grid-cols-4', today.isFetching ? 'opacity-70' : ''].join(' ')}>
+          <section aria-label="Today" className={['grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4', today.isFetching ? 'opacity-70' : ''].join(' ')}>
             {today.isError && <ErrorMessage error={today.error} />}
             {data && (
               <>
-                <Stat label="Bill total today" value={<Money paise={data.sales.grossSalesInPaise} />} hint={`Business day ${data.businessDate}`} />
+                <Stat label="Bill total today" value={<Money paise={data.sales.grossSalesInPaise} />} hint={`Business day ${data.businessDate}`} className="col-span-2 sm:col-span-1" />
                 <Stat label="Bills" value={data.sales.billCount} hint={`Average bill ${moneyText(data.sales.averageBillInPaise)}`} />
                 <Stat
                   label="Open orders"

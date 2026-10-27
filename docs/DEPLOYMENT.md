@@ -879,7 +879,7 @@ brought together when the PC is back (`docs/REPLICATION.md` section 13,
 | Render | `REPLICATION_SECRET` | the same value as the PC's |
 | PC | `DEPLOYMENT_ROLE` | `BOX` |
 | PC | `SYNC_MODE` | `TWO_WAY` |
-| PC | `MIRROR_URL` | the Render service's own address, like `https://zchaat-pos-api.onrender.com` |
+| PC | `MIRROR_URL` | the Render service's own address: `https://three-o-clock-erp-api.onrender.com` for Three O'Clock |
 | PC | `REPLICATION_SECRET` | the same value as Render's |
 | PC | `SYNC_EVERY_SECONDS` | `60` (the default) |
 | PC | `SYNC_HOURS` | the cafe's hours with a margin, like `08:30-02:30` (the default) |
@@ -924,7 +924,11 @@ Vercel rebuilds the screens from the same push. This repository has merged that
 3. A secret: `openssl rand -base64 48`.
 4. Render, Environment: add `SYNC_MODE=TWO_WAY` and `REPLICATION_SECRET`, Save,
    deploy, wait for Live. It takes a changelog baseline of every document once.
-5. The PC's `C:\ThreeOClock\.env`: the PC rows of the table above. Restart it.
+5. The PC: double-click **Connect to the website** and paste the secret. It checks
+   the secret and that the website holds this PC's restaurant before writing the
+   PC rows of the table above and restarting the server
+   (`box/windows/connect-website.ps1`). By hand: the same rows in
+   `C:\ThreeOClock\.env`, then restart it.
 6. The owner on the PC: **Sync** says "In step" within two minutes. From now on
    bill on the PC.
 

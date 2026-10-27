@@ -31,8 +31,9 @@ The till window uses its own Chrome profile (`ThreeOClock Website Till`). So:
 3. Copy the file for this computer to the desktop. On a Mac, the first time,
    right-click it and choose Open, because it was not downloaded from the App
    Store. After that a double-click is enough.
-4. Open the till with that file, sign in, and on **This device** choose the
-   printer (Thermal, 80 mm) and the print width.
+4. Open the till with that file and sign in with a cashier or manager login.
+   It starts on Z Chaat's paper: Thermal 80 mm, the printer's roll, 72 mm wide,
+   4 mm each side, Normal text, and nothing needs choosing on **This device**.
 5. Print one bill. It should come out of the Rugtek with no dialog.
 
 From then on, staff open the till only with that file. If Chrome shows the
@@ -49,8 +50,11 @@ sent to the PC never arrive.
 
 A captain's phone cannot reach the Rugtek. A captain taps **Print at counter**,
 and the counter computer prints it, when **Print bills sent by captains** is on
-in This device there. With the till opened by the file above, that print comes
-out with no dialog and nobody at the counter has to touch anything.
+in This device there. Every Send to the kitchen prints its KOT there too, on
+any screen, when **Print every new KOT here** is on. The till opened by the
+file above has both on by itself (it opens with `?till=1`), and prints with no
+dialog, so nobody at the counter has to touch anything. Turn **Print every new
+KOT here** off once the kitchen has a printer of its own.
 
 ## If something goes wrong
 

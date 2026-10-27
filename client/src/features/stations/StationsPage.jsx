@@ -86,7 +86,7 @@ export default function StationsPage() {
                   const name = event.target.value.trim();
                   if (name && name !== station.name) update.mutate({ id: station.id, changes: { name } });
                 }}
-                className="min-h-12 min-w-0 flex-1 rounded-lg border border-muted bg-surface px-3 type-body"
+                className="min-h-12 min-w-40 flex-1 basis-40 rounded-lg border border-muted bg-surface px-3 type-body"
               />
               {/* P20A. The kitchen ticket's time edge turns Late at this many minutes. */}
               <label className="flex items-center gap-2 type-caption">

@@ -284,7 +284,7 @@ export default function DeliveryOrderPage() {
 
             {draft.length === 0 ? (
               <p className="type-body rounded-lg bg-sunken px-4 py-8 text-muted">
-                Tap a dish on the left to add it.
+                Tap a dish to add it.
               </p>
             ) : (
               <ul className="flex max-h-[320px] flex-col gap-3 overflow-y-auto pr-1">

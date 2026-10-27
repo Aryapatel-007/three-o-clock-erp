@@ -51,6 +51,8 @@ const DEFAULTS = Object.freeze({
   autoPrintKots: false,
   // P25 Part D. A counter computer prints the bills captains send it.
   printCaptainBills: false,
+  // 2026-10-27. The counter prints every new KOT, on any screen (CounterKotPrinter).
+  printKotsAtCounter: false,
   // 2026-10-25. Where a bill printed from this device comes out: AUTO, HERE or COUNTER (billsPrintAtCounter).
   billPrintsAt: 'AUTO',
   // P29 Part D, retired by P57: Save & Print on the order screen says when to print. Kept so old saved settings still read.
@@ -79,6 +81,8 @@ const DEFAULTS = Object.freeze({
   recallRange: '1h',
   // 2026-10-21. The kitchen screen's tiles: BIG, or SMALL in a rush so more tickets fit.
   kitchenTiles: 'BIG',
+  // 2026-10-27. A device made after the roll setup below needs none: it starts on that paper.
+  rollSetup: 1,
 });
 
 export const BILL_PRINT_PLACES = Object.freeze(['AUTO', 'HERE', 'COUNTER']);
@@ -95,11 +99,21 @@ export const BILL_PRINT_PLACES = Object.freeze(['AUTO', 'HERE', 'COUNTER']);
  * sends to the counter. On the website it stays this device, as before. This device can
  * choose either.
  */
-export function billsPrintAtCounter(device, features) {
+export function billsPrintAtCounter(device, features, { small = smallScreen() } = {}) {
   if (device?.billPrintsAt === 'COUNTER') return true;
   if (device?.billPrintsAt === 'HERE') return false;
   // The till window (?till=1) always prints here: it is the counter.
-  return features?.sync?.server === 'BOX' && !device?.cafeTill && !device?.printCaptainBills;
+  if (device?.cafeTill || device?.printCaptainBills) return false;
+  if (features?.sync?.server === 'BOX') return true;
+  // 2026-10-27, Three O'Clock: on the website too, an owner's, manager's or
+  // cashier's phone or tablet has no bill printer, so it prints at the counter as
+  // a captain's does. A computer's screen keeps printing on its own printer.
+  return small;
+}
+
+/** A phone or tablet: narrower than a counter computer's screen. */
+function smallScreen() {
+  return typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia('(max-width: 1023px)').matches;
 }
 
 /** Same-tab listeners. The `storage` event only reaches other tabs. */
@@ -176,13 +190,41 @@ export function applyCafePcPrintSetup() {
  * with no dialog (--kiosk-printing): it prints captains' bills. Marked once as
  * the app loads, before any screen changes the address.
  */
+// 2: the till also prints every new KOT (2026-10-27, Three O'Clock): one printer at the counter.
+const TILL_SETUP = 2;
+
 function markCafeTill() {
   const stored = readStored() ?? lastWritten ?? {};
-  if (stored.cafeTill && stored.printCaptainBills) return;
-  write({ ...stored, cafeTill: true, printCaptainBills: true });
+  if (stored.cafeTill && (stored.tillSetup ?? 1) >= TILL_SETUP) return;
+  write({
+    ...stored,
+    cafeTill: true,
+    printCaptainBills: true,
+    printKotsAtCounter: true,
+    counterKotsArmedAt: Date.now(),
+    tillSetup: TILL_SETUP,
+  });
 }
 
-if (typeof window !== 'undefined' && window.location && new URLSearchParams(window.location.search).get('till') === '1') markCafeTill();
+/**
+ * 2026-10-27. Z Chaat's paper on every device, the website's included, once: the
+ * printer's roll, 72 mm wide, 4 mm each side, Normal text (CAFE_PC_PAPER), which
+ * the defaults above already give a new device. A device set up before them kept
+ * 78 mm and no edge, and cut the right side of the bill and the KOT. A later
+ * choice on This device is kept.
+ */
+const ROLL_SETUP = DEFAULTS.rollSetup;
+
+function applyRollSetup() {
+  const stored = readStored();
+  if (!stored || (stored.rollSetup ?? 0) >= ROLL_SETUP) return;
+  write({ ...stored, ...CAFE_PC_PAPER, billTextSize: 'NORMAL', rollSetup: ROLL_SETUP });
+}
+
+if (typeof window !== 'undefined' && window.location) {
+  applyRollSetup();
+  if (new URLSearchParams(window.location.search).get('till') === '1') markCafeTill();
+}
 
 function read() {
   return withDefaults(readStored() ?? lastWritten ?? {});

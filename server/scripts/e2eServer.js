@@ -9,6 +9,7 @@
  * script and is never part of the app:
  *
  *   POST /clock  { at }   moves the server's clock (setClockForTests)
+ *   POST /reset-played    the same, with the golden day played through the API
  *   POST /reset           empties the database and sets up the golden
  *                         restaurant, without playing the day
  *   GET  /ready           answers once both listeners are up
@@ -67,7 +68,7 @@ const { createApp } = await import('../server.js');
 const { ALL_MODELS } = await import('../models/index.js');
 const { setClockForTests } = await import('../utils/time.js');
 const { startTestServer } = await import('../tests/helpers/testServer.js');
-const { setupGoldenRestaurant } = await import('../tests/helpers/goldenDay.js');
+const { playGoldenDay, setupGoldenRestaurant } = await import('../tests/helpers/goldenDay.js');
 
 await mongoose.connect(process.env.MONGO_URI);
 for (const model of ALL_MODELS) await model.init();
@@ -145,6 +146,14 @@ const control = http.createServer(async (request, response) => {
       if (Number.isNaN(instant.getTime())) return send(response, 400, { error: 'at must be an instant' });
       setClockForTests(instant);
       return send(response, 200, { at: instant.toISOString() });
+    }
+    // The golden day already played through the API, for e2e/mobileLayout.spec.js, which
+    // measures screens with bills on them rather than walking the day through them.
+    if (request.method === 'POST' && request.url === '/reset-played') {
+      const { collections } = mongoose.connection;
+      await Promise.all(Object.values(collections).map((collection) => collection.deleteMany({})));
+      const golden = await playGoldenDay(await setupGoldenRestaurant({ name: 'Golden Day Cafe' }));
+      return send(response, 200, { phones: golden.phones, password: golden.password, ids: golden.ids });
     }
     if (request.method === 'POST' && request.url === '/reset') {
       Object.assign(fakeMeta.state, { templates: [], messages: [], requests: [] });

@@ -89,7 +89,7 @@ export default function RecipeEditorPage() {
         <div>
           {!selected && (
             <p className="rounded-lg border-2 border-dashed border-muted px-4 py-8 text-center type-body text-muted">
-              Pick a dish on the left to see or edit its recipe.
+              Pick a dish to see or edit its recipe.
             </p>
           )}
 

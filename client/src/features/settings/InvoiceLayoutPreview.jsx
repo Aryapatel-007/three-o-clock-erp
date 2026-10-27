@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 
 import Spinner from '../../components/ui/Spinner.jsx';
@@ -102,13 +102,44 @@ export function Preview({ tab, invoice, latest, layout, terms, pan, udyam, accen
           srcDoc={`<!doctype html><html><head><meta charset="utf-8" /><style>html,body{margin:0;background:white;color:black}body{padding:4mm}#slip{width:${width}mm;padding:0 ${THERMAL_SIDE_MM}mm;box-sizing:border-box}${THERMAL_BILL_STYLES}</style></head><body><div id="slip">${thermalBillHtml(data, { printer: 'THERMAL_80' })}</div></body></html>`}
         />
       ) : (
-        <iframe
-          title="Tax invoice preview"
-          className="w-full bg-surface shadow-float"
-          style={{ aspectRatio: `${PRINTERS[paper].widthMm} / ${PRINTERS[paper].heightMm}` }}
-          srcDoc={`<!doctype html><html><head><meta charset="utf-8" /><style>html,body{margin:0;background:white;color:black}body{padding:12mm}${invoiceStyles(layout.theme)}</style></head><body>${invoiceHtml(data, { logoDataUrl, signatureDataUrl: signature.data ?? null, copy })}</body></html>`}
-        />
+        <ScaledPage widthMm={PRINTERS[paper].widthMm} heightMm={PRINTERS[paper].heightMm}>
+          <iframe
+            title="Tax invoice preview"
+            className="h-full w-full bg-surface"
+            srcDoc={`<!doctype html><html><head><meta charset="utf-8" /><style>html,body{margin:0;background:white;color:black}body{padding:12mm}${invoiceStyles(layout.theme)}</style></head><body>${invoiceHtml(data, { logoDataUrl, signatureDataUrl: signature.data ?? null, copy })}</body></html>`}
+          />
+        </ScaledPage>
       )}
     </aside>
+  );
+}
+
+const PX_PER_MM = 96 / 25.4;
+
+/**
+ * The page laid out at the paper's real width and shrunk to the space there is,
+ * as a print preview does. Laid out at a phone's width instead, an A4 invoice's
+ * columns ran past the right edge and were cut off (2026-10-27).
+ */
+function ScaledPage({ widthMm, heightMm, children }) {
+  const frame = useRef(null);
+  const [available, setAvailable] = useState(0);
+  useEffect(() => {
+    const element = frame.current;
+    if (!element) return undefined;
+    const observer = new ResizeObserver(([entry]) => setAvailable(entry.contentRect.width));
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+  const pageWidth = widthMm * PX_PER_MM;
+  const pageHeight = heightMm * PX_PER_MM;
+  const scale = available > 0 ? Math.min(1, available / pageWidth) : 0;
+  return (
+    // The full-size page is placed absolutely, so its width never counts towards the column's.
+    <div ref={frame} className="relative w-full overflow-hidden shadow-float" style={{ height: pageHeight * scale }}>
+      <div className="absolute left-0 top-0" style={{ width: pageWidth, height: pageHeight, transform: `scale(${scale})`, transformOrigin: 'top left' }}>
+        {children}
+      </div>
+    </div>
   );
 }

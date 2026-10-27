@@ -946,3 +946,14 @@ Added 2026-10-25.
 | **At the counter** | The bill goes to the counter's printer, as a captain's does. Automatic on the cafe PC for every device but the till |
 | **Print at counter instead** | On the bill: send it to the counter this once |
 | **Print on this device instead** | On the bill: print it on this device this once |
+
+---
+
+## 51. Printing at the counter, for everyone
+
+Added 2026-10-27.
+
+| Term | Meaning |
+|---|---|
+| **Print every new KOT here** | On This device, for the till: every Send to the kitchen, from any phone, prints its KOT on this device's printer once, whatever screen is open. The till opened by the launcher has it on |
+| **Connect to the website** | On the cafe PC: the step that checks the website's secret and data, then switches two-way sync on |

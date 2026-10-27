@@ -7,6 +7,7 @@
 # Before the first use: make the bill printer (the Rugtek) the Mac's default,
 # in System Settings, Printers & Scanners, Default printer.
 
+# ?till=1 marks this window as the counter: it prints the bills and KOTs captains send.
 TILL_ADDRESS="https://three-o-clock-erp.vercel.app"
 PROFILE="$HOME/Library/Application Support/ThreeOClock Website Till"
 
@@ -15,4 +16,7 @@ open -na "Google Chrome" --args \
   --kiosk-printing \
   --no-first-run \
   --no-default-browser-check \
-  "$TILL_ADDRESS"
+  --disable-background-timer-throttling \
+  --disable-renderer-backgrounding \
+  --disable-backgrounding-occluded-windows \
+  "$TILL_ADDRESS/?till=1"

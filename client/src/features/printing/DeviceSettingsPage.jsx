@@ -174,7 +174,7 @@ export default function DeviceSettingsPage() {
         {isTill && (
           <Choice
             legend="Bills print"
-            hint={`Automatic: at the counter on the cafe PC, except on the computer that prints captains' bills; on this device everywhere else. Now: ${
+            hint={`Automatic: at the counter on a phone or tablet, and on every device on the cafe PC, except the till and a computer that prints captains' bills; on this device on a computer's screen. Now: ${
               billsPrintAtCounter(settings, features) ? 'at the counter' : 'on this device'
             }.`}
             options={BILL_PRINT_PLACES.map((value) => ({ value, label: BILL_PRINT_LABELS[value] }))}
@@ -195,6 +195,25 @@ export default function DeviceSettingsPage() {
             <span>
               <span className="type-body block">Print bills sent by captains</span>
               <span className="type-caption block text-muted">For the counter computer. Each bill a captain sends prints here once, on this device's printer.</span>
+            </span>
+          </label>
+        )}
+
+        {/* 2026-10-27. The counter prints every KOT too, on any screen (CounterKotPrinter). */}
+        {isTill && (
+          <label className="flex min-h-12 items-start gap-3">
+            <input
+              type="checkbox"
+              checked={Boolean(settings.printKotsAtCounter)}
+              onChange={(event) =>
+                // Switching it on starts fresh: tickets already sent are not printed again.
+                update({ printKotsAtCounter: event.target.checked, counterKotsArmedAt: Date.now() })
+              }
+              className="mt-1 size-5 accent-[var(--color-accent)]"
+            />
+            <span>
+              <span className="type-body block">Print every new KOT here</span>
+              <span className="type-caption block text-muted">For the counter computer when the kitchen has no printer of its own. Every Send to the kitchen, from any phone, prints here once, whatever screen is open.</span>
             </span>
           </label>
         )}

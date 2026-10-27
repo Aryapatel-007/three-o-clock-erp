@@ -153,10 +153,9 @@ back; the website carries on too. Design: `docs/REPLICATION.md` section 13.
 
 While it is on:
 
-- **Bills on the website use their own series**, `2026-27/W00001`, so a bill
-  made on each side can never get the same number. The PC carries on the
-  existing series. Orders and KOTs made on the website are numbered from
-  900001. Ask the CA to confirm the W series before it is used for real.
+- **One bill series.** Since 2026-10-22 the website continues the PC's series.
+  A number both used while apart stays the PC's: the website's bill gets the
+  next number, is listed under **Sync**, and is reprinted for the guest.
 - **Day Close is done on the PC only.** The website refuses it.
 - **Sync conflicts.** When both change the same thing before they can tell
   each other (dishes added to one table on both, the same table opened on both,
@@ -164,25 +163,33 @@ While it is on:
   owner and manager see a count in the top bar and a list under **Sync**, each
   saying what was kept and linking to the order or bill to fix.
 
-To switch it on (both sides start from the same data: load the exact copy of
-section 5b first):
+To switch it on. Three O'Clock's website server (`three-o-clock-erp-api` on
+Render) already has `SYNC_MODE=TWO_WAY` and a `REPLICATION_SECRET` (checked
+2026-10-27: it answers the sync route with a signature check). Only the PC is
+left:
 
-1. Pick a secret, the same on both: `openssl rand -base64 48`.
-2. **Website server** (Render): set `SYNC_MODE=TWO_WAY` and
-   `REPLICATION_SECRET=<the secret>`, then deploy. `docs/DEPLOYMENT.md` section 19.
-3. **Cafe PC**: in `C:\ThreeOClock\.env` (Notepad as Administrator) set
-   `SYNC_MODE=TWO_WAY`, `MIRROR_URL=https://<the website server's address>` (no
-   slash at the end) and `REPLICATION_SECRET=<the secret>`. Restart the server:
-   double-click **Install ThreeOClock** again, or restart the PC.
-4. Owner on the PC: **Sync** in the menu says "In step" within a minute.
+1. **Stop billing on the website** on every device, at a quiet hour.
+2. **On the Mac:** `SOURCE_MONGO_URI='<the Atlas address>' bash box/export-cloud.sh`
+   (it only reads Atlas) and copy `release/cafe-data-<date>.archive.gz` to
+   `C:\ThreeOClock` by pen drive.
+3. **On the PC:** double-click **Load cafe data** and type LOAD (section 5b).
+4. **On the PC:** double-click **Connect to the website**, and paste
+   `REPLICATION_SECRET` from Render, Environment (the eye icon shows it). It asks
+   the website whether the secret is right and whether it already holds this
+   PC's restaurant, and changes nothing unless both are true; then it writes
+   `SYNC_MODE=TWO_WAY`, `MIRROR_URL` and the secret into `.env` (keeping the old
+   file as `.env.before-connect`) and restarts the server. It also offers to take
+   Render's `INTEGRATION_SECRETS_KEY` and `PAYMENT_SECRETS_KEY`, needed only once
+   a card machine, a platform or Razorpay is connected.
+5. **Owner on the PC:** **Sync** in the menu says "In step" within two minutes.
+   From now on bill on the PC.
 
 The PC syncs every `SYNC_EVERY_SECONDS` (60) inside `SYNC_HOURS` (08:30-02:30
 India time), and at night only when it has something to send, so Render's free
 server sleeps. Using the live website as the fallback, step by step, and what
 to do when the PC has a problem: `docs/DEPLOYMENT.md` section 19.
 
-To switch it off: `SYNC_MODE=ONE_WAY` on both. Website bills keep their W
-numbers, which stay valid in their own series.
+To switch it off: `SYNC_MODE=ONE_WAY` on both, and bill on one side only.
 
 ### After moving the cafe from the website to the PC
 

@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext.jsx';
 import { useTheme } from '../context/ThemeProvider.jsx';
 import OnlineAlerts, { useAlertsOn, useOnlineInbox } from '../features/online/OnlineAlerts.jsx';
 import CaptainBillPrinter from '../features/printing/CaptainBillPrinter.jsx';
+import CounterKotPrinter from '../features/printing/CounterKotPrinter.jsx';
 import { CAFE_PC_PAPER } from '../features/printing/useDeviceSettings.js';
 import { inboxOn } from '../features/online/inboxOn.js';
 import BrandLogo from './ui/BrandLogo.jsx';
@@ -363,6 +364,7 @@ export default function AppShell({ children }) {
         <OnlineAlerts />
         {/* 2026-10-22. On the cafe PC the till prints captains' bills on the paper with no gap above. */}
         <CaptainBillPrinter paper={features?.sync?.server === 'BOX' ? CAFE_PC_PAPER : null} />
+        <CounterKotPrinter />
 
         {/* `relative`, so anything absolutely placed inside a screen (screen-reader text,
             tooltips) belongs to this scroll area. Without it such an element was

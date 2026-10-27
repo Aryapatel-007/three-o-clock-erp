@@ -30,7 +30,7 @@ import {
 import { useAuth } from '../../context/AuthContext.jsx';
 import { getKotTicket } from '../../api/kitchen.js';
 import { charactersFor, printText } from '../printing/printText.js';
-import { useDeviceSettings } from '../printing/useDeviceSettings.js';
+import { rememberPrinted, useDeviceSettings } from '../printing/useDeviceSettings.js';
 import { formatTimeIst } from '../../utils/formatDate.js';
 import BillComposer from '../billing/BillComposer.jsx';
 import BillOrderButton, { mayBill } from '../billing/BillOrderButton.jsx';
@@ -98,7 +98,7 @@ export default function OrderScreenPage() {
   const queryClient = useQueryClient();
   const { user, features } = useAuth();
   // P48. KOT & Print prints on this device's printer.
-  const [device] = useDeviceSettings();
+  const [device, updateDevice] = useDeviceSettings();
   const approvals = features.approvals ?? { lineCancel: true, paidIn: true, managerTasks: true };
   const approvesOwn = APPROVES_OWN.includes(user?.role);
 
@@ -370,6 +370,9 @@ export default function OrderScreenPage() {
     run({
       run: async () => {
         const result = await sendToKitchen(guest);
+        // Remembered before printing, so this device's counter KOT printer never prints the same round again.
+        const sent = (result.kots ?? [result.kot]).map((kot) => `${kot.id}:${result.round ?? 1}`);
+        updateDevice((current) => ({ printedKotIds: rememberPrinted(current.printedKotIds, sent) }));
         try {
           for (const kot of result.kots ?? [result.kot]) {
             const { text } = await getKotTicket(kot.id, { width: charactersFor(device.printer), ...(result.round ? { round: result.round } : {}) });
@@ -546,11 +549,13 @@ export default function OrderScreenPage() {
               isCounter ? 'lg:hidden' : '',
             ].join(' ')}
           >
-            <div className="flex items-center justify-between gap-3 rounded-[10px] border border-line bg-surface p-2 pl-4 shadow-float">
+            {/* On a phone the summary takes its own line and the buttons share the
+                one below, so neither is squeezed into a column a word wide. */}
+            <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-[10px] border border-line bg-surface p-2 pl-4 shadow-float">
               <button
                 type="button"
                 onClick={() => setIsReviewing(true)}
-                className="flex min-h-12 min-w-0 flex-col items-start rounded-lg text-left"
+                className="flex min-h-12 min-w-0 flex-1 basis-52 flex-col items-start rounded-lg text-left"
               >
                 <span className="flex items-baseline gap-2">
                   <span className="type-label">
@@ -564,7 +569,7 @@ export default function OrderScreenPage() {
                 </span>
               </button>
 
-              <div className="flex flex-none items-center gap-2">
+              <div className="flex flex-1 items-center justify-end gap-2 sm:flex-none">
                 {/* Shown on a phone too: it is the way to the sent dishes and their Change (P42). */}
                 <button
                   type="button"
@@ -577,7 +582,7 @@ export default function OrderScreenPage() {
                   type="button"
                   disabled={pendingCount === 0 || write.isPending}
                   onClick={() => askGuestThen(fire)}
-                  className="min-h-14 rounded-lg bg-accent px-4 text-on-accent hover:brightness-110 disabled:opacity-50 sm:px-8"
+                  className="min-h-14 flex-1 rounded-lg bg-accent px-4 text-on-accent hover:brightness-110 disabled:opacity-50 sm:flex-none sm:px-8"
                 >
                   {pendingCount === 0 ? (
                     <span className="type-button">Nothing to send</span>

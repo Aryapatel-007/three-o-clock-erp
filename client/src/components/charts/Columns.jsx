@@ -60,6 +60,9 @@ export default function Columns({
    * ellipsis in the middle of a date is worse than no date at all.
    */
   const labelEvery = rows.length <= 12 ? 1 : Math.ceil(rows.length / 12);
+  // A phone has room for about six labels ("10pm" is four characters wide), so a
+  // 24-hour axis there prints every fourth hour instead of running them together.
+  const phoneEvery = Math.max(labelEvery, rows.length <= 6 ? 1 : Math.ceil(rows.length / 6));
 
   return (
     <figure className="m-0">
@@ -149,7 +152,9 @@ export default function Columns({
             key={row[labelKey] ?? index}
             className="flex min-w-0 flex-1 justify-center overflow-visible whitespace-nowrap type-num-meta text-muted"
           >
-            {index % labelEvery === 0 ? row[labelKey] : ''}
+            {index % labelEvery === 0 && (
+              <span className={index % phoneEvery === 0 ? '' : 'hidden sm:inline'}>{row[labelKey]}</span>
+            )}
           </span>
         ))}
       </div>

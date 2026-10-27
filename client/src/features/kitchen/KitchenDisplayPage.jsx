@@ -293,7 +293,7 @@ export default function KitchenDisplayPage() {
           {lateCount > 0 && <StateChip state="alert" word={`${lateCount} late`} size="sm" />}
         </div>
 
-        <div className="ml-auto flex items-center gap-3 text-right">
+        <div className="ml-auto flex flex-wrap items-center justify-end gap-2 text-right sm:gap-3">
           {/* P45. The bell for a new ticket, on or off on this device. */}
           {/* 2026-10-21. Small tiles in a rush, so more tickets fit; kept on this device. */}
           <div role="group" aria-label="Tile size" className="flex gap-1">
@@ -307,7 +307,7 @@ export default function KitchenDisplayPage() {
                 aria-pressed={(device.kitchenTiles ?? 'BIG') === size}
                 onClick={() => updateDevice({ kitchenTiles: size })}
                 className={[
-                  'type-button min-h-12 rounded-lg border px-3',
+                  'type-button min-h-12 whitespace-nowrap rounded-lg border px-3',
                   (device.kitchenTiles ?? 'BIG') === size ? 'border-2 border-ink bg-sunken' : 'border-line bg-surface hover:bg-sunken',
                 ].join(' ')}
               >
@@ -319,7 +319,7 @@ export default function KitchenDisplayPage() {
             type="button"
             aria-pressed={device.kitchenSound}
             onClick={() => updateDevice({ kitchenSound: !device.kitchenSound })}
-            className="type-button min-h-12 rounded-lg border border-line bg-surface px-4 hover:bg-sunken"
+            className="type-button min-h-12 whitespace-nowrap rounded-lg border border-line bg-surface px-3 hover:bg-sunken sm:px-4"
           >
             {device.kitchenSound ? 'Sound on' : 'Sound off'}
           </button>
@@ -327,7 +327,7 @@ export default function KitchenDisplayPage() {
           <button
             type="button"
             onClick={() => setIsRecalling(true)}
-            className="type-button min-h-12 rounded-lg border border-line bg-surface px-4 hover:bg-sunken"
+            className="type-button min-h-12 whitespace-nowrap rounded-lg border border-line bg-surface px-3 hover:bg-sunken sm:px-4"
           >
             Recall
           </button>

@@ -87,8 +87,8 @@ export default function BillsListPage() {
   return (
     <main className="v2 text-ink min-h-full bg-ground px-4 py-6 lg:px-6">
       <div className="mx-auto flex max-w-[1600px] flex-col gap-6">
-        <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <Stat label="Bill total" hint={`${rangeLabel} · voided left out`}>
+        <section className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
+          <Stat label="Bill total" hint={`${rangeLabel} · voided left out`} className="col-span-2 sm:col-span-1">
             <span className="type-num-fit">
               <Money paise={totals.grandTotalInPaise} />
             </span>
@@ -195,13 +195,13 @@ export default function BillsListPage() {
                   <table className="w-full border-collapse text-left">
                     <thead>
                       <tr className="bg-sunken/70 type-num-metar text-muted">
-                        <th className="px-4 py-3 font-semibold">Invoice number</th>
-                        <th className="px-2 py-3 font-semibold">Time issued</th>
-                        <th className="px-4 py-3 font-semibold">Table</th>
+                        <th className="px-3 py-3 font-semibold sm:px-4">Invoice number</th>
+                        <th className="hidden px-2 py-3 font-semibold sm:table-cell">Time issued</th>
+                        <th className="hidden px-4 py-3 font-semibold sm:table-cell">Table</th>
                         <th className="hidden px-4 py-3 font-semibold xl:table-cell">Captain</th>
                         <th className="hidden px-4 py-3 font-semibold xl:table-cell">Paid with</th>
                         <th className="px-2 py-3 font-semibold">Status</th>
-                        <th className="whitespace-nowrap px-4 py-3 text-right font-semibold">Bill total</th>
+                        <th className="whitespace-nowrap px-3 py-3 text-right font-semibold sm:px-4">Bill total</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-line">
@@ -218,7 +218,7 @@ export default function BillsListPage() {
                               bill.isVoided ? 'opacity-70' : '',
                             ].join(' ')}
                           >
-                            <td className="px-4 py-3">
+                            <td className="px-3 py-3 sm:px-4">
                               <button
                                 type="button"
                                 onClick={() => setSelectedId(bill.id)}
@@ -231,12 +231,17 @@ export default function BillsListPage() {
                                 {isSelected && <span aria-hidden className="h-6 w-1 rounded-full bg-ink" />}
                                 {bill.billNumber}
                               </button>
+                              {/* On a phone the table and the time sit under the number, so Status and Bill total stay on screen. */}
+                              <p className={`max-w-[11rem] truncate type-caption text-muted sm:hidden ${struck}`}>
+                                {placeLabel(bill)}
+                                {bill.billedAt ? ` · ${formatTimeIst(bill.billedAt)}` : ''}
+                              </p>
                             </td>
-                            <td className={`whitespace-nowrap px-2 py-3 type-num-meta text-muted ${struck}`}>
+                            <td className={`hidden whitespace-nowrap px-2 py-3 type-num-meta text-muted sm:table-cell ${struck}`}>
                               {bill.billedAt ? formatTimeIst(bill.billedAt) : ''}
                             </td>
-                            <td className="px-4 py-3">
-                              <span className={`inline-flex rounded-full bg-sunken px-3 py-1 type-caption ${struck}`}>
+                            <td className="hidden px-4 py-3 sm:table-cell">
+                              <span className={`inline-flex max-w-[12rem] rounded-full bg-sunken px-3 py-1 type-caption break-all ${struck}`}>
                                 {placeLabel(bill)}
                               </span>
                             </td>
@@ -249,7 +254,7 @@ export default function BillsListPage() {
                             <td className="px-2 py-3">
                               <BillStatusBadge bill={bill} />
                             </td>
-                            <td className={`whitespace-nowrap px-4 py-3 text-right type-num ${struck}`}>
+                            <td className={`whitespace-nowrap px-3 py-3 text-right type-num sm:px-4 ${struck}`}>
                               <Money paise={bill.grandTotalInPaise} />
                             </td>
                           </tr>
@@ -404,11 +409,11 @@ function PreviewRow({ label, value, tone = 'text-muted' }) {
   );
 }
 
-function Stat({ label, hint, children }) {
+function Stat({ label, hint, children, className = '' }) {
   return (
-    <div className="@container flex min-w-0 flex-col gap-2 rounded-[10px] bg-surface p-4 border border-line">
+    <div className={`@container flex min-w-0 flex-col gap-2 rounded-[10px] bg-surface p-4 border border-line ${className}`}>
       <span className="type-caption text-muted">{label}</span>
-      <div className="flex items-baseline">{children}</div>
+      <div className="flex flex-wrap items-baseline gap-y-1">{children}</div>
       <span className="type-caption text-muted">{hint}</span>
     </div>
   );
