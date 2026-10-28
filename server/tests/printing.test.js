@@ -11,6 +11,7 @@ import {
   billWidthMm,
   charactersFor,
   contentWidthMm,
+  kotCharactersFor,
   monospaceFontMm,
   pageCss,
   printerFor,
@@ -55,6 +56,17 @@ describe('the page a print gets', () => {
     assert.equal(contentWidthMm('THERMAL_80', 'UNKNOWN'), 78);
     assert.equal(pageCss({ printer: 'THERMAL_80', contentHeightMm: 100, edgeMargin: 'SMALL' }), '@page { size: 74mm 101mm; margin: 0; }');
     assert.equal(contentWidthMm('A4', 'MORE'), 186);
+  });
+
+  it('lays a KOT out at 32 a line on either roll, in letters about half as big again on the 80 mm roll', () => {
+    // 2026-10-28, Three O'Clock's Gobbler: at 48 a line the KOT was too small to read.
+    assert.equal(kotCharactersFor('THERMAL_80'), 32);
+    assert.equal(kotCharactersFor('THERMAL_58'), 32);
+    assert.equal(kotCharactersFor('A4'), 48);
+    const receipt = monospaceFontMm('THERMAL_80', 'MORE', 'STANDARD');
+    const kot = monospaceFontMm('THERMAL_80', 'MORE', 'STANDARD', { characters: 32, widthMm: billWidthMm('THERMAL_80', 'MORE', 'STANDARD') });
+    assert.ok(kot > receipt * 1.5, `${kot} mm against ${receipt} mm`);
+    assert.ok(kot * 0.6 * 32 <= billWidthMm('THERMAL_80', 'MORE', 'STANDARD') - 2 + 1e-9);
   });
 
   it('gives a bill 5 mm more on the right at 4 mm each side on the 80 mm roll, and nothing else', () => {

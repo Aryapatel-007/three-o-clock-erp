@@ -29,7 +29,7 @@ import {
 } from '../../api/orders.js';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { getKotTicket } from '../../api/kitchen.js';
-import { charactersFor, printText } from '../printing/printText.js';
+import { kotCharactersFor, printText } from '../printing/printText.js';
 import { rememberPrinted, useDeviceSettings } from '../printing/useDeviceSettings.js';
 import { formatTimeIst } from '../../utils/formatDate.js';
 import BillComposer from '../billing/BillComposer.jsx';
@@ -375,8 +375,8 @@ export default function OrderScreenPage() {
         updateDevice((current) => ({ printedKotIds: rememberPrinted(current.printedKotIds, sent) }));
         try {
           for (const kot of result.kots ?? [result.kot]) {
-            const { text } = await getKotTicket(kot.id, { width: charactersFor(device.printer), ...(result.round ? { round: result.round } : {}) });
-            await printText(text, device.printer);
+            const { text } = await getKotTicket(kot.id, { width: kotCharactersFor(device.printer), ...(result.round ? { round: result.round } : {}) });
+            await printText(text, device.printer, { kot: true });
           }
         } catch {
           setToast({ tone: 'error', message: 'Sent to the kitchen, but the KOT did not print. Reprint it from the kitchen screen.' });

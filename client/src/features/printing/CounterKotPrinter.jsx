@@ -6,7 +6,7 @@ import { useLiveInterval } from '../../api/live.js';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { ROLES } from '../users/roles.js';
 
-import { charactersFor, printText } from './printText.js';
+import { kotCharactersFor, printText } from './printText.js';
 import { readDeviceSettings, rememberPrinted, useDeviceSettings } from './useDeviceSettings.js';
 
 const TILL = [ROLES.OWNER, ROLES.MANAGER, ROLES.CASHIER];
@@ -69,8 +69,8 @@ export default function CounterKotPrinter() {
       for (const key of fresh) {
         const [id, round] = key.split(':');
         try {
-          const { text } = await getKotTicket(id, { width: charactersFor(settings.printer), round: Number(round) });
-          await printText(text, settings.printer);
+          const { text } = await getKotTicket(id, { width: kotCharactersFor(settings.printer), round: Number(round) });
+          await printText(text, settings.printer, { kot: true });
         } catch {
           // Forgotten again, so the next poll tries it once more.
           updateDevice((current) => ({ printedKotIds: current.printedKotIds.filter((printed) => printed !== key) }));

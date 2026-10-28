@@ -15,10 +15,10 @@
  *
  * The server never talks to a printer. This is the only path to paper.
  */
-import { billWidthMm, charactersFor, contentWidthMm, monospaceFontMm, pageCss, PRINTERS, pxToMm, THERMAL_FEED_MM, THERMAL_SIDE_MM } from './printers.js';
+import { billWidthMm, charactersFor, contentWidthMm, kotCharactersFor, monospaceFontMm, pageCss, PRINTERS, pxToMm, THERMAL_FEED_MM, THERMAL_SIDE_MM } from './printers.js';
 import { readDeviceSettings } from './useDeviceSettings.js';
 
-export { charactersFor };
+export { charactersFor, kotCharactersFor };
 
 function escapeHtml(text) {
   return String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -69,7 +69,7 @@ function contentLoaded(doc) {
  * caller can say "Not printed" rather than believing it worked.
  */
 // `paper`: paperLength, edgeMargin and printWidth for this print only, over This device (2026-10-22, the cafe PC's printer window).
-// `bill`: a thermal bill, laid out to `billWidthMm` (2026-10-28).
+// `bill`: a thermal bill or KOT, laid out to `billWidthMm` (2026-10-28).
 export async function printDocument({ printer: chosen, bodyHtml, styles = '', paper = null, bill = false }) {
   // P21. The browser tests record the words that would print. Only a test's init script sets this.
   if (typeof window.__E2E_PRINT__ === 'function') {
@@ -132,10 +132,14 @@ export async function printDocument({ printer: chosen, bodyHtml, styles = '', pa
   }
 }
 
-/** The styles for server-laid text: a roll's full width, or a large block at the top of a page. */
-export function textStyles(printer) {
+/**
+ * The styles for server-laid text: a roll's full width, or a large block at the top of a page.
+ * `kot`: a KOT, its letters sized for `kotCharactersFor` across `billWidthMm` (2026-10-28).
+ */
+export function textStyles(printer, { kot = false } = {}) {
   const paper = PRINTERS[printer] ?? PRINTERS.THERMAL_80;
   const { edgeMargin, printWidth } = readDeviceSettings();
+  const kotFit = kot ? { characters: kotCharactersFor(printer), widthMm: billWidthMm(printer, edgeMargin, printWidth) } : {};
   return `
   pre {
     margin: 0;
@@ -149,7 +153,7 @@ export function textStyles(printer) {
     font-family: Consolas, "Lucida Console", Menlo, "DejaVu Sans Mono", monospace;
     font-weight: 700;
     color: black;
-    font-size: ${monospaceFontMm(printer, edgeMargin, printWidth).toFixed(2)}mm;
+    font-size: ${monospaceFontMm(printer, edgeMargin, printWidth, kotFit).toFixed(2)}mm;
     line-height: 1.2;
     white-space: pre;
   }
@@ -160,16 +164,17 @@ export function textStyles(printer) {
 /**
  * Prints server-laid text: a receipt, a KOT or the Day Close. On a thermal
  * roll it fills the roll's width; on A4 or A5 it prints as one large block at
- * the top of the page. `afterHtml` (the review QR code) goes under it.
+ * the top of the page. `afterHtml` (the review QR code) goes under it. A KOT
+ * (`kot`) is laid out from `getKotTicket` at `kotCharactersFor` a line.
  */
-export function printText(text, printer, { afterHtml = '' } = {}) {
+export function printText(text, printer, { afterHtml = '', kot = false } = {}) {
   // P21. The browser tests record what would print instead of printing. Only a
   // test's init script ever sets this; nothing in the app does.
   if (typeof window.__E2E_PRINT__ === 'function') {
     window.__E2E_PRINT__(text, printer);
     return Promise.resolve();
   }
-  return printDocument({ printer, bodyHtml: `<pre>${escapeHtml(text)}</pre>${afterHtml}`, styles: textStyles(printer) });
+  return printDocument({ printer, bodyHtml: `<pre>${escapeHtml(text)}</pre>${afterHtml}`, styles: textStyles(printer, { kot }), bill: kot });
 }
 
 export { escapeHtml };

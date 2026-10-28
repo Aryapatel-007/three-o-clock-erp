@@ -130,7 +130,17 @@ export function contentWidthMm(printer, edgeMargin = DEFAULT_EDGE_MARGIN, printW
  */
 export const BILL_RIGHT_GAIN_MM = Object.freeze({ MORE: 5 });
 
-/** The width a thermal bill is laid out to: the content width, plus its gain on the right on the 80 mm roll. */
+/**
+ * Characters a line of a KOT holds. 2026-10-28, Three O'Clock's Gobbler: at 48 a
+ * line on the 80 mm roll the KOT's letters were too small to read from the
+ * pass, so a KOT is 32 a line on either roll, as the 58 mm roll always was.
+ */
+export function kotCharactersFor(printer) {
+  const paper = PRINTERS[printer] ?? PRINTERS[DEFAULT_PRINTER];
+  return paper.thermal ? 32 : paper.characters;
+}
+
+/** The width a thermal bill or KOT is laid out to: the content width, plus its gain on the right on the 80 mm roll. */
 export function billWidthMm(printer, edgeMargin = DEFAULT_EDGE_MARGIN, printWidth = DEFAULT_PRINT_WIDTH) {
   const paper = PRINTERS[printer] ?? PRINTERS[DEFAULT_PRINTER];
   const width = contentWidthMm(printer, edgeMargin, printWidth);
@@ -143,11 +153,12 @@ export function billWidthMm(printer, edgeMargin = DEFAULT_EDGE_MARGIN, printWidt
  * millimetres. 0.6 em is the advance width of a typical monospace glyph. Text
  * on a full page is capped at a large, readable size.
  */
-export function monospaceFontMm(printer, edgeMargin = DEFAULT_EDGE_MARGIN, printWidth = DEFAULT_PRINT_WIDTH) {
+// `characters` and `widthMm`: a KOT's own line length and laid-out width (2026-10-28).
+export function monospaceFontMm(printer, edgeMargin = DEFAULT_EDGE_MARGIN, printWidth = DEFAULT_PRINT_WIDTH, { characters = null, widthMm = null } = {}) {
   const paper = PRINTERS[printer] ?? PRINTERS[DEFAULT_PRINTER];
   // On a roll, 1 mm is left free on each side, so the last character never meets the edge of the head.
-  const printable = contentWidthMm(printer, edgeMargin, printWidth) - (paper.thermal ? 2 * THERMAL_SIDE_MM : 0);
-  const fitted = printable / paper.characters / 0.6;
+  const printable = (widthMm ?? contentWidthMm(printer, edgeMargin, printWidth)) - (paper.thermal ? 2 * THERMAL_SIDE_MM : 0);
+  const fitted = printable / (characters ?? paper.characters) / 0.6;
   return paper.thermal ? fitted : Math.min(fitted, 5);
 }
 

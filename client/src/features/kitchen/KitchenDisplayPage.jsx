@@ -12,7 +12,7 @@ import { packColumns, useColumnCount } from './ticketColumns.js';
 import { useMinuteClock } from '../../components/ui/TimeEdge.jsx';
 import { formatTimeIst } from '../../utils/formatDate.js';
 import { errorMessage } from '../orders/errorCopy.js';
-import { charactersFor, printText } from '../printing/printText.js';
+import { kotCharactersFor, printText } from '../printing/printText.js';
 import { rememberPrinted, useDeviceSettings } from '../printing/useDeviceSettings.js';
 import EmptyState from '../../components/ui/EmptyState.jsx';
 import Spinner from '../../components/ui/Spinner.jsx';
@@ -152,8 +152,8 @@ export default function KitchenDisplayPage() {
   /** Fetches the server-laid-out ticket and prints it. Never throws. */
   async function printKot(kotId, { reprint = false, round, stationId } = {}) {
     try {
-      const { text } = await getKotTicket(kotId, { width: charactersFor(device.printer), reprint, round, stationId });
-      await printText(text, device.printer);
+      const { text } = await getKotTicket(kotId, { width: kotCharactersFor(device.printer), reprint, round, stationId });
+      await printText(text, device.printer, { kot: true });
       setNotPrinted((current) => {
         const next = new Set(current);
         next.delete(kotId);
