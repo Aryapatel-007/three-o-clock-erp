@@ -74,7 +74,8 @@ export const pxToMm = (px) => (px * 25.4) / 96;
  * bill prints from the top of the driver's roll. A full page is the paper's
  * own size with 12 mm margins.
  */
-export function pageCss({ printer, contentHeightMm = null, paperLength = DEFAULT_PAPER_LENGTH, edgeMargin = DEFAULT_EDGE_MARGIN, printWidth = DEFAULT_PRINT_WIDTH }) {
+// `widthMm`: the width the content was laid out to, when it is not `contentWidthMm` (a bill, `billWidthMm`).
+export function pageCss({ printer, contentHeightMm = null, paperLength = DEFAULT_PAPER_LENGTH, edgeMargin = DEFAULT_EDGE_MARGIN, printWidth = DEFAULT_PRINT_WIDTH, widthMm = null }) {
   const paper = PRINTERS[printer];
   if (!paper) throw new Error(`Unknown printer ${printer}.`);
   if (!paper.thermal) return `@page { size: ${printer}; margin: ${PAGE_MARGIN_MM}mm; }`;
@@ -84,7 +85,7 @@ export function pageCss({ printer, contentHeightMm = null, paperLength = DEFAULT
   if (!Number.isFinite(height) || height <= 0) {
     throw new Error('A page as long as the bill needs the measured height of what it prints.');
   }
-  return `@page { size: ${contentWidthMm(printer, edgeMargin, printWidth)}mm ${Math.ceil(height) + 1}mm; margin: 0; }`;
+  return `@page { size: ${widthMm ?? contentWidthMm(printer, edgeMargin, printWidth)}mm ${Math.ceil(height) + 1}mm; margin: 0; }`;
 }
 
 /**
@@ -119,6 +120,22 @@ export function contentWidthMm(printer, edgeMargin = DEFAULT_EDGE_MARGIN, printW
   const edge = (EDGE_MARGINS[edgeMargin] ?? EDGE_MARGINS[DEFAULT_EDGE_MARGIN]).mm;
   const head = paper.widthMm === 80 ? (PRINT_WIDTHS[printWidth] ?? PRINT_WIDTHS[DEFAULT_PRINT_WIDTH]).mm : paper.printableMm;
   return head - 2 * edge;
+}
+
+/**
+ * Extra width a thermal bill takes on the right, by edge margin. 2026-10-28,
+ * Three O'Clock's cafe PC: at 72 mm with 4 mm each side the bill printed well
+ * but left 5 mm blank on the right, so the bill takes those 5 mm back there.
+ * The left side, KOTs and other printed text keep the edge margin as it is.
+ */
+export const BILL_RIGHT_GAIN_MM = Object.freeze({ MORE: 5 });
+
+/** The width a thermal bill is laid out to: the content width, plus its gain on the right on the 80 mm roll. */
+export function billWidthMm(printer, edgeMargin = DEFAULT_EDGE_MARGIN, printWidth = DEFAULT_PRINT_WIDTH) {
+  const paper = PRINTERS[printer] ?? PRINTERS[DEFAULT_PRINTER];
+  const width = contentWidthMm(printer, edgeMargin, printWidth);
+  if (!paper.thermal || paper.widthMm !== 80) return width;
+  return width + (BILL_RIGHT_GAIN_MM[edgeMargin] ?? 0);
 }
 
 /**

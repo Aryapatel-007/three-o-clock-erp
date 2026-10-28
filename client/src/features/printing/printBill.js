@@ -101,7 +101,7 @@ export async function printBill(billId, { printer, logoDataUrl = null, forReques
   } else {
     // 2026-10-09: a thermal bill is laid out from the invoice data too, in the layout guests know.
     const [qrSvg, logo] = await Promise.all([reviewQrSvg(data.reviewLinkUrl), thermalLogoDataUrl(logoDataUrl)]);
-    document = { printer, bodyHtml: thermalBillHtml(data, { printer, logoDataUrl: logo, qrSvg, textSize: readDeviceSettings().billTextSize }), styles: THERMAL_BILL_STYLES };
+    document = { printer, bodyHtml: thermalBillHtml(data, { printer, logoDataUrl: logo, qrSvg, textSize: readDeviceSettings().billTextSize }), styles: THERMAL_BILL_STYLES, bill: true };
   }
   if (!forRequestAt) {
     await printDocument({ ...document, paper });

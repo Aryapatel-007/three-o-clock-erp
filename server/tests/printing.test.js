@@ -8,6 +8,7 @@ import { after, before, describe, it } from 'node:test';
 import {
   BILL_TEXT_SIZES,
   billFontPx,
+  billWidthMm,
   charactersFor,
   contentWidthMm,
   monospaceFontMm,
@@ -54,6 +55,21 @@ describe('the page a print gets', () => {
     assert.equal(contentWidthMm('THERMAL_80', 'UNKNOWN'), 78);
     assert.equal(pageCss({ printer: 'THERMAL_80', contentHeightMm: 100, edgeMargin: 'SMALL' }), '@page { size: 74mm 101mm; margin: 0; }');
     assert.equal(contentWidthMm('A4', 'MORE'), 186);
+  });
+
+  it('gives a bill 5 mm more on the right at 4 mm each side on the 80 mm roll, and nothing else', () => {
+    // 2026-10-28, Three O'Clock: 72 mm, 4 mm each side left 5 mm blank on the right of the bill.
+    assert.equal(billWidthMm('THERMAL_80', 'MORE', 'STANDARD'), 69);
+    assert.equal(contentWidthMm('THERMAL_80', 'MORE', 'STANDARD'), 64);
+    assert.equal(billWidthMm('THERMAL_80', 'MORE'), 75);
+    assert.equal(billWidthMm('THERMAL_80', 'SMALL', 'STANDARD'), 68);
+    assert.equal(billWidthMm('THERMAL_80', 'NONE', 'STANDARD'), 72);
+    assert.equal(billWidthMm('THERMAL_58', 'MORE'), 40);
+    assert.equal(billWidthMm('A4', 'MORE'), 186);
+    assert.equal(
+      pageCss({ printer: 'THERMAL_80', contentHeightMm: 100, edgeMargin: 'MORE', printWidth: 'STANDARD', widthMm: billWidthMm('THERMAL_80', 'MORE', 'STANDARD') }),
+      '@page { size: 69mm 101mm; margin: 0; }',
+    );
   });
 
   it("names no size on the printer's roll, so the bill starts at the top of the driver's paper", () => {

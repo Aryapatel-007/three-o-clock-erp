@@ -15,7 +15,7 @@
  *
  * The server never talks to a printer. This is the only path to paper.
  */
-import { charactersFor, contentWidthMm, monospaceFontMm, pageCss, PRINTERS, pxToMm, THERMAL_FEED_MM, THERMAL_SIDE_MM } from './printers.js';
+import { billWidthMm, charactersFor, contentWidthMm, monospaceFontMm, pageCss, PRINTERS, pxToMm, THERMAL_FEED_MM, THERMAL_SIDE_MM } from './printers.js';
 import { readDeviceSettings } from './useDeviceSettings.js';
 
 export { charactersFor };
@@ -69,7 +69,8 @@ function contentLoaded(doc) {
  * caller can say "Not printed" rather than believing it worked.
  */
 // `paper`: paperLength, edgeMargin and printWidth for this print only, over This device (2026-10-22, the cafe PC's printer window).
-export async function printDocument({ printer: chosen, bodyHtml, styles = '', paper = null }) {
+// `bill`: a thermal bill, laid out to `billWidthMm` (2026-10-28).
+export async function printDocument({ printer: chosen, bodyHtml, styles = '', paper = null, bill = false }) {
   // P21. The browser tests record the words that would print. Only a test's init script sets this.
   if (typeof window.__E2E_PRINT__ === 'function') {
     const holder = document.createElement('div');
@@ -79,7 +80,7 @@ export async function printDocument({ printer: chosen, bodyHtml, styles = '', pa
   }
   const printer = PRINTERS[chosen] ? chosen : 'THERMAL_80';
   const { paperLength, edgeMargin, printWidth } = { ...readDeviceSettings(), ...(paper ?? {}) };
-  const widthMm = contentWidthMm(printer, edgeMargin, printWidth);
+  const widthMm = (bill ? billWidthMm : contentWidthMm)(printer, edgeMargin, printWidth);
   /**
    * The content gets its width in millimetres, not the page's. Without it,
    * whatever paper Chrome prints on, A4 in the preview, stretched every block
@@ -120,7 +121,7 @@ export async function printDocument({ printer: chosen, bodyHtml, styles = '', pa
     // Measured after layout at the printed width, then the page is written: see pageCss.
     const heightMm = pxToMm(doc.getElementById('print-root').getBoundingClientRect().height);
     const page = doc.createElement('style');
-    page.textContent = pageCss({ printer, contentHeightMm: heightMm, paperLength, edgeMargin, printWidth });
+    page.textContent = pageCss({ printer, contentHeightMm: heightMm, paperLength, edgeMargin, printWidth, widthMm });
     doc.head.appendChild(page);
     await nextFrame(frame.contentWindow);
 

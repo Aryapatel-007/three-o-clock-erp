@@ -13,7 +13,7 @@ import { LABELS } from '../i18n/labels.js';
 import { invoiceHtml, invoiceStyles, THERMAL_BILL_STYLES, thermalBillHtml } from '../printing/invoiceHtml.js';
 import { printBill, reviewQrSvg, signatureDataUrl, thermalLogoDataUrl } from '../printing/printBill.js';
 import { COPY_WORDS } from '../printing/themes/shared.js';
-import { contentWidthMm, PRINTER_KEYS, PRINTERS, THERMAL_SIDE_MM } from '../printing/printers.js';
+import { billWidthMm, PRINTER_KEYS, PRINTERS, THERMAL_SIDE_MM } from '../printing/printers.js';
 import { useDeviceSettings } from '../printing/useDeviceSettings.js';
 import { placeLabel } from '../orders/orderLabel.js';
 import Money, { moneyText } from '../../components/ui/Money.jsx';
@@ -177,7 +177,7 @@ export default function ReceiptPreviewPage() {
 
           <div className="col-span-12 flex flex-col items-center xl:col-span-5">
             <p className="mb-3 rounded-lg bg-sunken/70 px-4 py-2 type-num-meta">
-              As printed · {PRINTERS[printer].label}{thermal ? ` · ${contentWidthMm(printer, device.edgeMargin, device.printWidth)} mm printed width` : ''}
+              As printed · {PRINTERS[printer].label}{thermal ? ` · ${billWidthMm(printer, device.edgeMargin, device.printWidth)} mm printed width` : ''}
             </p>
 
             {shown.isPending && <Spinner label="Laying out the receipt" />}
@@ -196,9 +196,9 @@ export default function ReceiptPreviewPage() {
               <iframe
                 title="Bill as printed"
                 className="bg-surface shadow-float"
-                style={{ width: `${contentWidthMm(printer, device.edgeMargin, device.printWidth) + 8}mm`, height: `${slipHeight}px` }}
+                style={{ width: `${billWidthMm(printer, device.edgeMargin, device.printWidth) + 8}mm`, height: `${slipHeight}px` }}
                 onLoad={(event) => setSlipHeight(event.currentTarget.contentDocument?.body?.scrollHeight ?? 600)}
-                srcDoc={`<!doctype html><html><head><meta charset="utf-8" /><style>html,body{margin:0;background:white;color:black}body{padding:4mm}#slip{width:${contentWidthMm(printer, device.edgeMargin, device.printWidth)}mm;padding:0 ${THERMAL_SIDE_MM}mm;box-sizing:border-box}${THERMAL_BILL_STYLES}</style></head><body><div id="slip">${thermalBillHtml(invoice.data, { printer, logoDataUrl: thermalLogo.data ?? null, qrSvg: qr.data ?? null, textSize: device.billTextSize })}</div></body></html>`}
+                srcDoc={`<!doctype html><html><head><meta charset="utf-8" /><style>html,body{margin:0;background:white;color:black}body{padding:4mm}#slip{width:${billWidthMm(printer, device.edgeMargin, device.printWidth)}mm;padding:0 ${THERMAL_SIDE_MM}mm;box-sizing:border-box}${THERMAL_BILL_STYLES}</style></head><body><div id="slip">${thermalBillHtml(invoice.data, { printer, logoDataUrl: thermalLogo.data ?? null, qrSvg: qr.data ?? null, textSize: device.billTextSize })}</div></body></html>`}
               />
             )}
           </div>
