@@ -43,6 +43,7 @@ cp -R client/dist/. "$STAGE/client/dist/"
 cp "box/windows/Install ThreeOClock.bat" "$STAGE/Install ThreeOClock.bat"
 cp "box/windows/Load cafe data.bat" "$STAGE/Load cafe data.bat"
 cp "box/windows/Connect to the website.bat" "$STAGE/Connect to the website.bat"
+cp "box/windows/Start fresh.bat" "$STAGE/Start fresh.bat"
 cat > "$STAGE/READ ME FIRST.txt" <<'TXT'
 THREE O'CLOCK - SETUP ON THIS PC (once)
 

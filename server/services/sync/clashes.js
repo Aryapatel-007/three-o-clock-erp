@@ -20,10 +20,12 @@ import { syncNode } from './mode.js';
 import { isNumberClash, renumber, renumberDetail, updateCopies } from './numberClashes.js';
 
 const VOID_NOTE = 'Voided by sync: this was also done on the cafe PC while the two were apart.';
-const WEBSITE = ' (website)';
 
-const renamed = (doc) => {
-  const name = `${String(doc.name ?? '').replace(/ \(website\)$/, '')}${WEBSITE}`;
+// 2026-10-28. A second clash on the same name or phone finds the first parked copy
+// already holding the plain placeholder, so later tries number it: (website 2), -website-2.
+const suffix = (attempt) => (attempt > 1 ? `-${attempt}` : '');
+const renamed = (doc, attempt = 1) => {
+  const name = `${String(doc.name ?? '').replace(/ \(website( \d+)?\)$/, '')} (website${attempt > 1 ? ` ${attempt}` : ''})`;
   return { ...doc, name, nameLower: name.toLowerCase() };
 };
 const voided = (doc) => ({
@@ -67,16 +69,16 @@ export const CLASH_RULES = Object.freeze({
   ingredients: { partial: {}, giveUp: renamed, detail: 'An ingredient with this name was added on both. The website\'s was renamed "(website)".' },
   customers: {
     partial: {},
-    giveUp: (doc) => ({ ...doc, phone: `${doc.phone}-website`, updatedAt: nowUtc() }),
+    giveUp: (doc, attempt = 1) => ({ ...doc, phone: `${doc.phone}-website${suffix(attempt)}`, updatedAt: nowUtc() }),
     detail: 'The same guest was added on both. The PC\'s record keeps the mobile number; the website\'s is kept with "-website" after it.',
   },
   users: {
     partial: {},
-    giveUp: (doc) => ({
+    giveUp: (doc, attempt = 1) => ({
       ...doc,
       isActive: false,
-      phone: `${doc.phone}-website`,
-      email: doc.email ? `${doc.email}.website` : doc.email ?? null,
+      phone: `${doc.phone}-website${suffix(attempt)}`,
+      email: doc.email ? `${doc.email}.website${attempt > 1 ? attempt : ''}` : doc.email ?? null,
       updatedAt: nowUtc(),
     }),
     detail: 'The same phone or email was given to two staff logins. The PC\'s login stands; the website\'s was switched off.',
@@ -85,6 +87,8 @@ export const CLASH_RULES = Object.freeze({
 
 /** A record can clash on its number and on its table: each round settles one. */
 const MAX_CLASH_ROUNDS = 4;
+/** How many placeholders a parked copy tries before it is left to a person. */
+const MAX_PARK_TRIES = 5;
 
 const isDuplicate = (error) => error?.code === 11000;
 const isIdDuplicate = (error) => isDuplicate(error) && Object.keys(error.keyPattern ?? {}).join() === '_id';
@@ -135,8 +139,8 @@ export async function writeWithClashRules(db, { restaurantId, coll, doc, incomin
 
     if (syncNode() === SYNC_NODES.BOX) {
       // The incoming document is the website's: it gives the place up.
-      const parked = rule.giveUp(doc);
-      await collection.replaceOne({ _id: parked._id }, parked, { upsert: true });
+      const parked = await park(collection, rule, doc, { upsert: true });
+      if (!parked) return leftForAPerson(db, { restaurantId, coll, doc, other, incomingDoc });
       await recordConflict(db, {
         restaurantId, coll, documentId: doc._id, kind: SYNC_CONFLICT_KINDS.SAME_SLOT, detail: rule.detail,
         keptFrom: SYNC_NODES.BOX, localDoc: other, incomingDoc, resultDoc: parked,
@@ -145,8 +149,8 @@ export async function writeWithClashRules(db, { restaurantId, coll, doc, incomin
     }
 
     // On the cloud the incoming document is the PC's: the website's own gives the place up first.
-    const parked = rule.giveUp(other);
-    await collection.replaceOne({ _id: other._id }, parked);
+    const parked = await park(collection, rule, other, { upsert: false });
+    if (!parked) return leftForAPerson(db, { restaurantId, coll, doc, other, incomingDoc });
     try {
       await collection.replaceOne({ _id: doc._id }, doc, { upsert: true });
     } catch (again) {
@@ -168,6 +172,34 @@ export async function writeWithClashRules(db, { restaurantId, coll, doc, incomin
     });
     return doc;
   }
+}
+
+/**
+ * Writes the copy that gives the place up. Its placeholder (a phone with
+ * "-website", a name with "(website)") can itself be taken, by the copy parked
+ * in an earlier clash: then the next numbered one is tried. Gives back the
+ * written copy, or null when every try was taken.
+ */
+async function park(collection, rule, doc, { upsert }) {
+  for (let attempt = 1; attempt <= MAX_PARK_TRIES; attempt += 1) {
+    const parked = rule.giveUp(doc, attempt);
+    try {
+      await collection.replaceOne({ _id: parked._id }, parked, { upsert });
+      return parked;
+    } catch (error) {
+      if (!isDuplicate(error) || isIdDuplicate(error)) throw error;
+    }
+  }
+  return null;
+}
+
+async function leftForAPerson(db, { restaurantId, coll, doc, other, incomingDoc }) {
+  await recordConflict(db, {
+    restaurantId, coll, documentId: doc._id, kind: SYNC_CONFLICT_KINDS.SAME_SLOT,
+    detail: 'Not copied here: two records claim one place, and the one to give it up could not be moved aside. A person decides which stays.',
+    keptFrom: syncNode(), localDoc: other, incomingDoc,
+  });
+  return null;
 }
 
 /**
