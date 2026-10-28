@@ -11,7 +11,10 @@
  *   1. --remove      deletes a duplicate restaurant and everything it owns.
  *                    --remove-id also finds what it left behind once its
  *                    restaurant document is gone (on the website, after sync).
- *   2. --move-owner  gives the kept restaurant's owner login the duplicate
+ *   2. --unpark-owner switches back on the kept restaurant's owner login that sync
+ *                    parked (phone "...-website") and gives it back its phone, as
+ *                    the cafe PC has it. On the website's copy, after the PC.
+ *      --move-owner  gives the kept restaurant's owner login the duplicate
  *                    owner's name, phone, email, password and PIN, switched on.
  *                    After step 1, so the phone is free.
  *   3. always        deletes the kept restaurant's trading records: orders, KOTs,
@@ -73,9 +76,9 @@ const LOCAL_OF_DUPLICATE = Object.freeze(['refreshtokens']);
 const OWNER_FIELDS = Object.freeze(['name', 'phone', 'email', 'passwordHash', 'passwordChangedAt', 'pinHash']);
 
 export function parseArgs(argv) {
-  const args = { apply: false, moveOwner: false, allowRemote: false, remove: null, removeId: null, confirmBills: null, backupDir: null };
+  const args = { apply: false, moveOwner: false, unparkOwner: false, allowRemote: false, remove: null, removeId: null, confirmBills: null, backupDir: null };
   const takes = { '--uri': 'uri', '--keep': 'keep', '--remove': 'remove', '--remove-id': 'removeId', '--confirm-bills': 'confirmBills', '--backup-dir': 'backupDir' };
-  const flags = { '--apply': 'apply', '--move-owner': 'moveOwner', '--allow-remote': 'allowRemote' };
+  const flags = { '--apply': 'apply', '--move-owner': 'moveOwner', '--unpark-owner': 'unparkOwner', '--allow-remote': 'allowRemote' };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (flags[arg]) args[flags[arg]] = true;
@@ -89,6 +92,7 @@ export function parseArgs(argv) {
   if (!args.uri) throw new Error('Give --uri, the database address.');
   if (!args.keep) throw new Error('Give --keep, the exact name of the restaurant to keep.');
   if (args.moveOwner && !args.remove && !args.removeId) throw new Error('--move-owner takes the owner from --remove.');
+  if (args.moveOwner && args.unparkOwner) throw new Error('Give --move-owner or --unpark-owner, not both.');
   if (args.removeId !== null && !/^[0-9a-f]{24}$/.test(args.removeId)) throw new Error('--remove-id is a 24-character id.');
   if (args.confirmBills !== null) {
     if (!/^\d+$/.test(args.confirmBills)) throw new Error('--confirm-bills is a whole number.');
@@ -114,7 +118,7 @@ async function findOne(db, name, { required }) {
 }
 
 /** Every document the run would touch, by collection, and the owner change. */
-export async function plan(db, { keep: keepName, remove: removeName, removeId, moveOwner }) {
+export async function plan(db, { keep: keepName, remove: removeName, removeId, moveOwner, unparkOwner }) {
   const keep = await findOne(db, keepName, { required: true });
   let duplicate = removeName ? await findOne(db, removeName, { required: false }) : null;
   if (removeId) {
@@ -146,6 +150,7 @@ export async function plan(db, { keep: keepName, remove: removeName, removeId, m
   const owners = await db.collection('users').find({ restaurantId: keep._id, role: 'OWNER' }).toArray();
   let owner = null;
   if (moveOwner) owner = ownerMove(owners, (removeDocs.users ?? []).filter((user) => user.role === 'OWNER'));
+  if (unparkOwner) owner = await ownerUnpark(db, owners, removeDocs.users ?? []);
   const activeOwnerAfter = owner ? true : owners.some((user) => user.isActive);
   if (duplicate && !activeOwnerAfter) {
     throw new Error(`${keepName} has no owner login switched on. Add --move-owner, or nobody can sign in as its owner. Nothing was changed.`);
@@ -166,6 +171,21 @@ function ownerMove(owners, fromOwners) {
   const from = fromOwners[0];
   const set = Object.fromEntries(OWNER_FIELDS.map((field) => [field, from[field] ?? null]));
   return { targetId: target._id, from, set };
+}
+
+const PARKED_PHONE = /-website(-\d+)?$/;
+
+async function ownerUnpark(db, owners, removedUsers) {
+  if (owners.some((user) => user.isActive)) return null; // Done on an earlier run.
+  const parked = owners.filter((user) => PARKED_PHONE.test(String(user.phone)));
+  if (parked.length !== 1) throw new Error('The restaurant to keep has no one owner login parked by sync. Nothing was changed.');
+  const target = parked[0];
+  const phone = String(target.phone).replace(PARKED_PHONE, '');
+  const email = target.email ? String(target.email).replace(/\.website\d*$/, '') : target.email ?? null;
+  const removing = new Set(removedUsers.map((user) => String(user._id)));
+  const holder = await db.collection('users').findOne({ phone, _id: { $ne: target._id } });
+  if (holder && !removing.has(String(holder._id))) throw new Error(`Another login (${holder.name}) holds phone ending ${phone.slice(-4)}. Nothing was changed.`);
+  return { targetId: target._id, set: { name: target.name, phone, email } };
 }
 
 const countOf = (byColl) => Object.fromEntries(Object.entries(byColl).map(([coll, docs]) => [coll, docs.length]));
