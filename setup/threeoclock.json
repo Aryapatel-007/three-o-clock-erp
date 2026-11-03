@@ -14,7 +14,14 @@
     "contactPhone": "9898947333"
   },
   "settings": {
-    "floor": { "sectionOrder": ["Indoor", "Umbrella Side", "Smoking Zone", "Garden"] },
+    "floor": {
+      "sectionOrder": [
+        "Indoor",
+        "Umbrella Side",
+        "Smoking Zone",
+        "Garden"
+      ]
+    },
     "businessDayStartsAtMinutes": 300,
     "features": {
       "inventory": false,
@@ -37,8 +44,8 @@
     }
   },
   "logos": {
-    "LIGHT_GROUND": "docs/clients/threeoclock/brand/threeoclock-logo-light-ground.png",
-    "DARK_GROUND": "docs/clients/threeoclock/brand/threeoclock-logo-dark-ground.png"
+    "LIGHT_GROUND": "setup/threeoclock-logo-light-ground.png",
+    "DARK_GROUND": "setup/threeoclock-logo-dark-ground.png"
   },
   "stations": [
     {
@@ -84,22 +91,76 @@
   "tables": [
     {
       "section": "Indoor",
-      "names": ["T-1", "T-2", "T-3", "T-4", "T-5", "T-6", "T-7", "T-8", "T-9", "T-10"],
+      "names": [
+        "T-1",
+        "T-2",
+        "T-3",
+        "T-4",
+        "T-5",
+        "T-6",
+        "T-7",
+        "T-8",
+        "T-9",
+        "T-10"
+      ],
       "seats": 4
     },
     {
       "section": "Umbrella Side",
-      "names": ["T-11", "T-12", "T-13", "T-14", "T-15", "T-16"],
+      "names": [
+        "T-11",
+        "T-12",
+        "T-13",
+        "T-14",
+        "T-15",
+        "T-16"
+      ],
       "seats": 4
     },
     {
       "section": "Smoking Zone",
-      "names": ["T-17", "T-18", "T-19", "T-20", "T-21", "T-22", "T-23", "T-24", "T-25", "T-26", "T-27", "T-28", "T-29", "T-30"],
+      "names": [
+        "T-17",
+        "T-18",
+        "T-19",
+        "T-20",
+        "T-21",
+        "T-22",
+        "T-23",
+        "T-24",
+        "T-25",
+        "T-26",
+        "T-27",
+        "T-28",
+        "T-29",
+        "T-30"
+      ],
       "seats": 4
     },
     {
       "section": "Garden",
-      "names": ["T-31", "T-32", "T-33", "T-34", "T-35", "T-36", "T-37", "T-38", "T-39", "T-40", "T-41", "T-42", "T-43", "T-44", "T-45", "T-46", "T-47", "T-48", "T-49", "T-50"],
+      "names": [
+        "T-31",
+        "T-32",
+        "T-33",
+        "T-34",
+        "T-35",
+        "T-36",
+        "T-37",
+        "T-38",
+        "T-39",
+        "T-40",
+        "T-41",
+        "T-42",
+        "T-43",
+        "T-44",
+        "T-45",
+        "T-46",
+        "T-47",
+        "T-48",
+        "T-49",
+        "T-50"
+      ],
       "seats": 4
     }
   ],
@@ -108,24 +169,63 @@
       "code": "CASH",
       "name": "Cash",
       "kind": "IN_HAND",
-      "orderTypes": ["DINE_IN", "TAKEAWAY", "DELIVERY"],
+      "orderTypes": [
+        "DINE_IN",
+        "TAKEAWAY",
+        "DELIVERY"
+      ],
       "displayOrder": 0
     },
     {
       "code": "CARD",
       "name": "Card",
       "kind": "IN_HAND",
-      "orderTypes": ["DINE_IN", "TAKEAWAY", "DELIVERY"],
+      "orderTypes": [
+        "DINE_IN",
+        "TAKEAWAY",
+        "DELIVERY"
+      ],
       "displayOrder": 1
     },
     {
       "code": "UPI",
       "name": "UPI",
       "kind": "IN_HAND",
-      "orderTypes": ["DINE_IN", "TAKEAWAY", "DELIVERY"],
+      "orderTypes": [
+        "DINE_IN",
+        "TAKEAWAY",
+        "DELIVERY"
+      ],
       "displayOrder": 2
     }
   ],
   "accounts": "TO CONFIRM",
-  "staff": "TO CONFIRM"
+  "staff": [
+    {
+      "name": "Manager",
+      "phone": "9000000002",
+      "role": "MANAGER"
+    },
+    {
+      "name": "Cashier",
+      "phone": "9000000003",
+      "role": "CASHIER"
+    },
+    {
+      "name": "Waiter",
+      "phone": "9000000004",
+      "role": "WAITER"
+    },
+    {
+      "name": "Kitchen",
+      "phone": "9000000005",
+      "role": "KITCHEN",
+      "station": "Kitchen"
+    },
+    {
+      "name": "Storekeeper",
+      "phone": "9000000006",
+      "role": "STOREKEEPER"
+    }
+  ]
 }
