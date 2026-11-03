@@ -1,8 +1,6 @@
 /**
  * Before two-way sync is switched on: does the website take this PC's secret, and
- * does it already hold this PC's restaurant? Called by connect-website.ps1. 2026-11-03:
- * the PC is the main system, so a website that has never seen the restaurant is fine:
- * it takes it from the PC's first push.
+ * does it already hold this PC's restaurant? Called by connect-website.ps1.
  * P63, docs/WINDOWS-INSTALL.md section 5c.
  *
  *   node box\windows\check-website.mjs "<local MONGO_URI>" "https://<website server>" "<REPLICATION_SECRET>"
@@ -74,4 +72,13 @@ for (const restaurant of restaurants) {
   results.push({ name: restaurant.name, newestSeq: body.data.newestSeq });
 }
 
+const unknown = results.filter((result) => !result.newestSeq);
+if (unknown.length > 0) {
+  done({
+    ok: false,
+    reason: 'NOT_THE_SAME_DATA',
+    message: `The website has never seen ${unknown.map((r) => `"${r.name}"`).join(', ')} from this PC. Load a fresh copy of the website's data with "Load cafe data" first.`,
+    results,
+  }, 1);
+}
 done({ ok: true, results });
