@@ -27,7 +27,7 @@ done
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 OUT="$ROOT/release"
 STAGE="$OUT/ThreeOClock"
-RELEASE_REPO="${THREE O CLOCK_RELEASE_REPO:-Aryapatel-007/three-o-clock-releases}"
+RELEASE_REPO="${THREEOCLOCK_RELEASE_REPO:-Aryapatel-007/three-o-clock-releases}"
 cd "$ROOT"
 
 ISCC=""
