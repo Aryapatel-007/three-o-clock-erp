@@ -11,8 +11,11 @@ const METHOD_ICON = { CASH: CashIcon, UPI: ReceiptIcon, CARD: MenuBookIcon };
  * The built-in methods carry the second-language line while they keep their
  * built-in name; a renamed method, or one the owner added, shows its own name
  * alone, because it is a brand and is not translated.
+ *
+ * `onPartPayment` (2026-11-03): a Part payment tile after the methods, the same size,
+ * filling the grid's empty place, opening the split.
  */
-export default function MethodButtons({ methods, selected = null, onPick }) {
+export default function MethodButtons({ methods, selected = null, onPick, onPartPayment = null }) {
   if (methods.length === 0) {
     return <p className="type-caption text-alert">No payment method can be used for this bill. An owner can add one in Settings.</p>;
   }
@@ -42,6 +45,21 @@ export default function MethodButtons({ methods, selected = null, onPick }) {
           </button>
         );
       })}
+      {onPartPayment && methods.length > 1 && (
+        <button
+          type="button"
+          onClick={onPartPayment}
+          className="flex min-h-20 items-center gap-3 rounded-lg border border-dashed border-ink bg-surface px-3 text-left transition-colors hover:bg-sunken"
+        >
+          <span className="text-muted">
+            <CashIcon />
+          </span>
+          <span className="flex flex-col">
+            <span className="type-label">Part payment</span>
+            <span className="type-caption text-muted">Cash, UPI and more together</span>
+          </span>
+        </button>
+      )}
     </div>
   );
 }

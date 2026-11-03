@@ -6,6 +6,7 @@ import Button from '../../components/ui/Button.jsx';
 import ErrorMessage from '../../components/ui/ErrorMessage.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useTheme } from '../../context/ThemeProvider.jsx';
+import OfflineAppCard, { isWebsite } from './OfflineAppCard.jsx';
 import ResetPasswordForm from './ResetPasswordForm.jsx';
 import { forgetSignedOut, readSignedOut } from './signedOut.js';
 import { FloorDoodle, greetingFor, IdentifierField, PASSWORD_FIELD_ID, PasswordField, seatedTables, ServiceClock, SignedOutNote, useNow } from './signInParts.jsx';
@@ -175,6 +176,12 @@ export default function LoginPage() {
       <PasswordField value={password} onChange={setPassword} disabled={isSubmitting} />
 
       {error && <ErrorMessage error={error} />}
+      {/* 2026-11-03. The website and each restaurant PC keep their own logins; the PC's file is no use here. */}
+      {error && isWebsite() && (
+        <p className="type-caption -mt-2 text-muted">
+          This is the website. The passwords in "ThreeOClock logins" on a restaurant PC work only on that PC, at its own address.
+        </p>
+      )}
 
       <Button type="submit" size="lg" fullWidth isLoading={isSubmitting}>
         {isSubmitting ? 'Signing in' : 'Sign in'}
@@ -202,7 +209,12 @@ export default function LoginPage() {
 
   const seated = seatedTables({ identifier, password, isSubmitting });
   const goodbye = signedOutName !== null && !isResetting ? <SignedOutNote name={signedOutName} /> : null;
-  const footnote = <p className="type-caption mt-6 text-muted">Accounts are created by your administrator. There is no self signup.</p>;
+  const footnote = (
+    <>
+      <p className="type-caption mt-6 text-muted">Accounts are created by your administrator. There is no self signup.</p>
+      {!isResetting && <OfflineAppCard />}
+    </>
+  );
 
   if (isBranded) {
     return (

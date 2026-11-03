@@ -1,5 +1,5 @@
-# Three O'Clock: opens the till on this PC, printing with no dialog. 2026-10-22.
-# Dot-sourced by open.ps1 (the "Three O'Clock" desktop icon) and print-agent.ps1 (the
+# ThreeOClock: opens the till on this PC, printing with no dialog. 2026-10-22.
+# Dot-sourced by open.ps1 (the "ThreeOClock" desktop icon) and print-agent.ps1 (the
 # "ThreeOClock Printer" task at Windows sign-in), so both open the same till: one
 # browser profile, one sign-in, one set of This device settings. The till prints
 # its own bills and the bills captains send to the counter, on the default printer.

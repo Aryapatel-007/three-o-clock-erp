@@ -31,7 +31,7 @@ export async function postConflictKeep(req, res) {
 
 /** POST /sync/now. */
 export async function postSyncNow(req, res) {
-  const result = await syncNow();
+  const result = await syncNow({ direction: req.body?.direction ?? null });
   return sendSuccess(res, { ...result, status: await syncStatus(req.restaurantId), changes: await listIncoming(req.restaurantId) });
 }
 

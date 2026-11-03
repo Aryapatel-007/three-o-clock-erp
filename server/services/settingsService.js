@@ -83,6 +83,7 @@ const SETTING_PATHS = Object.freeze({
   'kitchen.readyMeansServed': 'settings.kitchen.readyMeansServed',
   'kitchen.oneTicketPerOrder': 'settings.kitchen.oneTicketPerOrder',
   'kitchen.splitTicketsByStation': 'settings.kitchen.splitTicketsByStation',
+  'kitchen.printKots': 'settings.kitchen.printKots',
 
   'dayClose.showCashDifferenceToManager': 'settings.dayClose.showCashDifferenceToManager',
   'cash.denominations': 'settings.cash.denominations',

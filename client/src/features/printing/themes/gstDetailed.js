@@ -85,7 +85,7 @@ export function renderGstDetailed(data, { qrSvg = null, logoDataUrl = null, sign
   ${data.isVoided ? '<div class="voided">VOIDED</div>' : ''}
   <div class="parties">
     <div>
-      ${logoDataUrl ? `<img class="logo" src="${escapeHtml(logoDataUrl)}" alt="" />` : ''}
+      ${logoDataUrl && show.logo !== false ? `<img class="logo" src="${escapeHtml(logoDataUrl)}" alt="" />` : ''}
       ${r.headerAbove ? `<div class="muted">${escapeHtml(r.headerAbove)}</div>` : ''}
       <h1>${escapeHtml(r.name)}</h1>
       ${r.headerLines.map((line) => `<div>${escapeHtml(line)}</div>`).join('')}

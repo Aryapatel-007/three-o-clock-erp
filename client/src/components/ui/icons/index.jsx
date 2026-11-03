@@ -236,3 +236,13 @@ export const ChevronDownIcon = (props) => (
     <path d="m5 7.5 5 5 5-5" />
   </Svg>
 );
+export const MenuIcon = (props) => (
+  <Svg {...props}>
+    <path d="M3 5.5h14M3 10h14M3 14.5h14" />
+  </Svg>
+);
+export const DownloadIcon = (props) => (
+  <Svg {...props}>
+    <path d="M10 3v10M6 9.5l4 4 4-4M3.5 16.5h13" />
+  </Svg>
+);

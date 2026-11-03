@@ -1,7 +1,7 @@
 /**
  * P48 through the screens, PetPooja's way: the floor's colours, 🖨 and 👁; a
  * table's history; Recall Bill by number; the counter screen with a typed
- * extra and KOT & Print; Guest gave and Give back; and a busy kitchen board.
+ * extra and Send to the kitchen; Guest gave and Give back; and a busy kitchen board.
  */
 import { expect, test } from '@playwright/test';
 
@@ -88,7 +88,7 @@ test('PetPooja\'s way: floor, history, Recall Bill, counter, change, kitchen', a
   expect(paid.status).toBe('PAID');
   expect(paid.payments[0].tender.tenderedInPaise).toBe(50000);
 
-  // The counter screen: Table 3's order beside the menu, a typed extra, KOT & Print.
+  // The counter screen: Table 3's order beside the menu, a typed extra, Send to the kitchen.
   await page.goto('/floor');
   await page.getByRole('button', { name: /^Table 3, open, / }).click();
   const panel = page.getByRole('complementary', { name: 'This order' });
@@ -99,7 +99,7 @@ test('PetPooja\'s way: floor, history, Recall Bill, counter, change, kitchen', a
   await sheet.getByLabel('Extra 1', { exact: true }).fill('Extra cheese');
   await sheet.getByLabel('₹', { exact: true }).fill('30');
   await addFromPanel(page);
-  await panel.getByRole('button', { name: 'KOT & Print' }).click();
+  await panel.getByRole('button', { name: /^Send \d+ to the kitchen$/ }).click();
   // P56. The table's first Send asks for the guest's details.
   const asked = await page.getByRole('dialog', { name: 'Guest details' }).waitFor({ timeout: 3000 }).then(() => true, () => false);
   if (asked) await skipGuestDetails(page);

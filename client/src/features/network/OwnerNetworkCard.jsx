@@ -15,7 +15,8 @@ import { useNetworkStatus } from './useNetwork.js';
 export default function OwnerNetworkCard() {
   const status = useNetworkStatus();
   const data = status.data;
-  if (!data) return null;
+  // 2026-11-03. Only the restaurant PC has a WiFi and devices of its own to report.
+  if (!data || data.role !== 'BOX') return null;
   const box = data.box;
   const connected = data.devices.filter((device) => device.connected);
   const weakest = connected[0] ?? null;

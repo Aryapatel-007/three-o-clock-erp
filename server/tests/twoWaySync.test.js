@@ -96,12 +96,13 @@ describe('the three-way merge', () => {
     assert.deepEqual(fromBox.doc.updatedAt, at(3));
   });
 
-  it('takes the newer value of a field changed both ways, and names it', () => {
+  it("takes the PC's value of a field changed both ways, even when the website's is later, and names it", () => {
     const base = { _id: 1, kitchenNote: 'none', guestCount: 2, updatedAt: at(0) };
     const local = { ...base, kitchenNote: 'Less spicy', updatedAt: at(5) };
     const incoming = { ...base, kitchenNote: 'Jain', guestCount: 4, updatedAt: at(4) };
+    // This side is the website; the PC's change came in, earlier than the website's.
     const { doc, conflictFields } = threeWayMerge({ base, local, incoming, localIsBox: false });
-    assert.equal(doc.kitchenNote, 'Less spicy', 'the later change wins');
+    assert.equal(doc.kitchenNote, 'Jain', "the PC's change wins");
     assert.equal(doc.guestCount, 4, 'a field only one side changed keeps that change');
     assert.deepEqual(conflictFields, ['kitchenNote']);
   });
@@ -156,7 +157,7 @@ describe('applying the other side\'s changes', () => {
     assert.equal(await applyPeerEntry(db, restaurantId, entry('orders', incoming)), APPLY_OUTCOMES.MERGED);
     const here = await db.collection('orders').findOne({ _id: base._id });
     assert.deepEqual(here.lines.map((item) => item.itemName), ['Pani Puri', 'Sev Puri', 'Bhel']);
-    assert.equal(here.kitchenNote, 'Jain', 'the later change');
+    assert.equal(here.kitchenNote, 'Jain', "the PC's change");
     const conflict = await db.collection('syncconflicts').findOne({ documentId: base._id });
     assert.equal(conflict.kind, 'EDITED_BOTH');
     assert.deepEqual(conflict.fields, ['kitchenNote']);

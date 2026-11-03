@@ -84,7 +84,7 @@ const fromMe = (me) => ({
   },
   // P29 Part C. The kitchen's ready also serves the dish.
   // P58. Off: one ticket per Send with every dish, and no station chips on the kitchen screen.
-  kitchen: { readyMeansServed: me.kitchen?.readyMeansServed ?? true, splitTicketsByStation: me.kitchen?.splitTicketsByStation ?? true },
+  kitchen: { readyMeansServed: me.kitchen?.readyMeansServed ?? true, splitTicketsByStation: me.kitchen?.splitTicketsByStation ?? true, printKots: me.kitchen?.printKots ?? true },
   // P47. The modes Other offers one tap each.
   payments: { otherModes: me.payments?.otherModes ?? null },
   // P25 Part F. The active notes and coins, for the cash counter.

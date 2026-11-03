@@ -1,30 +1,59 @@
 import Money from '../../components/ui/Money.jsx';
-import StateChip from '../../components/ui/StateChip.jsx';
+import { MinusIcon, PlusIcon } from '../../components/ui/icons/index.jsx';
 
-import { QuantityStepper } from './LineOptionsPanel.jsx';
 import { describeReason, LINE_CANCEL_REASONS } from './cancelReasons.js';
 
 /**
- * How far along one line is, through `StateChip`: word, icon and colour
- * together. Not sent has no state colour, the way a free table has none.
+ * How far along a dish is, in a small dot and word beside it. Not sent has no
+ * colour, the way a free table has none.
  */
 const LINE_STATES = {
-  PENDING: { state: 'free', word: 'Not sent' },
-  FIRED: { state: 'open', word: 'With the kitchen' },
-  READY: { state: 'ok', word: 'Ready' },
-  SERVED: { state: 'served', word: 'Served' },
-  CANCELLED: { state: 'alert', word: 'Cancelled' },
+  PENDING: { dot: 'bg-muted', word: 'Not sent' },
+  FIRED: { dot: 'bg-open', word: 'With the kitchen' },
+  READY: { dot: 'bg-ok', word: 'Ready' },
+  SERVED: { dot: 'bg-ok', word: 'Served' },
+  CANCELLED: { dot: 'bg-alert', word: 'Cancelled' },
 };
 
-/** P29 Part C. Served by the kitchen's ready: the served state's colour, with the kitchen's word. */
-const READY_SERVED = { state: 'served', word: 'Ready' };
+/** The same dish at the same price, at the same stage, shows as one row, "2 ×", as the bill prints it. Notes are listed under it. */
+const sameDish = (line) => [line.status, line.itemName, line.variantName ?? '', line.addOns.map((addOn) => addOn.name).join('|'), line.unitPriceInPaise].join('\u0000');
+
+function groupLines(lines, { hideCancelled }) {
+  const groups = [];
+  const byKey = new Map();
+  for (const line of lines) {
+    if (hideCancelled && line.status === 'CANCELLED') continue;
+    // A dish not sent keeps its own row: its stepper and note are its own.
+    if (line.status === 'PENDING' || line.status === 'CANCELLED') {
+      groups.push({ key: line.id, lines: [line] });
+      continue;
+    }
+    const key = sameDish(line);
+    const group = byKey.get(key);
+    if (group) group.lines.push(line);
+    else {
+      const created = { key: line.id, lines: [line] };
+      byKey.set(key, created);
+      groups.push(created);
+    }
+  }
+  return groups.map((group) => ({
+    ...group,
+    line: group.lines[group.lines.length - 1],
+    quantity: group.lines.reduce((sum, line) => sum + line.quantity, 0),
+    totalInPaise: group.lines.reduce((sum, line) => sum + line.lineTotalInPaise, 0),
+    notes: [...new Set(group.lines.map((line) => line.notes).filter(Boolean))].join('; ') || null,
+  }));
+}
 
 /**
- * The lines on an order, densest thing on the screen.
+ * The lines on an order, read like the printed bill: "2 × Masala Chai" and its
+ * amount, with how far along it is in a small word under it (2026-11-03). One
+ * look for every state of the order, so a table looks the same before and after
+ * its dishes are sent and served.
  *
- * A list, not cards: this is read, not tapped. A PENDING line has its
- * stepper and Remove, which asks nothing (P49). A sent line has Change (P42): fewer of it, a new
- * note while the kitchen has not made it, removing it, or swapping it.
+ * A dish not sent has a small stepper (− at one removes it, P49) and its own note.
+ * A sent dish has Change (P42): fewer of it, a new note, removing it, or swapping it.
  */
 export default function OrderLineList({
   lines,
@@ -38,136 +67,136 @@ export default function OrderLineList({
   onServeLine,
   // P29. The order has a bill: its lines change only through the bill.
   locked = false,
-  // P29 Part C. The kitchen's ready serves the line: no served step, and a served line reads "Ready".
+  // P29 Part C. The kitchen's ready serves the line: no served step.
   readyMeansServed = false,
+  // A dish not sent yet takes its note here, in the order.
+  onNoteLine = null,
+  // Everything sent or served: cancelled dishes are left off, as on the bill.
+  billView = false,
 }) {
   if (lines.length === 0) {
-    return (
-      <p className="type-body px-4 py-8 text-muted">
-        Nothing on this order yet. Pick something from the menu.
-      </p>
-    );
+    return <p className="type-body px-4 py-8 text-muted">Nothing on this order yet. Pick something from the menu.</p>;
   }
 
+  const groups = groupLines(lines, { hideCancelled: billView });
+  if (groups.length === 0) return <p className="type-body px-4 py-8 text-muted">Every dish on this order was cancelled.</p>;
+
   return (
-    <ul className="divide-y divide-line">
-      {lines.map((line) => {
+    <ul className="flex flex-col px-4 py-1">
+      {groups.map(({ key, line, quantity, totalInPaise, notes }) => {
         const isCancelled = line.status === 'CANCELLED';
         const isPending = line.status === 'PENDING';
+        const state = LINE_STATES[line.status] ?? LINE_STATES.PENDING;
+        const canChange = !isCancelled && !isPending && !locked && (line.status !== 'SERVED' || readyMeansServed);
+        const reason = isCancelled ? describeReason(LINE_CANCEL_REASONS, line.cancelReasonCode, line.cancelReason) : null;
 
         return (
-          <li key={line.id} className={['px-4 py-2', isCancelled ? 'opacity-60' : ''].join(' ')}>
-            <div className="flex items-center justify-between gap-2">
-              <div className="min-w-0 flex-1">
-                <p
-                  title={line.variantName ? `${line.itemName} · ${line.variantName}` : line.itemName}
-                  className={[
-                    'type-body line-clamp-2 break-words',
-                    isCancelled ? 'line-through' : '',
-                  ].join(' ')}
-                >
-                  {line.itemName}
-                  {line.variantName && (
-                    <span className="text-muted"> · {line.variantName}</span>
-                  )}
-                </p>
+          <li key={key} className={['flex items-start gap-2 border-b border-dashed border-line py-2 last:border-b-0', isCancelled ? 'opacity-60' : ''].join(' ')}>
+            {isPending && !locked ? (
+              <MiniStepper
+                value={line.quantity}
+                disabled={isBusy}
+                onLess={() => (line.quantity > 1 ? onChangeQuantity(line, line.quantity - 1) : onRemoveDraft ? onRemoveDraft(line) : onCancelLine(line))}
+                onMore={() => onChangeQuantity(line, line.quantity + 1)}
+                name={line.itemName}
+              />
+            ) : (
+              <span className="type-num w-9 flex-none pt-px">{quantity} ×</span>
+            )}
 
-                {line.addOns.length > 0 && (
-                  <p className="type-caption text-muted">
-                    {line.addOns.map((addOn) => addOn.name).join(', ')}
-                  </p>
-                )}
-
-                {line.notes && (
-                  <p className="type-caption text-muted">“{line.notes}”</p>
-                )}
-
-                <p className="mt-0.5 flex flex-wrap items-center gap-2">
-                  <StateChip
-                    {...(readyMeansServed && line.status === 'SERVED' ? READY_SERVED : (LINE_STATES[line.status] ?? LINE_STATES.PENDING))}
-                    size="sm"
-                  />
-                  {isCancelled && line.wasPrepared === true && <span className="type-caption text-muted">was made</span>}
-                  {isCancelled && line.wasPrepared === false && <span className="type-caption text-muted">not made</span>}
-                </p>
-
-                {/* P04. The fixed reason's label and the note. A line cancelled
-                    with the whole order carries only the note. */}
-                {isCancelled && describeReason(LINE_CANCEL_REASONS, line.cancelReasonCode, line.cancelReason) && (
-                  <p className="type-caption text-muted">
-                    {describeReason(LINE_CANCEL_REASONS, line.cancelReasonCode, line.cancelReason)}
-                  </p>
-                )}
-              </div>
-
-              <div className="ml-auto flex-none text-right">
-                <Money paise={line.lineTotalInPaise} size="num" tabular className="block" />
-                <span className="type-num-meta block text-muted">
-                  {line.quantity} × <Money paise={line.unitPriceInPaise} />
+            <div className="min-w-0 flex-1">
+              <p className={['type-body break-words leading-snug', isCancelled ? 'line-through' : ''].join(' ')}>
+                {line.itemName}
+                {line.variantName && <span className="text-muted"> · {line.variantName}</span>}
+              </p>
+              {line.addOns.length > 0 && <p className="type-caption text-muted">{line.addOns.map((addOn) => addOn.name).join(', ')}</p>}
+              {notes && <p className="type-caption text-ink">Note: {notes}</p>}
+              <p className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1">
+                <span className="inline-flex items-center gap-1.5 text-[11px] leading-4 text-muted">
+                  <span className={`size-1.5 rounded-full ${state.dot}`} aria-hidden="true" />
+                  {state.word}
+                  {isCancelled && line.wasPrepared === true && ' · was made'}
+                  {isCancelled && line.wasPrepared === false && ' · not made'}
                 </span>
-              </div>
-              {/* P42, compact for a captain's phone: Change on the dish's own line. */}
-              {!isCancelled && !isPending && onChangeSentLine && (line.status !== 'SERVED' || readyMeansServed) && !locked && (
-                <button
-                  type="button"
-                  disabled={isBusy}
-                  onClick={() => onChangeSentLine(line)}
-                  className="type-label min-h-12 flex-none rounded-lg border border-ink bg-surface px-3 hover:bg-sunken disabled:opacity-60"
-                >
-                  Change
-                </button>
-              )}
+                {/* Always in sight on a dish not yet sent, so a request for the kitchen is never forgotten. */}
+                {isPending && !locked && onNoteLine && (
+                  <button
+                    type="button"
+                    disabled={isBusy}
+                    onClick={() => onNoteLine(line)}
+                    className="text-[11px] font-semibold leading-4 text-ink underline decoration-dotted underline-offset-2 disabled:opacity-60"
+                  >
+                    {line.notes ? 'Edit note' : '+ Add note'}
+                  </button>
+                )}
+              </p>
+              {reason && <p className="type-caption text-muted">{reason}</p>}
             </div>
 
-            {!isCancelled && (
-              <div className="mt-2 flex flex-wrap items-center gap-2 empty:hidden">
-                {isPending && !locked && (
-                  <QuantityStepper
-                    value={line.quantity}
-                    disabled={isBusy}
-                    onChange={(quantity) => onChangeQuantity(line, quantity)}
-                  />
-                )}
+            <span className="flex flex-none flex-col items-end">
+              <Money paise={totalInPaise} size="num" tabular className={isCancelled ? 'line-through' : ''} />
+              {quantity > 1 && (
+                <span className="text-[11px] leading-4 text-muted">
+                  <Money paise={line.unitPriceInPaise} /> each
+                </span>
+              )}
+            </span>
 
-                {line.status === 'READY' && !readyMeansServed && (
-                  <button
-                    type="button"
-                    disabled={isBusy}
-                    onClick={() => onServeLine(line)}
-                    className="type-button min-h-12 rounded-lg border border-ink bg-surface px-4 hover:bg-sunken disabled:opacity-60"
-                  >
-                    Mark served
-                  </button>
-                )}
-
-                {isPending && onRemoveDraft && !locked && (
-                  <button
-                    type="button"
-                    disabled={isBusy}
-                    onClick={() => onRemoveDraft(line)}
-                    aria-label={`Remove ${line.itemName}`}
-                    className="type-label min-h-12 rounded-lg px-3 text-alert hover:bg-alert-tint disabled:opacity-60"
-                  >
-                    Remove
-                  </button>
-                )}
-
-                {/* P29: when the kitchen's ready serves the dish, a served line is one the kitchen just made, and may still be cancelled. */}
-                {((isPending && !onRemoveDraft) || (!isPending && !onChangeSentLine)) && (line.status !== 'SERVED' || readyMeansServed) && !locked && (
-                  <button
-                    type="button"
-                    disabled={isBusy}
-                    onClick={() => onCancelLine(line)}
-                    className="type-label min-h-12 rounded-lg px-3 text-alert hover:bg-alert-tint disabled:opacity-60"
-                  >
-                    Cancel line
-                  </button>
-                )}
-              </div>
+            {line.status === 'READY' && !readyMeansServed && !locked && (
+              <SmallAction disabled={isBusy} onClick={() => onServeLine(line)}>
+                Serve
+              </SmallAction>
+            )}
+            {canChange && onChangeSentLine && (
+              <SmallAction disabled={isBusy} onClick={() => onChangeSentLine(line)}>
+                Change
+              </SmallAction>
+            )}
+            {canChange && !onChangeSentLine && (
+              <SmallAction disabled={isBusy} onClick={() => onCancelLine(line)}>
+                Cancel
+              </SmallAction>
             )}
           </li>
         );
       })}
     </ul>
+  );
+}
+
+function SmallAction({ children, ...props }) {
+  return (
+    <button type="button" className="type-label -my-1 min-h-10 flex-none rounded-lg px-2 text-muted hover:bg-sunken hover:text-ink disabled:opacity-60" {...props}>
+      {children}
+    </button>
+  );
+}
+
+/** A dish not sent: − and + around its quantity, small enough to sit in the row. */
+function MiniStepper({ value, onLess, onMore, disabled, name }) {
+  return (
+    <span className="-my-0.5 inline-flex flex-none items-center rounded-lg border border-line">
+      <button
+        type="button"
+        aria-label={value > 1 ? `One fewer ${name}` : `Remove ${name}`}
+        disabled={disabled}
+        onClick={onLess}
+        className="flex size-8 items-center justify-center rounded-lg hover:bg-sunken disabled:opacity-40"
+      >
+        <MinusIcon size={14} />
+      </button>
+      <span aria-live="polite" className="type-num w-5 text-center">
+        {value}
+      </span>
+      <button
+        type="button"
+        aria-label={`One more ${name}`}
+        disabled={disabled}
+        onClick={onMore}
+        className="flex size-8 items-center justify-center rounded-lg hover:bg-sunken disabled:opacity-40"
+      >
+        <PlusIcon size={14} />
+      </button>
+    </span>
   );
 }

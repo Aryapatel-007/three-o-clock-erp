@@ -62,3 +62,8 @@ export function getServerStarts(days = 7) {
 export function getServerBackups() {
   return api.get('/system/backups');
 }
+
+/** GET /system/printers. The restaurant PC's installed printers. OWNER, MANAGER, CASHIER. 2026-11-03. */
+export function listInstalledPrinters() {
+  return api.get('/system/printers');
+}

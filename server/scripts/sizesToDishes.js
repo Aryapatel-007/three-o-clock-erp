@@ -1,8 +1,8 @@
 /**
  * P35 Part B: an item's sizes become dishes of their own.
  *
- *   npm run menu:sizes-to-dishes -- --restaurant "Z Chaat" --item "Aerated Drinks"           a dry run
- *   npm run menu:sizes-to-dishes -- --restaurant "Z Chaat" --item "Aerated Drinks" --apply   writes
+ *   npm run menu:sizes-to-dishes -- --restaurant "Three O’Clock" --item "Aerated Drinks"           a dry run
+ *   npm run menu:sizes-to-dishes -- --restaurant "Three O’Clock" --item "Aerated Drinks" --apply   writes
  *
  * For the named item, every size becomes a dish in the same category, at the
  * size's own price, the item's GST, the size's availability and a copy of the

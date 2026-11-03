@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { getNetworkSetup, getNetworkStatus } from '../../api/network.js';
 import Button from '../../components/ui/Button.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
+import { isWebsite, OFFLINE_APP_URL } from '../auth/OfflineAppCard.jsx';
 import { rememberedSetup } from './linkMonitor.js';
 import SignalBars from './SignalBars.jsx';
 import { useLink } from './useNetwork.js';
@@ -47,6 +48,62 @@ function Qr({ text, label }) {
   );
 }
 
+/** Back to the app, at the top where people look for it. Not printed on the card. */
+function BackHome() {
+  return (
+    <Link to="/" className="type-label inline-flex min-h-12 items-center self-start rounded-lg px-2 text-muted hover:bg-sunken hover:text-ink print:hidden">
+      ← Back to Home
+    </Link>
+  );
+}
+
+/** The website's card: one address and its QR code, for any device with the internet. */
+function WebsiteConnect({ address }) {
+  return (
+    <div className="v2 min-h-dvh bg-ground text-ink">
+      <main className="mx-auto flex w-full max-w-3xl flex-col gap-5 p-4 print:p-0">
+        <BackHome />
+        <header>
+          <h1 className="type-title">Connect a device to Three O’Clock</h1>
+          <p className="type-caption text-muted">Any phone, tablet or computer with the internet opens the same system. Each person then signs in with their own login.</p>
+        </header>
+
+        <section className="flex flex-col items-center gap-3 rounded-xl border border-line bg-surface p-6 text-center">
+          <p className="type-label">Open this address, or scan the code with the camera</p>
+          <p className="type-heading break-all font-mono">{address}</p>
+          <Qr text={address} label="Scan to open Three O’Clock" />
+        </section>
+
+        <section className="rounded-xl border border-line bg-surface p-4">
+          <h2 className="type-label mb-2">Keep it one tap away</h2>
+          <ul className="type-body flex list-disc flex-col gap-1 pl-5">
+            <li><strong>Android (Chrome):</strong> menu ⋮, then <em>Add to Home screen</em>.</li>
+            <li><strong>iPad or iPhone (Safari):</strong> the share button, then <em>Add to Home Screen</em>.</li>
+            <li><strong>Windows or Mac:</strong> bookmark it, or in Chrome use ⋮, <em>Cast, save and share</em>, <em>Install page as app</em>.</li>
+          </ul>
+        </section>
+
+        <section className="rounded-xl border border-line bg-surface p-4">
+          <h2 className="type-label mb-2">Working without the internet</h2>
+          <p className="type-body">
+            Install the offline app on the restaurant&apos;s Windows PC: billing, kitchen tickets and printing then keep working when the
+            internet is down, and tablets connect to that PC over the WiFi.
+          </p>
+          <a href={OFFLINE_APP_URL} className="type-button mt-3 inline-flex min-h-12 items-center rounded-lg border border-ink bg-surface px-4 hover:bg-sunken print:hidden">
+            Download for Windows
+          </a>
+        </section>
+
+        <div className="flex flex-wrap gap-3 print:hidden">
+          <Button onClick={() => window.print()} variant="secondary">
+            Print this card
+          </Button>
+        </div>
+      </main>
+    </div>
+  );
+}
+
 export default function ConnectPage() {
   const { user } = useAuth();
   const link = useLink({ signedIn: Boolean(user) });
@@ -59,17 +116,24 @@ export default function ConnectPage() {
     if (manager) getNetworkStatus().then((status) => setPassword(status.staffWifi?.password ?? null)).catch(() => {});
   }, [manager]);
 
-  const address = setup?.boxUrl ?? window.location.origin;
+  // 2026-11-03. On the website there is no restaurant WiFi to join: any device with the
+  // internet opens the website itself. The server's own address there is the cloud
+  // host's internal one, which no tablet can reach, so it is never shown.
+  const website = isWebsite();
+  const address = website ? window.location.origin : (setup?.boxUrl ?? window.location.origin);
   const wifiName = setup?.wifiName ?? null;
   const reachable = link.status !== 'UNREACHABLE';
+
+  if (website) return <WebsiteConnect address={address} />;
 
   return (
     <div className="v2 min-h-dvh bg-ground text-ink">
       <main className="mx-auto flex w-full max-w-3xl flex-col gap-5 p-4 print:p-0">
+        <BackHome />
         <header className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="type-title">Connect a device to the cafe system</h1>
-            <p className="type-caption text-muted">Tills, captain tablets, kitchen screens and phones all use the cafe&apos;s own server, over the cafe WiFi.</p>
+            <h1 className="type-title">Connect a device to Three O’Clock</h1>
+            <p className="type-caption text-muted">Tills, captain tablets, kitchen screens and phones all use the restaurant&apos;s own server, over the restaurant WiFi.</p>
           </div>
           <span className="flex items-center gap-2 print:hidden">
             <span className={`flex items-center gap-1.5 type-label ${reachable ? 'text-ok' : 'text-alert'}`}>

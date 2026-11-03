@@ -10,8 +10,19 @@ const MAX_LENGTH = 200;
  * P56. One note for every dish on the order, like "Less spicy" for a whole
  * table. Printed at the top of every KOT as FOR ALL ITEMS, dishes already sent
  * included. The same one-tap requests as a dish's own note.
+ *
+ * 2026-11-03: also the note for one dish in the order, opened from the dish's own
+ * Add note in the order (the same 200-character limit, LINE_NOTES_MAX_LENGTH).
  */
-export default function KitchenNoteSheet({ current, isBusy, onCancel, onSave }) {
+export default function KitchenNoteSheet({
+  current,
+  isBusy,
+  onCancel,
+  onSave,
+  title = 'Note for all dishes',
+  description = 'Printed at the top of every KOT for this order, dishes already sent included.',
+  placeholder = 'What the whole table wants, like Less spicy',
+}) {
   const [note, setNote] = useState(current ?? '');
   const chosen = note.split(',').map((part) => part.trim());
   const toggle = (word) =>
@@ -23,7 +34,7 @@ export default function KitchenNoteSheet({ current, isBusy, onCancel, onSave }) 
 
   return (
     <Sheet
-      title="Note for all dishes"
+      title={title}
       onClose={onCancel}
       footer={
         <div className="flex flex-col gap-2">
@@ -48,15 +59,16 @@ export default function KitchenNoteSheet({ current, isBusy, onCancel, onSave }) 
         </div>
       }
     >
-      <p className="type-caption mb-3 text-muted">Printed at the top of every KOT for this order, dishes already sent included.</p>
+      <p className="type-caption mb-3 text-muted">{description}</p>
       <label className="block">
-        <span className="type-label mb-2 block">Note for all dishes</span>
+        <span className="type-label mb-2 block">{title}</span>
         <textarea
           value={note}
           onChange={(event) => setNote(event.target.value)}
           rows={2}
           maxLength={MAX_LENGTH}
-          placeholder="What the whole table wants, like Less spicy"
+          autoFocus
+          placeholder={placeholder}
           className="type-body min-h-12 w-full rounded-lg border border-muted bg-surface px-3 py-2 text-ink placeholder:text-muted"
         />
       </label>

@@ -122,7 +122,7 @@ function ReportScreen({ report }) {
               <Link to="/reports" className="inline-flex min-h-12 items-center hover:underline">
                 Reports
               </Link>{' '}
-              › {report.id}
+              › {report.title}
             </p>
             <h1 className="type-title ">{report.title}</h1>
             <p className="type-caption text-muted print:hidden">{report.question}</p>
@@ -318,7 +318,7 @@ function PresetButton({ active, onClick, children }) {
       className={[
         'min-h-12 rounded-lg px-3 type-caption transition-colors',
         '',
-        active ? 'bg-sunken text-ink ring-2 ring-inset ring-ink' : 'bg-sunken text-muted hover:text-ink',
+        active ? 'bg-ink text-surface' : 'bg-sunken text-muted hover:text-ink',
       ].join(' ')}
     >
       {children}

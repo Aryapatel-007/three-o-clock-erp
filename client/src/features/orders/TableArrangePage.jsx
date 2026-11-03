@@ -96,7 +96,7 @@ export default function TableArrangePage() {
                 type="button"
                 aria-pressed={active === name}
                 onClick={() => setSection(name)}
-                className={['min-h-12 rounded-lg px-4 type-label border border-line', active === name ? 'bg-sunken text-ink ring-2 ring-inset ring-ink' : 'bg-surface text-muted'].join(' ')}
+                className={['min-h-12 rounded-lg px-4 type-label border border-line', active === name ? 'bg-ink text-surface' : 'bg-surface text-muted'].join(' ')}
               >
                 {name}
               </button>
@@ -343,7 +343,7 @@ function SectionEditor({ section, tables, onSaved, onError }) {
                   type="button"
                   aria-pressed={selected.w === size.w && selected.h === size.h}
                   onClick={() => update(selectedId, { w: size.w, h: size.h })}
-                  className={['min-h-12 rounded-lg type-num-meta', selected.w === size.w && selected.h === size.h ? 'bg-sunken text-ink ring-2 ring-inset ring-ink' : 'bg-sunken'].join(' ')}
+                  className={['min-h-12 rounded-lg type-num-meta', selected.w === size.w && selected.h === size.h ? 'bg-ink text-surface' : 'bg-sunken'].join(' ')}
                 >
                   {size.label}
                 </button>
@@ -361,7 +361,7 @@ function SectionEditor({ section, tables, onSaved, onError }) {
                     aria-pressed={selected.shape === shape.value}
                     onClick={() => update(selectedId, { shape: shape.value })}
                     title={disabled ? 'A long table has a different width and height.' : undefined}
-                    className={['min-h-12 rounded-lg type-caption disabled:opacity-40', selected.shape === shape.value ? 'bg-sunken text-ink ring-2 ring-inset ring-ink' : 'bg-sunken'].join(' ')}
+                    className={['min-h-12 rounded-lg type-caption disabled:opacity-40', selected.shape === shape.value ? 'bg-ink text-surface' : 'bg-sunken'].join(' ')}
                   >
                     {shape.label}
                   </button>

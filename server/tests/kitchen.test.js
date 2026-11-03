@@ -148,8 +148,8 @@ describe('firing', () => {
     assert.equal(again.body.error.code, 'BUSINESS_RULE_VIOLATED');
   });
 
-  // P36. With one ticket per order (the default), a second round goes on the same ticket.
-  it('adds a second round to the same ticket, under the same number', async () => {
+  // 2026-11-03. Every Send is a new KOT, even from the same table (P36's one ticket per order is gone).
+  it('makes a new ticket, under a new number, for a second Send from the same order', async () => {
     const { tokens, order, second } = await orderWithTwoLines();
 
     const first = await fireOrder(tokens.WAITER, order.id, order.version);
@@ -166,16 +166,14 @@ describe('firing', () => {
     assert.equal(secondFire.status, 200);
     const secondKot = secondFire.body.data.kot;
 
-    assert.equal(secondKot.kotNumber, first.body.data.kot.kotNumber);
-    assert.equal(secondFire.body.data.round, 2);
-    assert.equal(secondKot.rounds, 2);
-    // The new round is on it as round 2. This is the starters-then-mains flow.
-    const roundTwo = secondKot.lines.filter((line) => line.round === 2);
-    assert.equal(roundTwo.length, 1);
-    assert.equal(roundTwo[0].quantity, 3);
+    assert.notEqual(secondKot.id, first.body.data.kot.id);
+    assert.equal(secondKot.kotNumber, first.body.data.kot.kotNumber + 1);
+    // The mains alone are on it. This is the starters-then-mains flow.
+    assert.equal(secondKot.lines.length, 1);
+    assert.equal(secondKot.lines[0].quantity, 3);
 
     const tickets = await listKots(tokens.KITCHEN);
-    assert.equal(tickets.body.data.length, 1);
+    assert.equal(tickets.body.data.length, 2);
   });
 
   it('refuses to fire with a stale version', async () => {
@@ -489,7 +487,7 @@ describe('the whole lifecycle', () => {
     // Not everything is served, so the order is still open.
     assert.equal(order.status, 'OPEN');
 
-    // 6. Two more go on, twenty minutes later, and are fired as round 2 of the same ticket (P36).
+    // 6. Two more go on, twenty minutes later, and are fired on a new ticket.
     order = (
       await addLines(tokens.WAITER, order.id, {
         version: order.version,
@@ -499,9 +497,8 @@ describe('the whole lifecycle', () => {
 
     fired = (await fireOrder(tokens.WAITER, order.id, order.version)).body.data;
     order = fired.order;
-    assert.equal(fired.kot.kotNumber, 1);
-    assert.equal(fired.round, 2);
-    assert.equal(fired.kot.lines.filter((line) => line.round === 2).length, 1);
+    assert.equal(fired.kot.kotNumber, 2);
+    assert.equal(fired.kot.lines.length, 1);
 
     // 7. Everything else comes up and goes out.
     const tickets = await listKots(tokens.KITCHEN);

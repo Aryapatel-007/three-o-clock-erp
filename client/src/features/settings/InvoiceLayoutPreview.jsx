@@ -99,7 +99,7 @@ export function Preview({ tab, invoice, latest, layout, terms, pan, udyam, accen
           className="mx-auto bg-surface shadow-float"
           style={{ width: `${width + 8}mm`, height: `${slipHeight}px` }}
           onLoad={(event) => setSlipHeight(event.currentTarget.contentDocument?.body?.scrollHeight ?? 600)}
-          srcDoc={`<!doctype html><html><head><meta charset="utf-8" /><style>html,body{margin:0;background:white;color:black}body{padding:4mm}#slip{width:${width}mm;padding:0 ${THERMAL_SIDE_MM}mm;box-sizing:border-box}${THERMAL_BILL_STYLES}</style></head><body><div id="slip">${thermalBillHtml(data, { printer: 'THERMAL_80' })}</div></body></html>`}
+          srcDoc={`<!doctype html><html><head><meta charset="utf-8" /><style>html,body{margin:0;background:white;color:black}body{padding:4mm}#slip{width:${width}mm;padding:0 ${THERMAL_SIDE_MM}mm;box-sizing:border-box}${THERMAL_BILL_STYLES}</style></head><body><div id="slip">${thermalBillHtml(data, { printer: 'THERMAL_80', logoDataUrl })}</div></body></html>`}
         />
       ) : (
         <ScaledPage widthMm={PRINTERS[paper].widthMm} heightMm={PRINTERS[paper].heightMm}>

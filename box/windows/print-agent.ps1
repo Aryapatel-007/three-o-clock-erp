@@ -1,4 +1,4 @@
-# Three O'Clock: keeps the till open on the cafe PC. 2026-10-22, at Rishi's word: a
+# ThreeOClock: keeps the till open on the cafe PC. 2026-10-22, at Rishi's word: a
 # captain's one tap prints the bill, with nobody at the counter.
 #
 # Run hidden (print-agent.vbs) by the "ThreeOClock Printer" task when anyone signs in to

@@ -129,7 +129,8 @@ export default function BillsListPage() {
                 <DateField label="From" value={from} onChange={resetPage(setFrom)} />
                 <DateField label="To" value={to} onChange={resetPage(setTo)} />
 
-                <div className="flex items-center gap-1 rounded-full bg-sunken p-1" role="group" aria-label="Status">
+                {/* A segmented control: the chosen status is a raised segment on the track. */}
+                <div className="flex items-center gap-1 rounded-lg bg-sunken p-1" role="group" aria-label="Status">
                   {STATUS_FILTERS.map((option) => (
                     <button
                       key={option.value}
@@ -137,9 +138,8 @@ export default function BillsListPage() {
                       aria-pressed={status === option.value}
                       onClick={() => resetPage(setStatus)(option.value)}
                       className={[
-                        'min-h-12 rounded-lg px-4 type-caption transition-colors',
-                        '',
-                        status === option.value ? 'bg-sunken text-ink ring-2 ring-inset ring-ink' : 'text-muted hover:text-ink',
+                        'min-h-11 rounded-md px-4 type-label transition-colors',
+                        status === option.value ? 'bg-surface text-ink shadow-sm' : 'text-muted hover:text-ink',
                       ].join(' ')}
                     >
                       {option.label}

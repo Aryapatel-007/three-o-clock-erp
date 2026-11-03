@@ -24,7 +24,7 @@ import { announce } from '../live/bus.js';
 import { isMirrorCollection, TENANT_COLLECTION } from '../replication/collections.js';
 import { ValidationError } from '../../utils/errors.js';
 import { RETRY, writeWithClashRules } from './clashes.js';
-import { otherNode, recordConflict } from './conflicts.js';
+import { recordConflict } from './conflicts.js';
 import { docHash, sameDoc } from './hash.js';
 import { threeWayMerge } from './merge.js';
 import { alignCopies, counterValue } from './numberClashes.js';
@@ -153,13 +153,11 @@ async function applyOnce(db, restaurantId, entry) {
   }
   // A counter keeps the higher value: nothing for a person to decide.
   if (conflictFields.length > 0 && entry.coll !== 'counters') {
-    const localTime = new Date(local.updatedAt ?? 0).getTime();
-    const incomingTime = new Date(incoming.updatedAt ?? 0).getTime();
-    let keptFrom = localTime > incomingTime ? syncNode() : otherNode();
-    if (localTime === incomingTime) keptFrom = SYNC_NODES.BOX;
+    // 2026-11-03: the PC's version of a value both changed is the one kept (merge.js).
+    const keptFrom = SYNC_NODES.BOX;
     await recordConflict(db, {
       restaurantId, coll: entry.coll, documentId: entry.documentId, kind: SYNC_CONFLICT_KINDS.EDITED_BOTH,
-      detail: 'Changed on the cafe PC and on the website before they could tell each other. Where both changed the same thing, the later change was kept; everything else from both was kept.',
+      detail: "Changed on the restaurant PC and on the website before they could tell each other. Where both changed the same thing, the PC's change was kept; everything else from both was kept.",
       fields: [...new Set(conflictFields.map((field) => field.split(/[.[]/)[0]))],
       keptFrom, localDoc: local, incomingDoc: incoming, resultDoc: merged,
     });

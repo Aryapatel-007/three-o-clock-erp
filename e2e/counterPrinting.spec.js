@@ -5,7 +5,7 @@
  * set on This device. A captain on a phone sends dishes from two stations:
  * the counter, sitting on the bills list, prints each KOT once. The captain
  * bills the table and taps Print at counter: the counter prints the bill once.
- * Then the counter's own KOT & Print prints its ticket once, not a second time
+ * Then the counter's own Send to the kitchen prints its ticket once (KOT & Print is gone, 2026-11-03), not a second time
  * from the background printer.
  */
 import { expect, test } from '@playwright/test';
@@ -60,7 +60,7 @@ test("the till prints a captain's KOTs and bill, each once, on any screen", asyn
   expect(counter.prints).toHaveLength(kotsPrinted + 1);
 });
 
-test("the counter's own KOT & Print prints once, not again from the background", async ({ browser }) => {
+test("the counter's own Send prints its KOT once, not again from the background", async ({ browser }) => {
   const golden = await resetGolden();
   await at('12:00', DAY);
 
@@ -71,7 +71,7 @@ test("the counter's own KOT & Print prints once, not again from the background",
   await expect(panel).toBeVisible();
   await counter.page.getByRole('button', { name: 'Add Caffe Latte', exact: true }).click();
   await addFromPanel(counter.page);
-  await panel.getByRole('button', { name: 'KOT & Print' }).click();
+  await panel.getByRole('button', { name: /^Send \d+ to the kitchen$/ }).click();
   const asked = await counter.page.getByRole('dialog', { name: 'Guest details' }).waitFor({ timeout: 3000 }).then(() => true, () => false);
   if (asked) await skipGuestDetails(counter.page);
 

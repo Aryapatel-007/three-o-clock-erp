@@ -32,6 +32,7 @@ const SHOW_LABELS = [
   ['cashier', 'Cashier'],
   ['customerName', 'Guest name'],
   ['customerMobileMasked', 'Guest mobile, last four digits only'],
+  ['logo', 'Restaurant logo at the top'],
   ['hsn', 'HSN/SAC column'],
   ['itemNote', 'Note on each dish'],
   ['paymentBreakdown', 'Paid with'],

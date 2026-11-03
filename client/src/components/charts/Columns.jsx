@@ -80,7 +80,8 @@ export default function Columns({
               className="type-num-meta tabular-nums text-muted"
               style={{ transform: 'translateY(50%)' }}
             >
-              {formatTick(Math.round(tick))}
+              {/* Nothing to show yet: only the zero line is labelled, not ₹0 five times. */}
+              {max === 0 && tick !== 0 ? '' : formatTick(Math.round(tick))}
             </span>
           ))}
         </div>

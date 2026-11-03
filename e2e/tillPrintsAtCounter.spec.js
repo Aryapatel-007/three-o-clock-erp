@@ -20,12 +20,12 @@ test('a manager on a phone sends Save & Print to the counter, which prints it on
   await at('12:00', DAY);
 
   const counter = await signIn(browser, { name: 'Counter', phone: golden.phones.Counter, password: golden.password, device: 'computer' });
-  await counter.page.goto('/device');
+  await counter.page.goto('/printers');
   await counter.page.getByText('Print bills sent by captains').click();
   await counter.page.goto('/bills');
 
   const manager = await signIn(browser, { name: 'Manager', phone: golden.phones.Manager, password: golden.password, device: 'phone' });
-  await manager.page.goto('/device');
+  await manager.page.goto('/printers');
   await manager.page.getByRole('group', { name: 'Bills print' }).getByText('At the counter', { exact: true }).click();
 
   const station = await signIn(browser, { name: 'Owner', phone: golden.phones.Owner, password: golden.password, device: 'tablet' });

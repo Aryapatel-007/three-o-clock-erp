@@ -310,7 +310,7 @@ async function main() {
     if (result.email) console.log(`  or with email      : ${result.email}`);
     console.log(
       `  Password           : ${result.password}${
-        result.passwordSource === 'chosen' ? '  (the one you chose)' : '  (generated)'
+        result.passwordSource === 'chosen' ? '  (as given)' : '  (generated)'
       }`,
     );
     console.log('');

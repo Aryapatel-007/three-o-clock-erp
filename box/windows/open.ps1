@@ -1,4 +1,4 @@
-# Three O'Clock desktop icon: start the server if it is not running, then open the screens.
+# ThreeOClock desktop icon: start the server if it is not running, then open the screens.
 # P62. Called hidden by open.vbs. Argument: the page to open ("" or "connect").
 param([string]$Page = '')
 $Root = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
@@ -25,10 +25,10 @@ if (-not (Test-Up)) {
 }
 
 if (Test-Up) {
-  # 2026-10-22. "Three O'Clock" opens the till, printing with no dialog: nobody chooses a browser or a launcher.
+  # 2026-10-22. "ThreeOClock" opens the till, printing with no dialog: nobody chooses a browser or a launcher.
   . (Join-Path $PSScriptRoot 'start-till.ps1')
   if ($Page -or -not (Open-Till "$url/?till=1")) { Start-Process "$url/$Page" }
 } else {
   Add-Type -AssemblyName PresentationFramework
-  [System.Windows.MessageBox]::Show("The cafe server did not start.`n`nCheck that this PC is switched on fully, wait one minute and try again.`nIf it still fails, open $Root\data\logs\server.log and send it to the person who set this up.", 'Three O''Clock') | Out-Null
+  [System.Windows.MessageBox]::Show("The cafe server did not start.`n`nCheck that this PC is switched on fully, wait one minute and try again.`nIf it still fails, open $Root\data\logs\server.log and send it to the person who set this up.", 'ThreeOClock') | Out-Null
 }

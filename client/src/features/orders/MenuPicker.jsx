@@ -39,11 +39,11 @@ function searchRank(name, needle) {
  * a second line of the same dish, so the kitchen ticket reads "3 × Latte", not
  * three separate lattes. `simpleLines` maps a menu item id to that line.
  *
- * Adding a dish always opens the options panel, `onOpen`, whether the dish or
- * its + is tapped: quantity, a note to the chef with one-tap requests, and the
- * sizes and extras where there are any (the owner's request, 2 October 2026).
+ * 2026-11-03: + on a plain dish puts it on the order at once (`onQuickAdd`); its note
+ * is added in the order, where every unsent dish shows Add note. Tapping the dish
+ * itself still opens the options panel (`onOpen`): quantity, a note, sizes and extras.
  * Once a plain dish is on the order and not yet sent, its stepper changes the
- * quantity in one tap, with no panel. A dish with sizes or extras shows Choose.
+ * quantity in one tap. A dish with sizes or extras, or an open item, shows Choose.
  */
 export default function MenuPicker({
   tree,
@@ -55,6 +55,7 @@ export default function MenuPicker({
   simpleLines,
   pendingCounts,
   onOpen,
+  onQuickAdd = null,
   onStep,
   onRemove,
 }) {
@@ -83,14 +84,15 @@ export default function MenuPicker({
       {categories.length > 1 && !needle && (
         <div
           className={[
-            '-mx-1 flex items-center gap-2 overflow-x-auto px-1 py-1',
-            compact ? 'lg:sticky lg:top-4 lg:mx-0 lg:max-h-[calc(100vh-10rem)] lg:w-44 lg:flex-none lg:flex-col lg:items-stretch lg:overflow-y-auto lg:overflow-x-visible lg:px-0' : '',
+            'scrollbar-none -mx-1 flex items-center gap-2 overflow-x-auto px-1 py-1',
+            compact ? 'lg:sticky lg:top-4 lg:mx-0 lg:max-h-[calc(100vh-10rem)] lg:w-52 lg:flex-none lg:flex-col lg:items-stretch lg:overflow-y-auto lg:overflow-x-visible lg:px-0' : '',
           ].join(' ')}
         >
           <CategoryPill
             label="All"
             count={totalItems}
             isActive={categoryId === null}
+            stacked={compact}
             onClick={() => setCategoryId(null)}
           />
           {categories.map((category) => (
@@ -99,6 +101,7 @@ export default function MenuPicker({
               label={category.name}
               count={category.items.length}
               isActive={categoryId === category.id}
+              stacked={compact}
               onClick={() => setCategoryId(category.id)}
             />
           ))}
@@ -135,6 +138,7 @@ export default function MenuPicker({
               pendingCount={pendingCounts.get(item.id) ?? 0}
               disabled={disabled}
               onOpen={() => (onOpen ?? onPick)(item)}
+              onQuickAdd={onQuickAdd && !item.isOpenItem ? () => onQuickAdd(item) : null}
               onStep={onStep}
               onRemove={onRemove}
             />
@@ -146,7 +150,7 @@ export default function MenuPicker({
   );
 }
 
-function DishCard({ item, line, pendingCount, disabled, onOpen, onStep, onRemove, compact = false }) {
+function DishCard({ item, line, pendingCount, disabled, onOpen, onQuickAdd = null, onStep, onRemove, compact = false }) {
   const hasChoices = item.variants.length > 0 || item.addOns.length > 0;
   const onOrder = Boolean(line) || (hasChoices && pendingCount > 0);
 
@@ -205,7 +209,7 @@ function DishCard({ item, line, pendingCount, disabled, onOpen, onStep, onRemove
             type="button"
             aria-label={`Add ${item.name}`}
             disabled={disabled}
-            onClick={onOpen}
+            onClick={onQuickAdd ?? onOpen}
             className="flex size-12 items-center justify-center self-end rounded-lg border border-ink hover:bg-sunken disabled:opacity-60 min-[600px]:self-auto"
           >
             <PlusIcon />
@@ -230,7 +234,12 @@ function StepButton({ label, icon, onClick, disabled }) {
   );
 }
 
-function CategoryPill({ label, count, isActive, onClick }) {
+/**
+ * One category. In the counter's list down the left (`stacked`, from 1024px) a long
+ * name wraps onto a second line, left-aligned, with its count kept at the right edge;
+ * in the strip across the top it stays on one line and the strip scrolls.
+ */
+function CategoryPill({ label, count, isActive, onClick, stacked = false }) {
   return (
     <button
       type="button"
@@ -238,11 +247,12 @@ function CategoryPill({ label, count, isActive, onClick }) {
       aria-pressed={isActive}
       className={[
         'type-label flex min-h-12 flex-none items-center gap-2 whitespace-nowrap rounded-lg border px-4 transition-colors',
+        stacked ? 'lg:justify-between lg:whitespace-normal lg:px-3 lg:py-2 lg:text-left' : '',
         isActive ? 'border-ink bg-sunken text-ink' : 'border-line bg-surface text-muted hover:text-ink',
       ].join(' ')}
     >
-      {label}
-      <span className="type-num-meta">{count}</span>
+      <span className={stacked ? 'lg:min-w-0 lg:break-words' : ''}>{label}</span>
+      <span className="type-num-meta flex-none">{count}</span>
     </button>
   );
 }

@@ -55,6 +55,8 @@ const DEFAULTS = Object.freeze({
   edgeMargin: 'MORE',
   // 2026-10-10. WIDE (78 mm) or STANDARD (72 mm): the 80 mm roll's printed width, from printers.js.
   printWidth: 'STANDARD',
+  // 2026-11-03. The printer's make and model, chosen on the Printers screen (printerModels.js).
+  printerModel: null,
   autoPrintKots: false,
   // P25 Part D. A counter computer prints the bills captains send it.
   printCaptainBills: false,

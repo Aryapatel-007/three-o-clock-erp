@@ -144,8 +144,13 @@ export async function fireOrder(req, { orderId, version }) {
    * single group with no station, exactly as before.
    */
   const groups = await routeLinesToStations(req, pending);
-  const oneTicket = (await getSetting(req.restaurantId, 'kitchen.oneTicketPerOrder', { req })) !== false;
-  const splitByStation = (await getSetting(req.restaurantId, 'kitchen.splitTicketsByStation', { req })) !== false;
+  // 2026-11-03, at Arya's word: every Send is a new KOT, even from the same table. P36's
+  // kitchen.oneTicketPerOrder is no longer read; tickets it wrote as rounds still read as before.
+  const oneTicket = false;
+  // 2026-11-03, Arya: every Send is one KOT with all its dishes, each dish keeping its section
+  // (station); the counter prints it whole and once per section. kitchen.splitTicketsByStation
+  // now only chooses whether the kitchen screen shows a tab per section.
+  const splitByStation = false;
   const firedAt = nowUtc();
 
   // P36. The order's ticket, when it already has one and the restaurant keeps one per order.
@@ -182,8 +187,8 @@ export async function fireOrder(req, { orderId, version }) {
       kotId: existing?._id ?? new mongoose.Types.ObjectId(),
       kotNumber: existing ? existing.kotNumber : await reserve(),
       append: Boolean(existing),
-      // P58. Not split: the ticket has no station of its own, even if every line went to one.
-      station: splitByStation && groups.length === 1 ? groups[0].station : null,
+      // 2026-11-03: a Send all for one section is that section's ticket; one for several has none of its own.
+      station: groups.length === 1 ? groups[0].station : null,
       lines: groups.flatMap((group) => group.lines.map((line) => ticketLine(line, group.station))),
     });
   } else {

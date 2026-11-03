@@ -1,4 +1,4 @@
-# Three O'Clock: load an exact copy of the cloud's data onto this PC. P62, docs/WINDOWS-INSTALL.md section 5b.
+# ThreeOClock: load an exact copy of the cloud's data onto this PC. P62, docs/WINDOWS-INSTALL.md section 5b.
 #
 # Run by double-clicking "Load cafe data.bat" in C:\ThreeOClock, after Install ThreeOClock.
 # The copy is a cafe-data-*.archive.gz made by box/export-cloud.sh, put in C:\ThreeOClock.
@@ -42,7 +42,7 @@ $principal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.
 if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
   Fail 'Run this as Administrator: double-click "Load cafe data.bat", and say Yes when Windows asks.'
 }
-if (-not (Test-Path $EnvFile)) { Fail 'Three O''Clock is not installed here yet. Double-click "Install ThreeOClock" first.' }
+if (-not (Test-Path $EnvFile)) { Fail 'ThreeOClock is not installed here yet. Double-click "Install ThreeOClock" first.' }
 Refresh-Path
 if (-not (Get-Command mongorestore -ErrorAction SilentlyContinue)) { Fail 'mongorestore is missing. Run "Install ThreeOClock" again: it installs the MongoDB tools.' }
 

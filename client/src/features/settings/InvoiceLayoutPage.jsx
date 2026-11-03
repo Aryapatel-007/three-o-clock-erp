@@ -41,6 +41,7 @@ const TABS = [
 
 
 const THERMAL_LABELS = [
+  ['logo', 'Restaurant logo at the top'],
   ['time', 'Time issued'],
   ['orderType', 'Order type'],
   ['table', 'Table'],
@@ -213,7 +214,7 @@ export default function InvoiceLayoutPage() {
               <section className="flex flex-col gap-3 rounded-[10px] border border-line bg-surface p-4">
                 <h2 className="type-heading">What the roll shows</h2>
                 <p className="type-caption text-muted">
-                  The thermal bill keeps the layout your guests know. The GSTIN, the FSSAI number and the captain follow Settings, Receipt.
+                  The thermal bill keeps the layout your guests know. The GSTIN, the FSSAI number and the captain follow Settings, Receipt. The logo is the one on Appearance.
                 </p>
                 <div className="grid gap-3 sm:grid-cols-2">
                   {THERMAL_LABELS.map(([key, label]) => (

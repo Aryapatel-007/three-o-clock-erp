@@ -24,8 +24,9 @@ export function keepSyncConflictVersion(conflictId, version) {
 }
 
 /** POST /sync/now: `{ did, failed, status, changes }`. 2026-10-22. */
-export function syncNow() {
-  return api.post('/sync/now', {});
+/** 2026-11-03. One-way: `direction` PUSH or PULL; none for both. */
+export function syncNow({ direction } = {}) {
+  return api.post('/sync/now', direction ? { direction } : {});
 }
 
 /** GET /sync/changes: what the other side's changes did here, newest first. 2026-10-22. */

@@ -9,6 +9,8 @@ import ErrorMessage from '../../components/ui/ErrorMessage.jsx';
 import StateChip from '../../components/ui/StateChip.jsx';
 import { formatDateIst, formatTimeIst } from '../../utils/formatDate.js';
 import { durationWords } from '../network/networkCopy.js';
+import { useAuth } from '../../context/AuthContext.jsx';
+import PushPullPage from './PushPullPage.jsx';
 import { useSyncStatus } from './useSyncStatus.js';
 
 const SIDE = { BOX: 'the cafe PC', CLOUD: 'the website' };
@@ -27,6 +29,13 @@ const KIND = {
  * each conflict links to, and Mark as seen says a person has dealt with it.
  */
 export default function SyncPage() {
+  const { features } = useAuth();
+  // 2026-11-03. One-way, the default: the PC pushes, the online copy shows. Push and pull.
+  if (features?.sync?.mode !== 'TWO_WAY') return <PushPullPage />;
+  return <TwoWaySync />;
+}
+
+function TwoWaySync() {
   const [showSeen, setShowSeen] = useState(false);
   const status = useSyncStatus();
   const conflicts = useQuery({ queryKey: ['sync', 'conflicts', showSeen], queryFn: () => listSyncConflicts({ seen: showSeen }) });
@@ -35,10 +44,13 @@ export default function SyncPage() {
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-4 p-4">
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="type-title">Sync</h1>
-          <p className="type-body text-muted">The cafe PC and the website, kept in step.</p>
+          <h1 className="type-title">Push and pull</h1>
+          <p className="type-body text-muted">
+            The restaurant PC is the main system: it pushes its records to the website and pulls the website&apos;s changes. Where both changed the same
+            thing, the PC&apos;s change is kept.
+          </p>
         </div>
-        <SyncNowButton isBox={status?.data?.node === 'BOX'} />
+        <PushPullButtons isBox={status?.data?.node === 'BOX'} />
       </header>
       <StatusCard status={status} />
       <IncomingChanges />
@@ -63,32 +75,46 @@ export default function SyncPage() {
 }
 
 /**
- * 2026-10-22. Sync now. On the cafe PC a whole round at once: the website's
- * changes in, then this PC's out. On the website its own changes are made
- * ready; the PC takes them on its next round, within a minute while it is on.
+ * 2026-11-03. Push now and Pull now, on the restaurant PC: one way at once, outside the
+ * minute's pace. The PC pushes and pulls by itself all day; these are for "now". On the
+ * website, Send to the PC readies its changes for the PC's next pull.
  */
-function SyncNowButton({ isBox }) {
+const WORDS = {
+  PUSHED: 'Pushed: the website has this PC’s records.',
+  PULLED: 'Pulled: this PC has the website’s changes.',
+  PULLED_AND_PUSHED: 'Pulled and pushed.',
+  READY_FOR_THE_PC: 'Ready: the restaurant PC takes these on its next pull, within a minute while it is on.',
+  NOTHING: 'Nothing to do on this server.',
+};
+
+function PushPullButtons({ isBox }) {
   const queryClient = useQueryClient();
   const [said, setSaid] = useState(null);
   const now = useMutation({
-    mutationFn: syncNow,
+    mutationFn: (direction) => syncNow({ direction }),
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['sync'] });
-      const words = {
-        PULLED_AND_PUSHED: 'Synced: the website’s changes are in, and this PC’s have gone.',
-        PUSHED: 'This PC’s changes have gone to the website.',
-        READY_FOR_THE_PC: 'Ready: the cafe PC takes the website’s changes on its next sync, within a minute while it is on.',
-        NOTHING: 'Nothing to sync on this server.',
-      };
-      setSaid({ tone: result.failed ? 'alert' : 'ok', text: result.failed ? 'The sync could not finish. See Last problem below; it tries again by itself.' : words[result.did] ?? 'Synced.' });
+      setSaid({ tone: result.failed ? 'alert' : 'ok', text: result.failed ? 'It could not finish. See Last problem below; it tries again by itself.' : WORDS[result.did] ?? 'Done.' });
     },
     onError: (error) => setSaid({ tone: 'alert', text: errorMessage(error) }),
   });
+  const busy = now.isPending ? now.variables : null;
   return (
     <div className="flex flex-col items-end gap-1">
-      <Button isLoading={now.isPending} onClick={() => now.mutate()}>
-        {now.isPending ? (isBox ? 'Syncing…' : 'Getting ready…') : 'Sync now'}
-      </Button>
+      {isBox ? (
+        <div className="flex gap-2">
+          <Button isLoading={busy === 'PUSH'} disabled={now.isPending} onClick={() => now.mutate('PUSH')}>
+            {busy === 'PUSH' ? 'Pushing…' : 'Push now'}
+          </Button>
+          <Button variant="secondary" isLoading={busy === 'PULL'} disabled={now.isPending} onClick={() => now.mutate('PULL')}>
+            {busy === 'PULL' ? 'Pulling…' : 'Pull now'}
+          </Button>
+        </div>
+      ) : (
+        <Button variant="secondary" isLoading={now.isPending} onClick={() => now.mutate(undefined)}>
+          {now.isPending ? 'Getting ready…' : 'Send to the PC now'}
+        </Button>
+      )}
       {said && <p className={`type-caption max-w-xs text-right ${said.tone === 'alert' ? 'text-alert' : 'text-muted'}`}>{said.text}</p>}
     </div>
   );

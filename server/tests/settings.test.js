@@ -72,7 +72,7 @@ const DEFAULTS = {
   billing: { captainsMayBill: true, captainsMayTakePayment: false, reviseUnpaidBills: true, printBeforePayment: true },
   // P28.
   approvals: { lineCancel: true, paidIn: true, managerTasks: true, revisePrintedBill: true },
-  kitchen: { readyMeansServed: true, oneTicketPerOrder: true, splitTicketsByStation: true },
+  kitchen: { readyMeansServed: true, oneTicketPerOrder: true, splitTicketsByStation: true, printKots: true },
   // P51.
   assistant: { enabled: false, bookingsEnabled: true, greeting: null, handoffHours: null, dailyAiLimit: 500 },
   dayClose: { showCashDifferenceToManager: false },

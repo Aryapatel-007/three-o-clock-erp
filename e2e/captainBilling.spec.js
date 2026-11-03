@@ -21,7 +21,7 @@ test('a captain bills a table and it prints once at the counter', async ({ brows
 
   // The counter computer prints bills sent by captains.
   const counter = await signIn(browser, { name: 'Counter', phone: golden.phones.Counter, password: golden.password, device: 'computer' });
-  await counter.page.goto('/device');
+  await counter.page.goto('/printers');
   await counter.page.getByText('Print bills sent by captains').click();
   await counter.page.goto('/bills');
 
@@ -52,7 +52,7 @@ test('with two tabs open at the counter, a captain bill still prints once', asyn
   await at('12:00', DAY);
 
   const counter = await signIn(browser, { name: 'Counter', phone: golden.phones.Counter, password: golden.password, device: 'computer' });
-  await counter.page.goto('/device');
+  await counter.page.goto('/printers');
   await counter.page.getByText('Print bills sent by captains').click();
   await counter.page.goto('/bills');
   // The cashier opens a second tab of the till on the same computer.
@@ -85,7 +85,7 @@ test('P59: with two counter devices printing captain bills, a bill prints once',
   const counters = [];
   for (const [name, phone] of [['Counter', golden.phones.Counter], ['Manager', golden.phones.Manager]]) {
     const device = await signIn(browser, { name, phone, password: golden.password, device: 'computer' });
-    await device.page.goto('/device');
+    await device.page.goto('/printers');
     await device.page.getByText('Print bills sent by captains').click();
     await device.page.goto('/bills');
     counters.push(device);

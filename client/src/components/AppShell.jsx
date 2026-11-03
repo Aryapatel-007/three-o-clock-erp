@@ -1,9 +1,7 @@
-import BillNoSearch from './BillNoSearch.jsx';
 import { Suspense, useEffect, useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 
 import { useAuth } from '../context/AuthContext.jsx';
-import { useTheme } from '../context/ThemeProvider.jsx';
 import OnlineAlerts, { useAlertsOn, useOnlineInbox } from '../features/online/OnlineAlerts.jsx';
 import CaptainBillPrinter from '../features/printing/CaptainBillPrinter.jsx';
 import CounterKotPrinter from '../features/printing/CounterKotPrinter.jsx';
@@ -14,41 +12,47 @@ import {
   BagIcon,
   CashIcon,
   ChartIcon,
+  ClockIcon,
+  CrossIcon,
   DeviceIcon,
+  EyeIcon,
   FloorIcon,
+  GearIcon,
   GlobeIcon,
   HomeIcon,
   KitchenIcon,
   LockIcon,
   MenuBookIcon,
-  MoreIcon,
+  MenuIcon,
+  PeopleIcon,
+  PersonIcon,
+  PhoneIcon,
+  PrintIcon,
   ReceiptIcon,
   ScooterIcon,
+  TickIcon,
 } from './ui/icons/index.jsx';
 import AccountMenu, { SignOutButton } from './AccountMenu.jsx';
 import LiveConnection from './LiveConnection.jsx';
 import ConnectionStatus, { LostConnectionBanner } from '../features/network/ConnectionStatus.jsx';
 import SyncBadge from '../features/sync/SyncBadge.jsx';
-import Sheet from './ui/Sheet.jsx';
 import Spinner from './ui/Spinner.jsx';
 
 /**
  * The frame around every signed-in screen. DESIGN-SYSTEM sections 8a and 9.
  *
- * Under 600px: a top bar with the wordmark, and a bottom bar with the role's
- * main places and More. From 600px: a 76px rail on the left with the same
- * places. Chosen by width, never by device type. More opens a sheet with every
- * other place this person may go, and sign out.
+ * 2026-11-03: a top bar carries the role's main places as tabs, and the menu button
+ * at its left opens a sidebar with every place, grouped, the way an AI chat app opens
+ * its side panel. On a wide screen the sidebar sits beside the page and stays open
+ * until closed (remembered on the device); narrower, it slides over the page. Under
+ * 600px the main places sit in a bottom bar instead, where a thumb reaches them.
  *
  * Links are conveniences, not permissions. The server refuses each endpoint to
  * the wrong role whether or not a link is drawn, and a switched-off feature is
  * hidden here the same way.
  */
 const FULL_SCREEN_PATHS = ['/attendance'];
-
-/** The service screens of DESIGN-SYSTEM section 8a. Everything else is back office. */
-const SERVICE_PATHS = ['/floor', '/orders', '/bills', '/kitchen'];
-const isServicePath = (pathname) => SERVICE_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`));
+const SIDEBAR_KEY = 'threeoclock.sidebar';
 
 const PLACES = {
   home: { to: '/dashboard', label: 'Home', Icon: HomeIcon },
@@ -67,82 +71,106 @@ const PLACES = {
   online: { to: '/online', label: 'Online', Icon: GlobeIcon },
 };
 
-/** Each role's four main places, in the order they are used. */
+/** Each role's main places, in the order they are used. Five at most, so a phone's bottom bar never crowds. */
 const MAIN_BY_ROLE = {
-  OWNER: ['floor', 'bills', 'kitchen', 'reports'],
-  MANAGER: ['floor', 'bills', 'kitchen', 'dayClose'],
-  CASHIER: ['floor', 'bills', 'takeaway', 'cash'],
-  WAITER: ['floor', 'takeaway', 'delivery', 'kitchen'],
+  OWNER: ['home', 'floor', 'kitchen', 'bills', 'reports'],
+  MANAGER: ['home', 'floor', 'kitchen', 'bills', 'dayClose'],
+  CASHIER: ['home', 'floor', 'bills', 'cash'],
+  WAITER: ['home', 'floor', 'takeaway', 'kitchen'],
   KITCHEN: ['kitchen', 'availability'],
-  STOREKEEPER: ['stock', 'availability'],
+  STOREKEEPER: ['home', 'stock', 'availability'],
 };
 
-function useMoreGroups() {
+/**
+ * Every place, grouped by what a person came to do. Each place appears once; setting
+ * the restaurant up is apart from setting a device up; a page that only means
+ * something on the restaurant PC (Network) is not offered on the website.
+ */
+function useSidebarGroups() {
   const { user, features } = useAuth();
   const role = user?.role;
-  const manager = role === 'OWNER' || role === 'MANAGER';
+  const owner = role === 'OWNER';
+  const manager = owner || role === 'MANAGER';
   const till = manager || role === 'CASHIER';
   const floor = till || role === 'WAITER';
   const inventoryOn = features.inventory !== false;
   const attendanceOn = features.attendance !== false;
   const onlineOn = Boolean(features.online?.enabled);
+  const onRestaurantPc = features?.sync?.server === 'BOX';
 
   const groups = [
     {
       title: 'Service',
       items: [
-        { to: '/dashboard', label: 'Home', show: true },
-        // P55. The owner's dashboard, outside the ERP.
-        { to: '/owner', label: 'Dashboard', show: role === 'OWNER' },
-        { to: '/floor', label: 'Floor', show: floor },
-        { to: '/orders/takeaway', label: 'Takeaway', show: floor },
-        { to: '/orders/delivery', label: 'Delivery', show: floor },
-        { to: '/kitchen', label: 'Kitchen', show: true },
-        { to: '/bills', label: 'Bills', show: till },
-        { to: '/menu/availability', label: 'Availability', show: true },
-        { to: '/online', label: 'Online orders', show: floor && inboxOn(features) },
-        { to: '/online/bookings', label: 'Bookings', show: floor && onlineOn },
+        { to: '/owner', label: 'Dashboard', Icon: ChartIcon, show: owner },
+        { to: '/dashboard', label: 'Home', Icon: HomeIcon, show: true },
+        { to: '/floor', label: 'Floor', Icon: FloorIcon, show: floor },
+        { to: '/orders/takeaway', label: 'Takeaway', Icon: BagIcon, show: floor },
+        { to: '/orders/delivery', label: 'Delivery', Icon: ScooterIcon, show: floor },
+        { to: '/kitchen', label: 'Kitchen', Icon: KitchenIcon, show: true },
+        { to: '/bills', label: 'Bills', Icon: ReceiptIcon, show: till },
+        { to: '/menu/availability', label: 'Availability', Icon: TickIcon, show: true },
+        { to: '/online', label: 'Online orders', Icon: GlobeIcon, show: floor && inboxOn(features) },
+        { to: '/online/bookings', label: 'Bookings', Icon: ClockIcon, show: floor && onlineOn },
         // P51. WhatsApp chats, for the till.
-        { to: '/online/chats', label: 'Chats', show: till && Boolean(features.online?.chats) },
+        { to: '/online/chats', label: 'Chats', Icon: PhoneIcon, show: till && Boolean(features.online?.chats) },
       ],
     },
     {
-      title: 'Money',
+      title: 'Money and reports',
       items: [
-        { to: '/accounts', label: 'On Hold', show: till },
-        { to: '/cash-book', label: 'Cash book', show: till },
+        { to: '/reports', label: 'Reports', Icon: ChartIcon, show: manager },
+        { to: '/cash-book', label: 'Cash book', Icon: CashIcon, show: till },
         // P61. The cashier closes the day too.
-        { to: '/day-end', label: 'Day End', show: till },
-        { to: '/day-close', label: 'Day Close history', show: manager },
-        { to: '/payouts', label: 'Payouts', show: manager },
-        { to: '/reports', label: 'Reports', show: manager },
-        { to: '/customers', label: 'Customers', show: manager },
+        { to: '/day-end', label: 'Day End', Icon: LockIcon, show: till },
+        { to: '/day-close', label: 'Day Close history', Icon: ClockIcon, show: manager },
+        { to: '/accounts', label: 'On Hold', Icon: PersonIcon, show: till },
+        { to: '/payouts', label: 'Payouts', Icon: CashIcon, show: manager },
+        { to: '/customers', label: 'Customers', Icon: PeopleIcon, show: manager },
       ],
     },
     {
-      title: 'Set up',
+      title: 'Menu and staff',
       items: [
-        { to: '/menu', label: 'Menu', show: manager },
-        { to: '/tables', label: 'Table setup', show: manager },
-        { to: '/stations', label: 'Stations', show: manager },
-        { to: '/inventory', label: 'Stock', show: inventoryOn },
-        { to: '/staff', label: 'Staff', show: manager },
-        { to: '/attendance/register', label: 'Attendance', show: attendanceOn && manager },
-        { to: '/attendance/me', label: 'My hours', show: attendanceOn },
-        { to: '/settings', label: 'Settings', show: role === 'OWNER' },
-        { to: '/settings/integrations', label: 'Integrations', show: manager },
-        // P62. The cafe server's WiFi, the devices on it and the cloud copy.
-        { to: '/network', label: 'Network and devices', show: manager },
+        { to: '/menu', label: 'Menu', Icon: MenuBookIcon, show: manager },
+        { to: '/inventory', label: 'Stock', Icon: BagIcon, show: inventoryOn },
+        { to: '/staff', label: 'Staff', Icon: PeopleIcon, show: manager },
+        { to: '/attendance/register', label: 'Attendance', Icon: ClockIcon, show: attendanceOn && manager },
+        { to: '/attendance/me', label: 'My hours', Icon: ClockIcon, show: attendanceOn },
+      ],
+    },
+    {
+      title: 'Restaurant',
+      items: [
+        { to: '/settings/restaurant', label: 'Restaurant details', Icon: HomeIcon, show: owner },
+        { to: '/settings/invoice-layout', label: 'Invoice layout', Icon: ReceiptIcon, show: owner },
+        { to: '/settings/ca-reports', label: 'CA reports', Icon: ChartIcon, show: owner },
+        { to: '/settings/appearance', label: 'Appearance', Icon: EyeIcon, show: owner },
+        { to: '/tables', label: 'Table setup', Icon: FloorIcon, show: manager },
+        { to: '/stations', label: 'Stations', Icon: KitchenIcon, show: manager },
+        { to: '/settings/integrations', label: 'Integrations', Icon: GlobeIcon, show: manager },
+        { to: '/settings', label: 'Settings', Icon: GearIcon, show: owner },
+      ],
+    },
+    {
+      title: 'Devices',
+      items: [
+        { to: '/printers', label: 'Printers', Icon: PrintIcon, show: role !== 'KITCHEN' },
+        { to: '/connect', label: 'Connect a device', Icon: DeviceIcon, show: true },
+        { to: '/device', label: 'This device', Icon: DeviceIcon, show: true },
+        // P62. The restaurant PC's WiFi, the devices on it and the cloud copy.
+        { to: '/network', label: 'Network and devices', Icon: GlobeIcon, show: manager && onRestaurantPc },
         // P63. Two-way sync with the website, and its conflicts.
-        { to: '/sync', label: 'Sync', show: manager && features?.sync?.mode === 'TWO_WAY' },
-        { to: '/connect', label: 'Connect a device', show: true },
-        { to: '/device', label: 'This device', show: true },
+        {
+          to: '/sync',
+          label: 'Push and pull',
+          Icon: GlobeIcon,
+          show: manager && (features?.sync?.mode === 'TWO_WAY' || ['BOX', 'MIRROR'].includes(features?.sync?.server)),
+        },
       ],
     },
   ];
-  return groups
-    .map((group) => ({ ...group, items: group.items.filter((item) => item.show) }))
-    .filter((group) => group.items.length > 0);
+  return groups.map((group) => ({ ...group, items: group.items.filter((item) => item.show) })).filter((group) => group.items.length > 0);
 }
 
 /** The till's roles, who get Online beside their main places while it is on. */
@@ -153,12 +181,14 @@ function useMainPlaces() {
   const keys = [...(MAIN_BY_ROLE[user?.role] ?? ['home'])];
   // P25 Part H. Also while a delivery platform is connected: its orders arrive in the same inbox.
   if (inboxOn(features) && ONLINE_MAIN_ROLES.includes(user?.role)) keys.push('online');
-  return keys
-    .filter((key) => key !== 'stock' || features.inventory !== false)
-    .map((key) => PLACES[key]);
+  return keys.filter((key) => key !== 'stock' || features.inventory !== false).map((key) => PLACES[key]);
 }
 
-const isCurrent = (pathname, to) => pathname === to || (to !== '/dashboard' && pathname.startsWith(`${to}/`) && !(to === '/menu' && pathname.startsWith('/menu/availability')));
+const isCurrent = (pathname, to) =>
+  pathname === to ||
+  (to !== '/dashboard' && pathname.startsWith(`${to}/`) && !(to === '/menu' && pathname.startsWith('/menu/availability'))) ||
+  // An order opened from the floor belongs to the floor.
+  (to === '/floor' && pathname.startsWith('/orders/') && !pathname.startsWith('/orders/takeaway') && !pathname.startsWith('/orders/delivery'));
 
 /** The waiting count on the Online place, from the same query the alert polls. */
 function OnlineBadge() {
@@ -167,23 +197,45 @@ function OnlineBadge() {
   const waiting = data ? data.waitingOrders + data.waitingReservations : 0;
   if (!waiting) return null;
   return (
-    <span className="type-caption absolute -right-1 -top-1 flex min-w-5 items-center justify-center rounded-full bg-alert px-1 text-on-accent">
-      {waiting}
-    </span>
+    <span className="type-caption absolute -right-2 -top-1 flex min-w-5 items-center justify-center rounded-full bg-alert px-1 text-on-accent">{waiting}</span>
   );
 }
 
-function PlaceLink({ place, layout }) {
+/** A main place as a tab in the top bar: icon and word, the current one filled. */
+function TopTab({ place }) {
   const { pathname } = useLocation();
-  const active = isCurrent(pathname, place.to) || (place.to === '/floor' && pathname.startsWith('/orders/') && !pathname.startsWith('/orders/takeaway') && !pathname.startsWith('/orders/delivery'));
+  const active = isCurrent(pathname, place.to);
+  const Icon = place.Icon;
+  return (
+    <NavLink
+      to={place.to}
+      aria-current={active ? 'page' : undefined}
+      title={place.label}
+      className={[
+        'type-label flex h-10 flex-none items-center gap-2 rounded-lg px-3 transition-colors',
+        active ? 'bg-surface text-ink shadow-sm' : 'text-muted hover:text-ink',
+      ].join(' ')}
+    >
+      <span className={`relative ${active ? 'text-accent' : ''}`}>
+        <Icon size={18} />
+        {place.to === '/online' && <OnlineBadge />}
+      </span>
+      <span className="hidden lg:inline">{place.label}</span>
+    </NavLink>
+  );
+}
+
+/** A main place in the phone's bottom bar. */
+function BottomTab({ place }) {
+  const { pathname } = useLocation();
+  const active = isCurrent(pathname, place.to);
   const Icon = place.Icon;
   return (
     <NavLink
       to={place.to}
       aria-current={active ? 'page' : undefined}
       className={[
-        'flex flex-col items-center justify-center gap-1 rounded-lg transition-colors',
-        layout === 'rail' ? 'min-h-14 w-16' : 'min-h-14 flex-1',
+        'flex min-h-14 flex-1 flex-col items-center justify-center gap-1 rounded-lg px-0.5 transition-colors',
         active ? 'bg-sunken text-ink' : 'text-muted hover:bg-sunken hover:text-ink',
       ].join(' ')}
     >
@@ -191,47 +243,42 @@ function PlaceLink({ place, layout }) {
         <Icon size={22} />
         {place.to === '/online' && <OnlineBadge />}
       </span>
-      <span className="type-caption">{place.label}</span>
+      <span className="type-caption text-center leading-tight tracking-tight">{place.label}</span>
     </NavLink>
   );
 }
 
-function MoreButton({ onClick, layout }) {
+/** Every place, in groups, down the left. */
+function Sidebar({ onClose, overlay }) {
+  const groups = useSidebarGroups();
   return (
-    <button
-      type="button"
-      onClick={onClick}
+    <aside
+      aria-label="All places"
       className={[
-        'flex flex-col items-center justify-center gap-1 rounded-lg text-muted transition-colors hover:bg-sunken hover:text-ink',
-        layout === 'rail' ? 'min-h-14 w-16' : 'min-h-14 flex-1',
+        'flex w-72 flex-none flex-col border-r border-line bg-surface print:hidden',
+        overlay ? 'fixed inset-y-0 left-0 z-50 shadow-float' : 'h-full',
       ].join(' ')}
     >
-      <MoreIcon size={22} />
-      <span className="type-caption">More</span>
-    </button>
-  );
-}
-
-function MoreSheet({ onClose }) {
-  const { user } = useAuth();
-  const groups = useMoreGroups();
-  return (
-    <Sheet title="All places" subtitle={user ? `${user.name}` : null} onClose={onClose}>
-      <nav aria-label="All places" className="flex flex-col gap-4">
-        {groups.map((group) => (
-          <div key={group.title}>
-            <p className="type-label mb-1 text-muted">{group.title}</p>
+      <nav aria-label="All places" className="flex min-h-0 flex-1 flex-col overflow-y-auto px-3 pb-4">
+        {groups.map((group, index) => (
+          <div key={group.title} className={index > 0 ? 'mt-3 border-t border-line pt-3' : 'pt-3'}>
+            {/* A heading, not a place: small capitals, no icon, never a hover. */}
+            <p className="mb-1 px-3 text-[11px] font-semibold uppercase leading-6 tracking-[0.12em] text-muted">{group.title}</p>
             <ul className="flex flex-col">
               {group.items.map((item) => (
                 <li key={item.to}>
                   <NavLink
                     to={item.to}
-                    onClick={onClose}
-                    end={item.to === '/menu' || item.to === '/bills'}
+                    onClick={overlay ? onClose : undefined}
+                    end={['/menu', '/bills', '/settings', '/online'].includes(item.to)}
                     className={({ isActive }) =>
-                      ['type-body flex min-h-12 items-center rounded-lg px-3', isActive ? 'bg-sunken font-semibold' : 'hover:bg-sunken'].join(' ')
+                      [
+                        'type-label flex min-h-11 items-center gap-3 rounded-lg px-3 transition-colors',
+                        isActive ? 'bg-ink text-surface' : 'text-ink hover:bg-sunken',
+                      ].join(' ')
                     }
                   >
+                    {item.Icon && <item.Icon size={18} />}
                     {item.label}
                   </NavLink>
                 </li>
@@ -239,42 +286,33 @@ function MoreSheet({ onClose }) {
             </ul>
           </div>
         ))}
-        <SignOutButton />
       </nav>
-    </Sheet>
+      <div className="border-t border-line p-3">
+        <SignOutButton />
+      </div>
+    </aside>
   );
 }
 
-/**
- * The restaurant's mark in the top bar. P22, DESIGN-SYSTEM section 15.
- *
- * On a phone the logo at 32px. From 600px, on a back-office screen, the logo at
- * 40px; on a service screen the rail carries the square mark instead, so a
- * screen shows the brand once. With no logo, the wordmark as text everywhere,
- * exactly as before: the restaurant's wordmark, then its name, then the
- * product's. A client's name is never written into the product.
- */
-function TopBarMark({ isService }) {
-  const { brand } = useTheme();
-  const hasLogo = Boolean(brand.logos?.LIGHT_GROUND?.dataUrl || brand.logos?.DARK_GROUND?.dataUrl);
-  return (
-    <>
-      <BrandLogo height={32} className="min-[600px]:hidden" />
-      {!(isService && hasLogo) && <BrandLogo height={40} className="hidden min-[600px]:flex" />}
-    </>
-  );
+function readSidebarOpen() {
+  try {
+    return window.localStorage.getItem(SIDEBAR_KEY) === 'open';
+  } catch {
+    return false;
+  }
 }
 
-/** The square mark at the top of the rail, on a service screen with a logo. */
-function RailMark({ isService }) {
-  const { brand } = useTheme();
-  const hasLogo = Boolean(brand.logos?.LIGHT_GROUND?.dataUrl || brand.logos?.DARK_GROUND?.dataUrl);
-  if (!hasLogo || !isService) return null;
-  return (
-    <NavLink to="/dashboard" className="mb-2 flex min-h-12 items-center justify-center rounded-[10px]">
-      <BrandLogo shape="mark" height={44} />
-    </NavLink>
-  );
+function useWideScreen() {
+  const query = '(min-width: 1024px)';
+  const [wide, setWide] = useState(() => window.matchMedia?.(query).matches ?? true);
+  useEffect(() => {
+    const media = window.matchMedia?.(query);
+    if (!media) return undefined;
+    const onChange = () => setWide(media.matches);
+    media.addEventListener('change', onChange);
+    return () => media.removeEventListener('change', onChange);
+  }, []);
+  return wide;
 }
 
 /**
@@ -294,19 +332,47 @@ export default function AppShell({ children }) {
   const { user, features } = useAuth();
   const { pathname } = useLocation();
   const places = useMainPlaces();
-  const [moreOpen, setMoreOpen] = useState(false);
+  const wide = useWideScreen();
+  // Open beside the page on a wide screen, remembered; over the page otherwise, never remembered.
+  const [pinned, setPinned] = useState(readSidebarOpen);
+  const [sliding, setSliding] = useState(false);
+  const sidebarOpen = wide ? pinned : sliding;
 
-  useEffect(() => setMoreOpen(false), [pathname]);
+  useEffect(() => setSliding(false), [pathname]);
+  const toggleSidebar = () => {
+    if (!wide) {
+      setSliding((now) => !now);
+      return;
+    }
+    setPinned((now) => {
+      try {
+        window.localStorage.setItem(SIDEBAR_KEY, now ? 'closed' : 'open');
+      } catch {
+        // Not remembered in a private window: only this visit keeps it.
+      }
+      return !now;
+    });
+  };
+  const closeSidebar = () => (wide ? toggleSidebar() : setSliding(false));
+
+  // The service screens (Home, Floor, an order, the bill, the kitchen) arrive while
+  // the first screen draws, so tapping one never waits for its download.
+  // Bills, the Cash book and Day End are the till's own main places, so its roles get them early too.
+  const tillRole = ['OWNER', 'MANAGER', 'CASHIER'].includes(user?.role);
+  useEffect(() => {
+    import('../routes/service.js').catch(() => {});
+    if (tillRole) import('../routes/settlement.js').catch(() => {});
+  }, [tillRole]);
 
   /**
    * P42. The kitchen login: the ticket board and a bar with who is signed in
-   * and Sign out. No rail, no bottom bar, no More: nothing but the tickets.
+   * and Sign out. No tabs, no sidebar: nothing but the tickets.
    */
   if (user?.role === 'KITCHEN') {
     return (
       <div className="v2 flex h-full flex-col bg-ground text-ink">
-        <header className="flex min-h-12 flex-none items-center justify-between gap-3 border-b border-line bg-surface px-4 print:hidden">
-          <TopBarMark isService />
+        <header className="flex min-h-14 flex-none items-center justify-between gap-3 border-b border-line bg-surface px-4 print:hidden">
+          <BrandLogo height={32} />
           <span className="flex items-center gap-3">
             {/* P62. This device's connection to the cafe server, on every device. */}
             <ConnectionStatus />
@@ -333,55 +399,69 @@ export default function AppShell({ children }) {
   }
 
   return (
-    <div className="v2 flex h-full bg-ground text-ink">
-      <nav aria-label="Main" className="hidden w-[76px] flex-none flex-col items-center gap-1 overflow-y-auto border-r border-line bg-surface py-3 min-[600px]:flex print:!hidden">
-        <RailMark isService={isServicePath(pathname)} />
-        {places.map((place) => (
-          <PlaceLink key={place.to} place={place} layout="rail" />
-        ))}
-        <MoreButton layout="rail" onClick={() => setMoreOpen(true)} />
-        <NavLink to="/device" className="mt-auto flex min-h-12 w-16 items-center justify-center rounded-lg text-muted hover:bg-sunken hover:text-ink" aria-label="This device">
-          <DeviceIcon />
+    <div className="v2 flex h-full flex-col bg-ground text-ink">
+      {/* Three columns: the menu and logo, the main places centred, the status and account. */}
+      <header className="grid min-h-14 flex-none grid-cols-[1fr_auto_1fr] items-center gap-2 border-b border-line bg-surface px-2 print:hidden sm:px-3">
+        <span className="flex min-w-0 items-center gap-1">
+        <button
+          type="button"
+          onClick={toggleSidebar}
+          aria-label={sidebarOpen ? 'Close the menu' : 'Open the menu'}
+          aria-expanded={sidebarOpen}
+          className="flex size-11 flex-none items-center justify-center rounded-lg text-ink hover:bg-sunken"
+        >
+          <MenuIcon size={22} />
+        </button>
+        <NavLink to="/dashboard" className="flex min-w-0 items-center">
+          <BrandLogo height={32} />
         </NavLink>
-      </nav>
+        </span>
 
-      <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex min-h-12 flex-none items-center justify-between gap-3 border-b border-line bg-surface px-4 print:hidden">
-          <TopBarMark isService={isServicePath(pathname)} />
-          <span className="flex items-center gap-3">
-            {/* P62. This device's connection to the cafe server, and the cloud copy's state. */}
-            <ConnectionStatus />
-            {/* P63. Sync conflicts waiting for an owner or manager. */}
-            <SyncBadge />
-            {/* P48. Recall Bill, as on PetPooja: the till finds a bill by its number. */}
-            {['OWNER', 'MANAGER', 'CASHIER'].includes(user?.role) && <BillNoSearch />}
-            <AccountMenu />
-          </span>
-        </header>
+        {/* The main places as tabs, centred, from 600px; a phone has them in the bottom bar. */}
+        <nav aria-label="Main" className="hidden min-w-0 items-center justify-center gap-1 overflow-x-auto rounded-xl bg-sunken p-1 min-[600px]:flex">
+          {places.map((place) => (
+            <TopTab key={place.to} place={place} />
+          ))}
+        </nav>
+        <span className="min-[600px]:hidden" />
 
-        <LostConnectionBanner />
-        <LiveConnection />
-        <OnlineAlerts />
-        {/* 2026-10-22. On the cafe PC the till prints captains' bills on the paper with no gap above. */}
-        <CaptainBillPrinter paper={features?.sync?.server === 'BOX' ? CAFE_PC_PAPER : null} />
-        <CounterKotPrinter />
+        <span className="flex min-w-0 items-center justify-end gap-2 sm:gap-3">
+          {/* P62. This device's connection to the cafe server, and the cloud copy's state. */}
+          <ConnectionStatus />
+          {/* P63. Sync conflicts waiting for an owner or manager. */}
+          <SyncBadge />
+          <AccountMenu />
+        </span>
+      </header>
 
-        {/* `relative`, so anything absolutely placed inside a screen (screen-reader text,
-            tooltips) belongs to this scroll area. Without it such an element was
-            placed against the window and gave the page a second scroll. */}
-        <div className="relative min-h-0 flex-1 overflow-y-auto print:overflow-visible">
+      <LostConnectionBanner />
+      <LiveConnection />
+      <OnlineAlerts />
+      {/* 2026-10-22. On the cafe PC the till prints captains' bills on the paper with no gap above. */}
+      <CaptainBillPrinter paper={features?.sync?.server === 'BOX' ? CAFE_PC_PAPER : null} />
+      <CounterKotPrinter />
+
+      <div className="flex min-h-0 flex-1">
+        {sidebarOpen && wide && <Sidebar onClose={closeSidebar} overlay={false} />}
+        {/* `relative`, so anything absolutely placed inside a screen belongs to this
+            scroll area rather than to the window, which gave the page a second scroll. */}
+        <div className="relative min-h-0 min-w-0 flex-1 overflow-y-auto print:overflow-visible">
           <Suspense fallback={<ScreenLoading />}>{children}</Suspense>
         </div>
-
-        <nav aria-label="Main" className="flex flex-none items-stretch gap-1 border-t border-line bg-surface px-2 py-1 min-[600px]:hidden print:hidden">
-          {places.map((place) => (
-            <PlaceLink key={place.to} place={place} layout="bar" />
-          ))}
-          <MoreButton layout="bar" onClick={() => setMoreOpen(true)} />
-        </nav>
       </div>
 
-      {moreOpen && <MoreSheet onClose={() => setMoreOpen(false)} />}
+      <nav aria-label="Main" className="flex flex-none items-stretch gap-1 border-t border-line bg-surface px-2 py-1 min-[600px]:hidden print:hidden">
+        {places.map((place) => (
+          <BottomTab key={place.to} place={place} />
+        ))}
+      </nav>
+
+      {sidebarOpen && !wide && (
+        <>
+          <button type="button" aria-label="Close the menu" onClick={closeSidebar} className="fixed inset-0 z-40 bg-ink/30 print:hidden" />
+          <Sidebar onClose={closeSidebar} overlay />
+        </>
+      )}
     </div>
   );
 }

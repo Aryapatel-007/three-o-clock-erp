@@ -1,13 +1,13 @@
-# Three O'Clock: connect this PC to the website, so each takes the other's orders and bills
+# ThreeOClock: connect this PC to the website, so each takes the other's orders and bills
 # and Atlas always holds a copy. P63, docs/WINDOWS-INSTALL.md section 5c.
 #
-# Run by double-clicking "Connect to the website.bat" in C:\ThreeOClock, after
-# "Load cafe data" has put the website's copy on this PC.
+# Run by double-clicking "Connect to the website.bat" in the ThreeOClock folder. 2026-11-03: the PC
+# is the main system: a website that has never seen this PC's restaurant takes it from
+# this PC's first push, and where both change the same thing, the PC's change is kept.
 #
 # It asks for REPLICATION_SECRET (Render, Environment), checks with the website that
-# the secret is right and that the website already holds this PC's restaurant, and
-# only then writes SYNC_MODE=TWO_WAY, MIRROR_URL and the secret into .env and restarts
-# the server. A wrong secret or a PC with other data changes nothing.
+# the secret is right, and only then writes SYNC_MODE=TWO_WAY, MIRROR_URL and the secret
+# into .env and restarts the server. A wrong secret changes nothing.
 # Written in plain ASCII for Windows PowerShell 5.1.
 
 $ErrorActionPreference = 'Stop'
@@ -51,7 +51,7 @@ $principal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.
 if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
   Fail 'Run this as Administrator: double-click "Connect to the website.bat", and say Yes when Windows asks.'
 }
-if (-not (Test-Path $EnvFile)) { Fail 'Three O''Clock is not installed here yet. Double-click "Install ThreeOClock" first.' }
+if (-not (Test-Path $EnvFile)) { Fail 'ThreeOClock is not installed here yet. Double-click "Install ThreeOClock" first.' }
 Refresh-Path
 if (-not (Get-Command node -ErrorAction SilentlyContinue)) { Fail 'Node.js is missing. Run "Install ThreeOClock" again.' }
 
@@ -70,7 +70,7 @@ if ((Get-EnvValue 'SYNC_MODE') -eq 'TWO_WAY' -and (Get-EnvValue 'REPLICATION_SEC
   Write-Host 'This PC is already connected. Going on checks the secret again and restarts the server.' -ForegroundColor Yellow
 }
 Write-Host ''
-Write-Host 'On Render: the three-o-clock-erp-api service, Environment, REPLICATION_SECRET, the eye icon, copy.'
+Write-Host 'On Render: the threeoclock service, Environment, REPLICATION_SECRET, the eye icon, copy.'
 $secret = Read-Secret 'Paste REPLICATION_SECRET here (it stays hidden), then press Enter'
 if (-not $secret) { Fail 'Nothing was pasted. Nothing was changed.' }
 
@@ -86,7 +86,10 @@ $jsonLine = $output | Where-Object { $_ -match '^\{' } | Select-Object -Last 1
 if (-not $jsonLine) { $output | Select-Object -Last 10 | Out-Host; Fail 'The check did not finish. Nothing was changed.' }
 $check = $jsonLine | ConvertFrom-Json
 if (-not $check.ok) { Fail "$($check.message) Nothing was changed." }
-foreach ($restaurant in $check.results) { Write-Host "The website knows $($restaurant.name)." -ForegroundColor Green }
+foreach ($restaurant in $check.results) {
+  if ($restaurant.newestSeq) { Write-Host "The website knows $($restaurant.name)." -ForegroundColor Green }
+  else { Write-Host "The website takes $($restaurant.name) from this PC on the first push." -ForegroundColor Green }
+}
 
 Write-Host ''
 Write-Host 'Optional, only if the website has card machine, Swiggy, Zomato or Razorpay connections:'
@@ -124,8 +127,8 @@ $hours = Get-EnvValue 'SYNC_HOURS'
 if (-not $hours) { $hours = '08:30-02:30' }
 Write-Host ''
 Write-Host 'Connected.' -ForegroundColor Green
-Write-Host "This PC and the website now swap orders and bills every minute between $hours (India time),"
-Write-Host 'and at night whenever this PC has something new. Atlas holds the website''s copy.'
-Write-Host 'Check: sign in as the owner on this PC, open Sync in the menu. Within two minutes it says In step.' -ForegroundColor Green
-Write-Host 'Bill on this PC. Use the website only when this PC has a problem (docs\DEPLOYMENT.md section 19.4).'
+Write-Host "This PC now pushes its records and pulls the website's changes every minute between $hours (India time),"
+Write-Host 'and at night whenever it has something new. The first push sends everything, so it can take a few minutes.'
+Write-Host 'Where both change the same thing before they can tell each other, this PC''s change is kept.'
+Write-Host 'Check: sign in as the owner on this PC and open Push and pull in the menu.' -ForegroundColor Green
 Read-Host 'Press Enter to close'

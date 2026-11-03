@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
+
+import { useTheme } from '../../context/ThemeProvider.jsx';
+import { printBill } from '../printing/printBill.js';
 
 import { PrintIcon } from '../../components/ui/icons/index.jsx';
 import Money, { moneyText } from '../../components/ui/Money.jsx';
@@ -20,16 +22,22 @@ const MANAGERS = [ROLES.OWNER, ROLES.MANAGER];
  * The bill, before it is made. P57.
  *
  * PetPooja's way: the dishes above stay changeable, the discount is chosen
- * here, and the totals show before anything is saved. Nothing is made, and
- * nothing printed, until Save or Save & Print.
+ * here, and the totals show before anything is saved. Nothing is made until
+ * Print bill (the usual way: made and printed at once) or Save without printing.
+ * 2026-11-03: either way the screen stays on the order, where the payment is
+ * taken next (the bill workspace); nothing jumps to a separate bill screen.
  *
  * Every figure is the server's: the totals are a preview of POST /bills
  * (`preview: true`), which writes nothing and uses no bill number, read again
  * whenever the order or the discount changes. The discount travels with the
  * bill in the same request, so a bill is never printed without it.
  */
-export default function BillComposer({ order, onStale, withoutKot = false, onBack = null }) {
-  const navigate = useNavigate();
+/**
+ * `compact` (2026-11-03): in the counter's order column, under the dishes, where the
+ * whole order and its bill must fit the window: the GST of each rate on one line, and
+ * the discount and "without printing" as small links beside the heading.
+ */
+export default function BillComposer({ order, onStale, withoutKot = false, onBack = null, compact = false }) {
   const queryClient = useQueryClient();
   const { user, features } = useAuth();
   const [discount, setDiscount] = useState(null);
@@ -39,6 +47,7 @@ export default function BillComposer({ order, onStale, withoutKot = false, onBac
   const isCaptain = user?.role === ROLES.WAITER;
   // 2026-10-25. A manager's or cashier's phone on the cafe PC sends the print to the counter too.
   const [device] = useDeviceSettings();
+  const { brand } = useTheme();
   const atCounter = isCaptain || (TILL.includes(user?.role) && billsPrintAtCounter(device, features));
   const isManager = MANAGERS.includes(user?.role);
   const cashierPlatformOnly = user?.role === ROLES.CASHIER && Boolean(features?.cashierMayApplyPlatformDiscounts);
@@ -63,18 +72,24 @@ export default function BillComposer({ order, onStale, withoutKot = false, onBac
       const bill = await createBill({ orderId: order.id, version: order.version, discount, ...(withoutKot ? { withoutKot } : {}) });
       // P25 Part D. A captain's print goes to the counter's printer. A failed request leaves Print at counter on the bill.
       if (andPrint && atCounter) await requestBillPrint(bill.id).catch(() => null);
+      // The till prints here, on this device, as the bill is made. A failed print leaves Print bill below.
+      if (andPrint && !atCounter) {
+        await printBill(bill.id, { printer: device.printer, logoDataUrl: brand.logos?.LIGHT_GROUND?.dataUrl ?? null }).catch(() => null);
+      }
       return bill;
     },
-    onSuccess: (bill, { andPrint }) => {
+    onSuccess: (bill) => {
+      // The order screen shows the bill and its payment in this box's place.
+      queryClient.setQueryData(['bill', bill.id], bill);
+      queryClient.invalidateQueries({ queryKey: ['bill', bill.id] });
       queryClient.invalidateQueries({ queryKey: ['order', order.id] });
       queryClient.invalidateQueries({ queryKey: ['tables'] });
-      // The bill screen prints it on this device, then asks for the payment (P29).
-      navigate(`/bills/${bill.id}`, { state: andPrint && !atCounter ? { printNow: true } : null });
     },
     onError: (mutationError) => {
       const raced = existingBillId(mutationError);
       if (raced) {
-        navigate(`/bills/${raced}`);
+        // Someone else made the bill a moment ago: the order shows it.
+        queryClient.invalidateQueries({ queryKey: ['order', order.id] });
         return;
       }
       if (mutationError?.code === 'VERSION_CONFLICT') onStale?.();
@@ -83,6 +98,83 @@ export default function BillComposer({ order, onStale, withoutKot = false, onBac
   });
 
   const busy = save.isPending;
+
+  if (compact) {
+    return (
+      <section aria-label="Bill" className="flex flex-none flex-col gap-2 border-t-2 border-ink px-4 py-3">
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="type-heading">Bill</h2>
+          <span className="flex items-center gap-1">
+            {canDiscount && (
+              <button type="button" disabled={busy} onClick={() => setChoosing(true)} className="type-label min-h-9 rounded-lg px-2 hover:bg-sunken disabled:opacity-50">
+                {discount ? 'Change discount' : 'Add discount'}
+              </button>
+            )}
+            {discount && (
+              <button type="button" disabled={busy} onClick={() => setDiscount(null)} className="type-label min-h-9 rounded-lg px-2 text-alert hover:bg-alert-tint disabled:opacity-50">
+                Remove
+              </button>
+            )}
+          </span>
+        </div>
+        {discount && <p className="type-caption text-muted">Discount · {discountWords(discount)}</p>}
+        {preview ? (
+          <dl aria-busy={previewQuery.isFetching} className={['flex flex-col', previewQuery.isFetching ? 'opacity-60' : ''].join(' ')}>
+            <SmallRow label="Item total" value={<Money paise={preview.subtotalInPaise} />} />
+            {preview.discount && <SmallRow label="Discount" value={`− ${moneyText(preview.discount.amountInPaise)}`} />}
+            {preview.taxBreakdown.map((slab) => (
+              <SmallRow key={slab.taxRateBps} label={`GST @ ${formatBasisPoints(slab.taxRateBps)} (CGST + SGST)`} value={<Money paise={slab.cgstInPaise + slab.sgstInPaise} />} />
+            ))}
+            {preview.roundOffInPaise !== 0 && <SmallRow label="Round-off" value={<Money paise={preview.roundOffInPaise} />} />}
+            <div className="mt-1 flex items-end justify-between gap-2 border-t border-line pt-1">
+              <dt className="type-label">Bill total</dt>
+              <dd>
+                <Money paise={preview.grandTotalInPaise} size="tile" />
+              </dd>
+            </div>
+          </dl>
+        ) : (
+          !previewError && <p className="type-caption text-muted">Working out the total…</p>
+        )}
+        {(error || previewError) && <p className="type-caption text-alert">{error ?? previewError}</p>}
+        <div className="flex items-stretch gap-2">
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => save.mutate({ andPrint: true })}
+            className="type-button flex min-h-12 flex-1 items-center justify-center gap-2 rounded-lg bg-accent px-3 text-on-accent hover:brightness-110 disabled:opacity-50"
+          >
+            <PrintIcon />
+            {busy ? 'Making the bill…' : atCounter ? 'Print bill at counter' : 'Print bill'}
+          </button>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => save.mutate({ andPrint: false })}
+            title="Make the bill without printing"
+            className="type-label min-h-12 rounded-lg border border-line px-3 leading-tight hover:bg-sunken disabled:opacity-50"
+          >
+            No print
+          </button>
+        </div>
+        {choosing && (
+          <DiscountPanel
+            billNumber={null}
+            subtotalInPaise={preview?.subtotalInPaise ?? order.totals.subtotalInPaise}
+            platformOnly={!isManager}
+            isBusy={false}
+            error={null}
+            onCancel={() => setChoosing(false)}
+            onConfirm={(body) => {
+              setDiscount(body);
+              setChoosing(false);
+              setError(null);
+            }}
+          />
+        )}
+      </section>
+    );
+  }
 
   return (
     <section aria-label="Bill" className="flex flex-col gap-3 border-t-2 border-ink px-4 py-4">
@@ -143,15 +235,8 @@ export default function BillComposer({ order, onStale, withoutKot = false, onBac
 
       {(error || previewError) && <p className="type-caption text-alert">{error ?? previewError}</p>}
 
-      <div className="grid grid-cols-2 gap-2">
-        <button
-          type="button"
-          disabled={busy}
-          onClick={() => save.mutate({ andPrint: false })}
-          className="type-button min-h-14 rounded-lg border border-ink bg-surface px-4 hover:bg-sunken disabled:opacity-50"
-        >
-          Save
-        </button>
+      {/* One clear step: the bill is made and printed together; the payment comes next, right here. */}
+      <div className="flex flex-col gap-2">
         <button
           type="button"
           disabled={busy}
@@ -159,7 +244,15 @@ export default function BillComposer({ order, onStale, withoutKot = false, onBac
           className="type-button flex min-h-14 items-center justify-center gap-2 rounded-lg bg-accent px-4 text-on-accent hover:brightness-110 disabled:opacity-50"
         >
           <PrintIcon />
-          {busy ? 'Saving…' : atCounter ? 'Save & Print at counter' : 'Save & Print'}
+          {busy ? 'Making the bill…' : atCounter ? 'Print bill at counter' : 'Print bill'}
+        </button>
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => save.mutate({ andPrint: false })}
+          className="type-label min-h-12 rounded-lg px-4 text-ink hover:bg-sunken disabled:opacity-50"
+        >
+          Make the bill without printing
         </button>
       </div>
 
@@ -198,6 +291,15 @@ function discountWords(discount) {
   const size = discount.kind === 'PERCENT' ? formatBasisPoints(discount.rateBps) : moneyText(discount.valueInPaise);
   const label = discountReasonLabel(discount.reasonCode);
   return `${size} · ${discount.note ? `${label}: ${discount.note}` : label}`;
+}
+
+function SmallRow({ label, value }) {
+  return (
+    <div className="flex justify-between gap-3">
+      <dt className="type-caption text-muted">{label}</dt>
+      <dd className="type-num-meta">{value}</dd>
+    </div>
+  );
 }
 
 function Row({ label, value }) {

@@ -22,7 +22,10 @@ export const conflictKeepSchema = z.object({
   body: z.object({ version: z.enum(['LOCAL', 'INCOMING', 'RESULT']) }).strict(),
 });
 
-export const syncNowSchema = z.object({ body: z.object({}).strict().optional() });
+// 2026-11-03. One-way: PUSH, PULL, or neither for both. Two-way ignores it.
+export const syncNowSchema = z.object({
+  body: z.object({ direction: z.enum(['PUSH', 'PULL'], { error: 'Must be PUSH or PULL.' }).optional() }).strict().optional(),
+});
 
 export const syncChangesSchema = z.object({ query: z.object({}).strict() });
 

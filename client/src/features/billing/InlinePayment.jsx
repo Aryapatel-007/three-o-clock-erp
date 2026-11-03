@@ -26,7 +26,7 @@ import MethodButtons from './MethodButtons.jsx';
 /** P43. Used only before /auth/me carries the restaurant's own list (P47). Anything else is typed. */
 const FALLBACK_OTHER_MODES = ['Swiggy Dineout', 'Zomato Dineout', 'EazyDiner', 'Cheque', 'Bank transfer', 'Coupon'];
 
-export default function InlinePayment({ billId, methods, outstandingInPaise, isBusy, error, onConfirm, onTerminalFinished }) {
+export default function InlinePayment({ billId, methods, outstandingInPaise, isBusy, error, onConfirm, onTerminalFinished, onPartPayment = null }) {
   // Until one is picked, the first allowed method is selected. Derived, because
   // the methods may still be loading when this mounts.
   const [picked, setMethod] = useState(null);
@@ -66,7 +66,7 @@ export default function InlinePayment({ billId, methods, outstandingInPaise, isB
             {LABELS.outstanding} <Money paise={outstandingInPaise} size="num" className="text-ink" />
           </span>
         </div>
-        <MethodButtons methods={methods} selected={method?.code} onPick={setMethod} />
+        <MethodButtons methods={methods} selected={method?.code} onPick={setMethod} onPartPayment={onPartPayment} />
       </div>
 
       {method && (

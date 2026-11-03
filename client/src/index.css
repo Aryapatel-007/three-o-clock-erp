@@ -380,6 +380,25 @@
   font-weight: 450;
 }
 
+/*
+ * No scrollbar is drawn anywhere (2026-11-03, at Arya's word): every page and list
+ * still scrolls by wheel, touch, keyboard or drag.
+ */
+* {
+  scrollbar-width: none;
+}
+*::-webkit-scrollbar {
+  display: none;
+}
+
+/* A list that scrolls by wheel, touch or drag without drawing a scrollbar (2026-11-03). */
+@utility scrollbar-none {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 /* Density-aware spacing for tiles, tickets and lists. */
 @utility gap-d {
   gap: var(--d-gap);

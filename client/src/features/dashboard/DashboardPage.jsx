@@ -13,6 +13,7 @@ import UnclosedDayWarning from '../settlement/UnclosedDayWarning.jsx';
 import Money, { moneyText } from '../../components/ui/Money.jsx';
 
 import Spinner from '../../components/ui/Spinner.jsx';
+import { DeviceIcon } from '../../components/ui/icons/index.jsx';
 import { useLiveInterval } from '../../api/live.js';
 
 /**
@@ -75,14 +76,24 @@ export default function DashboardPage() {
   const seated = (tables.data ?? []).filter((table) => table.occupancy.isOccupied);
   const data = today.data;
 
+  // The first two are the big buttons at the top; the rest are the cards below, so none shows twice.
   const actions = [
-    { to: '/floor', title: 'New dine-in order', note: 'Pick a table', show: canTakeOrders, primary: true },
+    { to: '/floor', title: 'New dine-in order', note: 'Pick a table', show: canTakeOrders },
     { to: '/orders/takeaway', title: 'Takeaway', note: 'Counter order', show: canTakeOrders },
-    { to: '/orders/delivery', title: 'Delivery order', note: 'Zomato or Swiggy', show: canTakeOrders },
-    { to: '/day-close', title: 'Day Close', note: 'Count the cash and lock the day', show: isManager },
-    { to: '/bills', title: 'Bills', note: 'Collect payment', show: canBill && !isManager },
     { to: '/menu/availability', title: 'Availability', note: 'Mark a dish out', show: !canTakeOrders },
+    { to: '/inventory', title: 'Stock', note: 'Receive, count and record wastage', show: role === 'STOREKEEPER' },
+    { to: '/reports/stock', title: 'Stock report', note: 'What is low and what moved', show: role === 'STOREKEEPER' },    { to: '/orders/delivery', title: 'Delivery order', note: 'Zomato or Swiggy', show: canTakeOrders },
+    { to: '/bills', title: 'Bills', note: 'Collect payment', show: canBill },
+    { to: '/kitchen', title: 'Kitchen', note: 'Tickets at the pass', show: canTakeOrders },
+    { to: '/day-end', title: 'Day End', note: 'Count the cash and close the day', show: canBill },
+    { to: '/owner', title: 'Dashboard', note: "The day's sales, money and watch list", show: role === 'OWNER' },
+    { to: '/reports', title: 'Reports', note: 'Sales, GST and payments', show: isManager },
+    { to: '/menu', title: 'Menu', note: 'Dishes, prices and categories', show: isManager },
+    { to: '/staff', title: 'Staff', note: 'Logins, roles and PINs', show: isManager },
+    { to: '/settings', title: 'Settings', note: 'Bills, taxes and appearance', show: role === 'OWNER' },
   ].filter((action) => action.show);
+  const topActions = actions.slice(0, 2);
+  const moreActions = actions.slice(2);
 
   return (
     <main className="min-h-full bg-ground">
@@ -105,22 +116,28 @@ export default function DashboardPage() {
           <p className="mt-1 text-sm text-muted">
             {formatDateIst(now)} · signed in as {role?.toLowerCase()}
           </p>
-          {actions.length > 0 && (
-            <div className="mt-6 flex flex-wrap gap-3">
-              {actions.slice(0, 2).map((action, index) => (
-                <Link
-                  key={action.to}
-                  to={action.to}
-                  className={[
-                    'type-button flex min-h-14 items-center rounded-lg px-6',
-                    index === 0 ? 'bg-accent text-on-accent hover:brightness-110' : 'border border-ink bg-surface hover:bg-sunken',
-                  ].join(' ')}
-                >
-                  {action.title}
-                </Link>
-              ))}
-            </div>
-          )}
+          <div className="mt-6 flex flex-wrap gap-3">
+            {topActions.map((action, index) => (
+              <Link
+                key={action.to}
+                to={action.to}
+                className={[
+                  'type-button flex min-h-14 items-center rounded-lg px-6',
+                  index === 0 ? 'bg-accent text-on-accent hover:brightness-110' : 'border border-ink bg-surface hover:bg-sunken',
+                ].join(' ')}
+              >
+                {action.title}
+              </Link>
+            ))}
+            {/* Tablets, phones and kitchen screens join from here: the first screen everyone sees. */}
+            <Link
+              to="/connect"
+              className="type-button flex min-h-14 items-center gap-2 rounded-lg px-5 text-ink hover:bg-sunken"
+            >
+              <DeviceIcon />
+              Connect a device
+            </Link>
+          </div>
         </Card>
 
         {isManager && (
@@ -128,7 +145,7 @@ export default function DashboardPage() {
             {today.isError && <ErrorMessage error={today.error} />}
             {data && (
               <>
-                <Stat label="Bill total today" value={<Money paise={data.sales.grossSalesInPaise} />} hint={`Business day ${data.businessDate}`} className="col-span-2 sm:col-span-1" />
+                <Stat label="Bill total today" value={<Money paise={data.sales.grossSalesInPaise} />} hint={`Business day ${data.businessDate}`} />
                 <Stat label="Bills" value={data.sales.billCount} hint={`Average bill ${moneyText(data.sales.averageBillInPaise)}`} />
                 <Stat
                   label="Open orders"
@@ -147,30 +164,18 @@ export default function DashboardPage() {
 
         <section className="grid gap-6 lg:grid-cols-12">
           <div className="flex flex-col gap-3 lg:col-span-5">
-            <h2 className="px-1 type-heading">Quick actions</h2>
-            <div className="grid gap-3 sm:grid-cols-2">
-              {actions.map((action) => (
+            {moreActions.length > 0 && <h2 className="px-1 type-heading">Quick actions</h2>}
+            <div className="grid grid-cols-2 gap-3">
+              {moreActions.map((action) => (
                 <Link
                   key={action.to}
                   to={action.to}
-                  className={[
-                    'flex min-h-24 flex-col justify-between rounded-[10px] border border-line bg-surface p-4 hover:bg-sunken',
-                  ].join(' ')}
+                  className="flex min-h-24 flex-col justify-between rounded-[10px] border border-line bg-surface p-4 hover:bg-sunken"
                 >
                   <span className="type-heading">{action.title}</span>
                   <span className="type-caption text-muted">{action.note}</span>
                 </Link>
               ))}
-              <Link to="/kitchen" className="flex min-h-24 flex-col justify-between rounded-[10px] border border-line bg-surface p-4 hover:bg-sunken">
-                <span className="type-heading">Kitchen</span>
-                <span className="type-caption text-muted">Tickets at the pass</span>
-              </Link>
-              {isManager && (
-                <Link to="/reports" className="flex min-h-24 flex-col justify-between rounded-[10px] border border-line bg-surface p-4 hover:bg-sunken">
-                  <span className="type-heading">Reports</span>
-                  <span className="type-caption text-muted">Sales, GST and payments</span>
-                </Link>
-              )}
             </div>
           </div>
 

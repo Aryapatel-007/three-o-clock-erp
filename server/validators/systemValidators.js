@@ -6,6 +6,9 @@ import { z } from 'zod';
 /** P54. GET /system/backups takes no query. */
 export const serverBackupsSchema = z.object({ query: z.object({}).strict() });
 
+/** 2026-11-03. GET /system/printers takes no query. */
+export const installedPrintersSchema = z.object({ query: z.object({}).strict() });
+
 export const serverStartsSchema = z.object({
   query: z.object({
     days: z.preprocess(

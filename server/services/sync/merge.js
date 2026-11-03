@@ -6,9 +6,10 @@
  *
  *   - both sides the same                 that value
  *   - only one side changed it from base  that side's value
- *   - both changed it, differently        the newer document's value (by
- *                                         updatedAt; a tie goes to the box), and
- *                                         the field is named as a conflict
+ *   - both changed it, differently        the restaurant PC's value, always
+ *                                         (2026-11-03, Arya: the PC is the main
+ *                                         system), and the field is named as a
+ *                                         conflict
  *
  * Plain objects are merged key by key. An array whose items are sub-documents
  * with an `_id` (order lines, payments, a ticket's lines) is merged item by item,
@@ -49,9 +50,8 @@ function time(doc) {
 export function threeWayMerge({ base, local, incoming, localIsBox }) {
   const localTime = time(local);
   const incomingTime = time(incoming);
-  let newer;
-  if (localTime === incomingTime) newer = localIsBox ? 'local' : 'incoming';
-  else newer = localTime > incomingTime ? 'local' : 'incoming';
+  // Where both changed the same value, the PC's stands, whichever was later.
+  const newer = localIsBox ? 'local' : 'incoming';
   const conflictFields = new Set();
 
   function mergeValue(baseValue, localValue, incomingValue, path) {

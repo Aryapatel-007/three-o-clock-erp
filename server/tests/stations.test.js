@@ -99,26 +99,25 @@ describe('routing when an order fires', () => {
     assert.equal(fired.kot.lines.length, 1);
   });
 
-  it('splits a pasta and a latte into two KOTs, numbered in station order', async () => {
+  // 2026-11-03: one KOT for the whole Send; each dish keeps its section, in station order.
+  it('puts a pasta and a latte on one KOT, each dish routed to its own section', async () => {
     const floor = await stationFloor();
     const fired = await fireLines(floor, [
       { menuItemId: floor.latte.id, quantity: 1 },
       { menuItemId: floor.pasta.id, quantity: 1 },
     ]);
 
-    assert.equal(fired.kots.length, 2);
-    const [first, second] = fired.kots;
-    assert.equal(first.stationName, 'Live Kitchen');
-    assert.equal(second.stationName, 'Beverages');
-    assert.ok(first.kotNumber < second.kotNumber, 'numbers follow station order');
-    assert.deepEqual(first.lines.map((line) => line.itemName), ['Creamy Pesto Pasta']);
-    assert.deepEqual(second.lines.map((line) => line.itemName), ['Caffe Latte']);
-
-    // Each order line points at the ticket it actually went on.
-    const order = fired.order;
-    const kotOf = Object.fromEntries(order.lines.map((line) => [line.itemName, line.kotId]));
-    assert.equal(kotOf['Creamy Pesto Pasta'], first.id);
-    assert.equal(kotOf['Caffe Latte'], second.id);
+    assert.equal(fired.kots.length, 1);
+    assert.equal(fired.kot.stationName, null);
+    assert.deepEqual(
+      fired.kot.lines.map((line) => [line.itemName, line.stationName]),
+      [
+        ['Creamy Pesto Pasta', 'Live Kitchen'],
+        ['Caffe Latte', 'Beverages'],
+      ],
+    );
+    // Every order line points at that one ticket.
+    assert.deepEqual([...new Set(fired.order.lines.map((line) => line.kotId))], [fired.kot.id]);
   });
 
   it('sends a line whose category has no station to the first station', async () => {
@@ -271,8 +270,10 @@ describe('station endpoints', () => {
       lines: orphan.toObject().lines.map((line) => ({ ...line, stationId: null, stationName: null })),
     });
 
+    // The Send's one KOT holds the bar's latte, so the bar's screen lists it.
     const bar = await request('GET', `/api/v1/kots?stationId=${floor.bar.id}`, { token: floor.tokens.KITCHEN });
-    assert.deepEqual(bar.body.data.map((kot) => kot.stationName), ['Beverages']);
+    assert.equal(bar.body.data.length, 1);
+    assert.ok(bar.body.data[0].lines.some((line) => line.itemName === 'Caffe Latte'));
 
     const none = await request('GET', '/api/v1/kots?stationId=none', { token: floor.tokens.KITCHEN });
     assert.deepEqual(none.body.data.map((kot) => kot.kotNumber), [999]);

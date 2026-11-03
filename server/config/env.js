@@ -328,7 +328,7 @@ const envSchema = z
     BOX_DATA_DIR: optionalVar('BOX_DATA_DIR', path.join(REPO_ROOT, 'box-data')),
     /** P62. The address staff type on a tablet, shown on the setup card, e.g. http://192.168.1.10. BOX only. */
     BOX_PUBLIC_URL: nullableText.refine((value) => value === null || /^https?:[/][/][^/]+$/.test(value), 'BOX_PUBLIC_URL must be a bare origin with no trailing slash.'),
-    /** P62. The box's second name, without the internet's DNS: avahi's mDNS name, e.g. http://cafezza.local. Optional. */
+    /** P62. The box's second name, without the internet's DNS: avahi's mDNS name, e.g. http://threeoclock.local. Optional. */
     BOX_LOCAL_NAME_URL: nullableText.refine((value) => value === null || /^https?:[/][/][^/]+$/.test(value), 'BOX_LOCAL_NAME_URL must be a bare origin with no trailing slash.'),
     /** P62. The network adapter the box uses for WiFi (wlan0, en0, Wi-Fi). Found by itself when unset. */
     BOX_WIFI_INTERFACE: nullableText,

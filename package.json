@@ -47,6 +47,7 @@
     "@playwright/test": "^1.63.0",
     "concurrently": "^9.1.2",
     "eslint": "^9.18.0",
-    "exceljs": "^4.4.0"
+    "exceljs": "^4.4.0",
+    "javascript-obfuscator": "^4.2.2"
   }
 }

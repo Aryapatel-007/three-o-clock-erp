@@ -1,12 +1,12 @@
 import { useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 
-import { getKotTicket, listKots } from '../../api/kitchen.js';
+import { listKots } from '../../api/kitchen.js';
 import { useLiveInterval } from '../../api/live.js';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { ROLES } from '../users/roles.js';
 
-import { kotCharactersFor, printText } from './printText.js';
+import { printKotWithSections } from './printKot.js';
 import { readDeviceSettings, rememberPrinted, useDeviceSettings } from './useDeviceSettings.js';
 
 const TILL = [ROLES.OWNER, ROLES.MANAGER, ROLES.CASHIER];
@@ -22,15 +22,16 @@ const PRINT_LOCK = 'counter-kot-printer';
  *
  * On with "Print every new KOT here" on This device, which the till window
  * (`?till=1`) turns on by itself. Each Send is printed once, whole, as
- * "ticket:round", the same keys the Kitchen screen and KOT & Print remember on
+ * "ticket:round" (2026-11-03: the whole KOT, then a slip per section, printKot.js), the same keys the Kitchen screen remembers on
  * this device, so none of the three prints a round another already printed.
  * The first run marks what is already there as printed, so switching it on
  * mid-service prints no backlog. A failed print is tried again on the next poll.
  */
 export default function CounterKotPrinter() {
-  const { user } = useAuth();
+  const { user, features } = useAuth();
   const [device, updateDevice] = useDeviceSettings();
-  const enabled = Boolean(device.printKotsAtCounter) && TILL.includes(user?.role);
+  // 2026-11-03. A restaurant that reads tickets on screens prints none (Settings, Kitchen).
+  const enabled = Boolean(device.printKotsAtCounter) && TILL.includes(user?.role) && features?.kitchen?.printKots !== false;
 
   // P33. 5 seconds, or 60 while the live channel is healthy and announcing tickets.
   const interval = useLiveInterval(POLL_MS);
@@ -66,11 +67,11 @@ export default function CounterKotPrinter() {
       // Recorded before printing, so a slow printer never gets the same round again from the next poll.
       updateDevice((current) => ({ printedKotIds: rememberPrinted(current.printedKotIds, fresh) }));
       const settings = readDeviceSettings();
+      const byId = new Map((tickets.data?.data ?? []).map((kot) => [kot.id, kot]));
       for (const key of fresh) {
         const [id, round] = key.split(':');
         try {
-          const { text } = await getKotTicket(id, { width: kotCharactersFor(settings.printer), round: Number(round) });
-          await printText(text, settings.printer, { kot: true });
+          await printKotWithSections(byId.get(id) ?? { id, lines: [] }, { round: Number(round), printer: settings.printer });
         } catch {
           // Forgotten again, so the next poll tries it once more.
           updateDevice((current) => ({ printedKotIds: current.printedKotIds.filter((printed) => printed !== key) }));

@@ -75,9 +75,9 @@ describe('one ticket per Send, not per station', () => {
     assert.deepEqual([...new Set(sent.order.lines.map((line) => line.kotId))], [sent.kot.id]);
     assert.equal(await Kot.countDocuments({ restaurantId: floor.restaurant._id }), 1);
 
-    // Printed whole, under KITCHEN, with every dish.
+    // Printed whole, under ALL SECTIONS (2026-11-03), with every dish.
     const { text } = ok(await request('GET', `/api/v1/kots/${sent.kot.id}/ticket?width=32`, { token: floor.tokens.KITCHEN }), 'ticket');
-    assert.match(text, /KITCHEN/);
+    assert.match(text, /ALL SECTIONS/);
     assert.doesNotMatch(text, /CHAAT COUNTER|TANDOOR|BEVERAGES/);
     assert.match(text, /3 x Pani Puri/);
     assert.match(text, /2 x Butter Roti/);
@@ -102,22 +102,28 @@ describe('one ticket per Send, not per station', () => {
     assert.equal(await Kot.countDocuments({ restaurantId: floor.restaurant._id }), 2);
   });
 
-  it('keeps one ticket per station per Send while the setting is on, as P05', async () => {
+  // 2026-11-03: one KOT per Send even with the setting on; the counter prints a slip per section from it.
+  it('makes one whole KOT per Send with the setting on too, each dish keeping its section', async () => {
     const floor = await stationFloor({ oneTicketPerOrder: false });
     const opened = ok(await openOrder(floor.tokens.WAITER, { tableId: floor.table.id, lines: threeDishes(floor) }), 'open');
     const sent = ok(await fireOrder(floor.tokens.WAITER, opened.id, opened.version), 'send');
 
-    assert.deepEqual(sent.kots.map((kot) => kot.stationName), ['Chaat Counter', 'Tandoor', 'Beverages']);
-    assert.equal(new Set(sent.kots.map((kot) => kot.kotNumber)).size, 3);
+    assert.equal(sent.kots.length, 1);
+    assert.equal(sent.kot.stationName, null, 'a Send for several sections has none of its own');
+    assert.deepEqual(new Set(sent.kot.lines.map((line) => line.stationName)), new Set(['Chaat Counter', 'Tandoor', 'Beverages']));
+    // Each section's slip is that section's dishes alone, headed with its name.
+    const slip = ok(await request('GET', `/api/v1/kots/${sent.kot.id}/ticket?stationId=${floor.tandoor.id}`, { token: floor.tokens.KITCHEN }), 'slip');
+    assert.match(slip.text, /TANDOOR/);
+    assert.match(slip.text, /Butter Roti/);
+    assert.doesNotMatch(slip.text, /Pani Puri|Coke/);
   });
 
-  it('leaves the one ticket per order without a station when the setting is off', async () => {
+  it("gives a Send that is all for one section that section's name", async () => {
     const floor = await stationFloor({ splitTicketsByStation: false });
     const opened = ok(await openOrder(floor.tokens.WAITER, { tableId: floor.table.id, lines: [{ menuItemId: floor.pani.id, quantity: 1 }] }), 'open');
     const sent = ok(await fireOrder(floor.tokens.WAITER, opened.id, opened.version), 'send');
 
-    // One station's dish only, and still no station of its own.
-    assert.equal(sent.kot.stationName, null);
+    assert.equal(sent.kot.stationName, 'Chaat Counter');
     assert.equal(sent.kot.lines[0].stationName, 'Chaat Counter');
   });
 

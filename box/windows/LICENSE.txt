@@ -1,0 +1,33 @@
+THREE O CLOCK - SOFTWARE LICENCE AGREEMENT
+
+ThreeOClock, including its programs, screens, database design, documentation and
+updates (the "Software"), is owned by Arya Patel and is protected by copyright.
+It is licensed to you, not sold.
+
+1. Use. You may install and use the Software on computers at the restaurant it
+   was provided for, for running that restaurant.
+
+2. Restrictions. You may not, and may not let anyone else:
+   a. copy, sell, rent, lend, share or give the Software to anyone else;
+   b. install it for another business or another restaurant;
+   c. decompile, disassemble, de-obfuscate or reverse engineer it, or try to
+      obtain its source code;
+   d. modify it, or make other software from it;
+   e. remove or change any notice of ownership in it.
+
+3. Your data. The restaurant's own records (menu, bills, staff and settings)
+   belong to the restaurant. The Software keeps them on this computer.
+
+4. Updates. The Software may download and install updates published by its
+   owner. This agreement covers them too.
+
+5. No warranty. The Software is provided as it is. To the extent the law
+   allows, the owner is not liable for any loss arising from its use. Keep
+   the backups the Software makes.
+
+6. Ending. This licence ends if you break it. You must then stop using the
+   Software and delete it.
+
+By clicking "I accept the agreement" you agree to these terms.
+
+Copyright (c) 2026 Arya Patel. All rights reserved.

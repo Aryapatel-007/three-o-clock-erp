@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 
-import { BackIcon } from '../../components/ui/icons/index.jsx';
+import { BackIcon, ChevronDownIcon } from '../../components/ui/icons/index.jsx';
 import Money from '../../components/ui/Money.jsx';
 import Sheet, { SheetActions } from '../../components/ui/Sheet.jsx';
 import StateChip from '../../components/ui/StateChip.jsx';
@@ -28,12 +28,10 @@ import {
   setOrderCustomer,
 } from '../../api/orders.js';
 import { useAuth } from '../../context/AuthContext.jsx';
-import { getKotTicket } from '../../api/kitchen.js';
-import { kotCharactersFor, printText } from '../printing/printText.js';
-import { rememberPrinted, useDeviceSettings } from '../printing/useDeviceSettings.js';
 import { formatTimeIst } from '../../utils/formatDate.js';
 import BillComposer from '../billing/BillComposer.jsx';
-import BillOrderButton, { mayBill } from '../billing/BillOrderButton.jsx';
+import { mayBill } from '../billing/BillOrderButton.jsx';
+import { BillWorkspace } from '../billing/BillScreenPage.jsx';
 import Bilingual from '../i18n/Bilingual.jsx';
 import CancelPanel from './CancelPanel.jsx';
 import GuestDetailsSheet from './GuestDetailsSheet.jsx';
@@ -97,8 +95,6 @@ export default function OrderScreenPage() {
   const { orderId } = useParams();
   const queryClient = useQueryClient();
   const { user, features } = useAuth();
-  // P48. KOT & Print prints on this device's printer.
-  const [device, updateDevice] = useDeviceSettings();
   const approvals = features.approvals ?? { lineCancel: true, paidIn: true, managerTasks: true };
   const approvesOwn = APPROVES_OWN.includes(user?.role);
 
@@ -132,6 +128,8 @@ export default function OrderScreenPage() {
    * Skip is remembered for this visit to the screen.
    */
   const [isNotingAll, setIsNotingAll] = useState(false);
+  // 2026-11-03. The dish whose note is being written, from its Add note in the order.
+  const [notingLine, setNotingLine] = useState(null);
   const [askingGuest, setAskingGuest] = useState(null);
   const [guestSkipped, setGuestSkipped] = useState(false);
   /**
@@ -268,7 +266,8 @@ export default function OrderScreenPage() {
   // P39. A captain changes nothing on an order whose bill has printed: the counter does.
   const captainLockedOut = user?.role === 'WAITER' && hasBill && (billQuery.data?.printCount ?? 0) > 0;
   const canAddMore = order.status === 'READY_TO_BILL' && (!hasBill || Boolean(billQuery.data?.revisable)) && !captainLockedOut;
-  const showMenu = (isOpen || (canAddMore && addingMore)) && !captainLockedOut && !billingWithoutKot;
+  // 2026-11-03. A served table with no bill opens on the menu, to add more; its bill is made beside the order.
+  const showMenu = (isOpen || (canAddMore && (addingMore || !hasBill))) && !captainLockedOut && !billingWithoutKot;
   // P40. A dish going onto a printed bill needs a manager, unless one already approved this visit.
   const addsToPrintedBill =
     !approvesOwn && hasBill && !billQuery.data?.isVoided && (approvals.revisePrintedBill ?? true) && (billQuery.data?.printCount ?? 0) > 0;
@@ -285,7 +284,7 @@ export default function OrderScreenPage() {
   const isTill = ['OWNER', 'MANAGER', 'CASHIER'].includes(user?.role);
   const isCounter = order.orderType !== 'DINE_IN' || isTill;
   // P57. Everything served and no bill yet: the Bill box under the dishes, PetPooja's way.
-  const composing = order.status === 'READY_TO_BILL' && !hasBill && !addingMore && mayBill(user, features, order);
+  const composing = order.status === 'READY_TO_BILL' && !hasBill && pendingCount === 0 && mayBill(user, features, order);
   /**
    * P60. The counter bills dishes not yet sent, without a KOT: a table or a
    * takeaway, nothing with the kitchen, no bill yet. The server checks it all.
@@ -299,6 +298,8 @@ export default function OrderScreenPage() {
     pendingCount > 0 &&
     order.lines.every((line) => !['FIRED', 'READY'].includes(line.status));
   const withoutKotOpen = billingWithoutKot && isOpen && !hasBill;
+  // Everything is with the kitchen or served: the order reads as the bill will, quantity × dish and the amount.
+  const billView = !isOpen || withoutKotOpen;
 
   const changeQuantity = (line, quantity) =>
     run({
@@ -365,31 +366,28 @@ export default function OrderScreenPage() {
       onFailed: afterGuestFailed,
     });
 
-  /** P48. KOT & Print: send, then print each new ticket on this device's printer. */
-  const fireAndPrint = (guest = null) =>
+  /**
+   * 2026-11-03. + on a plain dish puts one on the order at once, with no panel: its note,
+   * if any, is added from the dish's own Add note in the order. A dish going onto a
+   * printed bill still opens the panel, which asks for the manager's PIN.
+   */
+  const quickAdd = (item) => {
+    if (addNeedsApproval) {
+      setPickingItem(item);
+      return;
+    }
+    const approval = addsToPrintedBill ? printedBillApproval : undefined;
     run({
-      run: async () => {
-        const result = await sendToKitchen(guest);
-        // Remembered before printing, so this device's counter KOT printer never prints the same round again.
-        const sent = (result.kots ?? [result.kot]).map((kot) => `${kot.id}:${result.round ?? 1}`);
-        updateDevice((current) => ({ printedKotIds: rememberPrinted(current.printedKotIds, sent) }));
-        try {
-          for (const kot of result.kots ?? [result.kot]) {
-            const { text } = await getKotTicket(kot.id, { width: kotCharactersFor(device.printer), ...(result.round ? { round: result.round } : {}) });
-            await printText(text, device.printer, { kot: true });
-          }
-        } catch {
-          setToast({ tone: 'error', message: 'Sent to the kitchen, but the KOT did not print. Reprint it from the kitchen screen.' });
-        }
-        return result;
-      },
-      onDone: () => {
-        setIsReviewing(false);
-        setAskingGuest(null);
-        setNow(Date.now());
-        setLastSendAt(Date.now());
-      },
-      onFailed: afterGuestFailed,
+      run: () => addOrderLines(order.id, { version: order.version, lines: [{ menuItemId: item.id, quantity: 1 }], approval }),
+      onDone: () => setSwapFor(null),
+    });
+  };
+
+  /** 2026-11-03. One dish's note, while it is not sent; null clears it. */
+  const saveLineNote = (notes) =>
+    run({
+      run: () => editOrderLine(order.id, notingLine.id, { version: order.version, notes }),
+      onDone: () => setNotingLine(null),
     });
 
   /** P56. One note for every dish; null clears it. */
@@ -415,6 +413,8 @@ export default function OrderScreenPage() {
       isOpen={isOpen && !withoutKotOpen}
       locked={hasBill || withoutKotOpen}
       readyMeansServed={features.kitchen?.readyMeansServed ?? true}
+      billView={billView}
+      showTotal={!composing}
       isBusy={write.isPending}
       pendingCount={pendingCount}
       canCancelOrder={canCancelOrder}
@@ -427,9 +427,11 @@ export default function OrderScreenPage() {
       }
       onCancelLine={(line) => setCancelling({ kind: 'line', line })}
       onRemoveDraft={removeDraft}
+      onNoteLine={(line) => setNotingLine(line)}
+      kitchenNote={order.kitchenNote}
+      onNoteAll={canNoteAll && !hasBill && pendingCount > 0 ? () => setIsNotingAll(true) : null}
       onChangeSentLine={(line) => setChangingLine(line)}
       onFire={() => askGuestThen(fire)}
-      onFireAndPrint={isTill ? () => askGuestThen(fireAndPrint) : null}
       onBillWithoutKot={canBillWithoutKot ? () => askGuestThen(startBillWithoutKot, { forBill: true }) : null}
       onCancelOrder={() => setCancelling({ kind: 'order' })}
       onCloseOrder={canClose && !withoutKotOpen ? () => setCancelling({ kind: 'close' }) : null}
@@ -439,7 +441,7 @@ export default function OrderScreenPage() {
   );
 
   return (
-    <Shell>
+    <Shell fit={showMenu && isCounter}>
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-3">
           <Link
@@ -478,16 +480,6 @@ export default function OrderScreenPage() {
         </div>
 
         <div className="flex flex-wrap items-center justify-end gap-2">
-          {canNoteAll && (
-            <button
-              type="button"
-              disabled={write.isPending}
-              onClick={() => setIsNotingAll(true)}
-              className="type-button min-h-12 whitespace-nowrap rounded-lg border border-ink bg-surface px-4 hover:bg-sunken disabled:opacity-50"
-            >
-              Note for all dishes
-            </button>
-          )}
           {canMove && (
             <button
               type="button"
@@ -498,7 +490,8 @@ export default function OrderScreenPage() {
               Switch table
             </button>
           )}
-          {canAddMore && !addingMore && (
+          {/* The bill's own actions carry Add to this bill, except for a captain who may not bill. */}
+          {canAddMore && !addingMore && hasBill && user?.role === 'WAITER' && !features?.billing?.captainsMayBill && (
             <button
               type="button"
               onClick={() => setAddingMore(true)}
@@ -507,7 +500,6 @@ export default function OrderScreenPage() {
               {hasBill ? 'Add to this bill' : 'Add more dishes'}
             </button>
           )}
-          {hasBill && <BillOrderButton order={order} />}
         </div>
         {captainLockedOut && (
           <p className="type-caption mt-2 rounded-lg bg-sunken px-3 py-2 text-muted">This bill has been printed. Only the counter or a manager can change it now.</p>
@@ -515,8 +507,8 @@ export default function OrderScreenPage() {
       </header>
 
       {showMenu ? (
-        <div className={isCounter ? 'flex flex-1 flex-col gap-4 lg:flex-row lg:items-start' : 'contents'}>
-          <div className={isCounter ? 'flex min-w-0 flex-1 flex-col gap-4' : 'contents'}>
+        <div className={isCounter ? 'flex flex-1 flex-col gap-4 lg:min-h-0 lg:flex-row lg:items-stretch' : 'contents'}>
+          <div className={isCounter ? 'flex min-w-0 flex-1 flex-col gap-4 lg:min-h-0 lg:overflow-y-auto lg:pb-2' : 'contents'}>
           {/* P42. A swap: the old dish is off, the replacement is picked here and sent. */}
           {swapFor && (
             <div role="status" className="flex items-center justify-between gap-3 rounded-lg border border-line border-l-[3px] border-l-open bg-surface px-4 py-2">
@@ -541,6 +533,7 @@ export default function OrderScreenPage() {
             onStep={changeQuantity}
             onRemove={removeDraft}
             onOpen={(item) => setPickingItem(item)}
+            onQuickAdd={quickAdd}
           />
 
           <div
@@ -578,6 +571,15 @@ export default function OrderScreenPage() {
                 >
                   Review<span className="hidden md:inline">&nbsp;order</span>
                 </button>
+                {composing ? (
+                  <button
+                    type="button"
+                    onClick={() => setIsReviewing(true)}
+                    className="type-button min-h-14 flex-1 rounded-lg bg-accent px-4 text-on-accent hover:brightness-110 sm:flex-none sm:px-8"
+                  >
+                    Bill
+                  </button>
+                ) : (
                 <button
                   type="button"
                   disabled={pendingCount === 0 || write.isPending}
@@ -590,6 +592,7 @@ export default function OrderScreenPage() {
                     <Bilingual k="sendToKitchen" en={`Send ${pendingCount} to kitchen`} keep align="center" />
                   )}
                 </button>
+                )}
               </div>
             </div>
           </div>
@@ -598,9 +601,9 @@ export default function OrderScreenPage() {
           {isCounter && (
             <aside
               aria-label="This order"
-              className="sticky top-4 hidden max-h-[calc(100vh-2rem)] w-[360px] flex-none flex-col overflow-hidden rounded-[10px] border border-line bg-surface lg:flex xl:w-[420px]"
+              className="hidden w-[360px] flex-none flex-col overflow-hidden rounded-[10px] border border-line bg-surface lg:flex lg:min-h-0 xl:w-[420px]"
             >
-              <div className="flex items-center justify-between border-b border-line px-4 py-3">
+              <div className="flex flex-none items-center justify-between border-b border-line px-4 py-2">
                 <div>
                   <h2 className="type-heading">Current order</h2>
                   <p className="type-caption text-muted">
@@ -612,9 +615,14 @@ export default function OrderScreenPage() {
                 <span className="type-num-meta text-muted">#{order.orderNumber}</span>
               </div>
               {details}
+              {composing && <BillComposer compact order={order} onStale={() => orderQuery.refetch()} />}
             </aside>
           )}
         </div>
+      ) : hasBill && billQuery.data && !billQuery.data.isVoided ? (
+        /* 2026-11-03. The bill once made, here and not on another screen: the bill on the
+           left; print, discount, On Hold, void, changes and the payment on the right. */
+        <BillWorkspace billId={order.billId} embedded onAddMore={canAddMore ? () => setAddingMore(true) : null} />
       ) : (
         <section aria-label="This order" className="mx-auto w-full max-w-3xl rounded-[10px] bg-surface border border-line">
           {details}
@@ -625,9 +633,10 @@ export default function OrderScreenPage() {
         </section>
       )}
 
-      {isOpen && isReviewing && (
+      {showMenu && isReviewing && (
         <Sheet title={placeLabel(order)} subtitle={`#${order.orderNumber}`} onClose={() => setIsReviewing(false)}>
           {details}
+          {composing && <BillComposer order={order} onStale={() => orderQuery.refetch()} />}
         </Sheet>
       )}
 
@@ -811,6 +820,19 @@ export default function OrderScreenPage() {
         <KitchenNoteSheet current={order.kitchenNote} isBusy={write.isPending} onCancel={() => setIsNotingAll(false)} onSave={saveKitchenNote} />
       )}
 
+      {notingLine && (
+        <KitchenNoteSheet
+          key={notingLine.id}
+          current={notingLine.notes}
+          isBusy={write.isPending}
+          title={`Note for ${notingLine.itemName}`}
+          description="Printed under this dish on the KOT."
+          placeholder="Like Less spicy, or No onion"
+          onCancel={() => setNotingLine(null)}
+          onSave={saveLineNote}
+        />
+      )}
+
       {askingGuest && (
         <GuestDetailsSheet
           placeName={placeLabel(order)}
@@ -867,6 +889,8 @@ function OrderDetails({
   isOpen,
   locked = false,
   readyMeansServed = false,
+  billView = false,
+  showTotal = true,
   isBusy,
   pendingCount,
   canCancelOrder,
@@ -874,10 +898,12 @@ function OrderDetails({
   onServeLine,
   onCancelLine,
   onRemoveDraft,
+  onNoteLine = null,
+  // P56. The note for the whole KOT, at the foot of the order with its button.
+  kitchenNote = null,
+  onNoteAll = null,
   onChangeSentLine,
   onFire,
-  // P48. The till's KOT & Print.
-  onFireAndPrint = null,
   // P60. The counter's Bill without KOT; null when it does not apply.
   onBillWithoutKot = null,
   onCancelOrder,
@@ -896,93 +922,164 @@ function OrderDetails({
           lines={order.lines}
           locked={locked}
           readyMeansServed={readyMeansServed}
+          billView={billView}
           isBusy={isBusy}
           onChangeQuantity={onChangeQuantity}
           onServeLine={onServeLine}
           onCancelLine={onCancelLine}
           onRemoveDraft={onRemoveDraft}
+          onNoteLine={isOpen ? onNoteLine : null}
           onChangeSentLine={onChangeSentLine}
         />
       </div>
 
-      <footer className="flex flex-col gap-2 border-t border-line px-4 py-4">
-        <div className="flex items-baseline justify-between">
-          <span className="type-label text-muted">Item total</span>
-          <Money paise={order.totals.subtotalInPaise} size="tile" />
-        </div>
-
-        {isOpen && (
+      <footer className="flex flex-none flex-col gap-2 border-t border-line px-4 py-3">
+        {/* The note for the whole KOT, right above Send, while there is something to send. */}
+        {onNoteAll && (
           <button
             type="button"
-            disabled={pendingCount === 0 || isBusy}
+            disabled={isBusy}
+            onClick={onNoteAll}
+            className="flex min-h-10 w-full items-center justify-between gap-3 rounded-lg border border-dashed border-line px-3 py-1.5 text-left hover:bg-sunken disabled:opacity-50"
+          >
+            <span className="min-w-0 truncate type-caption">
+              <span className="font-semibold">Note for the whole KOT</span>
+              {kitchenNote ? <span className="text-ink">: {kitchenNote}</span> : <span className="text-muted">, like Less spicy</span>}
+            </span>
+            <span className="type-label flex-none">{kitchenNote ? 'Edit' : '+ Add'}</span>
+          </button>
+        )}
+
+        {showTotal && (
+          <div className="flex items-baseline justify-between">
+            <span className="type-label text-muted">Item total</span>
+            <Money paise={order.totals.subtotalInPaise} size="tile" />
+          </div>
+        )}
+
+        {isOpen && pendingCount > 0 && (
+          <button
+            type="button"
+            disabled={isBusy}
             onClick={onFire}
             className="type-button min-h-14 w-full rounded-lg bg-accent text-on-accent hover:brightness-110 disabled:opacity-50"
           >
-            {pendingCount === 0 ? 'Nothing new to send' : `Send ${pendingCount} to the kitchen`}
-          </button>
-        )}
-        {isOpen && onFireAndPrint && pendingCount > 0 && (
-          <button
-            type="button"
-            disabled={isBusy}
-            onClick={onFireAndPrint}
-            className="type-button min-h-12 w-full rounded-lg border border-ink bg-surface hover:bg-sunken disabled:opacity-50"
-          >
-            KOT & Print
-          </button>
-        )}
-        {isOpen && onBillWithoutKot && (
-          <button
-            type="button"
-            disabled={isBusy}
-            onClick={onBillWithoutKot}
-            className="type-button min-h-12 w-full rounded-lg border border-ink bg-surface hover:bg-sunken disabled:opacity-50"
-          >
-            Bill without KOT
+            Send {pendingCount} to the kitchen
           </button>
         )}
 
-        {/* P08. Manager work, on an open order or one waiting for the cashier. */}
-        {canCancelOrder && (isOpen || order.status === 'READY_TO_BILL') && (
-          <button
-            type="button"
-            disabled={isBusy}
-            onClick={onNoCharge}
-            className="type-button min-h-12 w-full rounded-lg border border-ink bg-surface hover:bg-sunken disabled:opacity-50"
-          >
-            No Charge
-          </button>
-        )}
-
-        {onCloseOrder && (
-          <button
-            type="button"
-            disabled={isBusy}
-            onClick={onCloseOrder}
-            className="type-button min-h-12 w-full rounded-lg border border-ink bg-surface hover:bg-sunken disabled:opacity-50"
-          >
-            {closeLabel}
-          </button>
-        )}
-
-        {/* 2026-10-22. Also an order waiting with no bill, like one whose bill was voided: the server allows it. */}
-        {(isOpen || (order.status === 'READY_TO_BILL' && !order.billId)) && canCancelOrder && !onCloseOrder && (
-          <button
-            type="button"
-            disabled={isBusy}
-            onClick={onCancelOrder}
-            className="type-button min-h-12 w-full rounded-lg text-alert hover:bg-alert-tint"
-          >
-            Cancel the whole order
-          </button>
-        )}
+        <OrderActions
+          isBusy={isBusy}
+          main={
+            onCloseOrder
+              ? { label: closeLabel, onClick: onCloseOrder }
+              : (isOpen || (order.status === 'READY_TO_BILL' && !order.billId)) && canCancelOrder
+                ? { label: 'Cancel the whole order', onClick: onCancelOrder, danger: true }
+                : null
+          }
+          more={[
+            // P08. Manager work, on an open order or one waiting for the cashier.
+            canCancelOrder && (isOpen || order.status === 'READY_TO_BILL') ? { label: 'No Charge', onClick: onNoCharge } : null,
+            // P60. The counter bills dishes not yet sent, without a KOT.
+            isOpen && onBillWithoutKot ? { label: 'Bill without KOT', onClick: onBillWithoutKot } : null,
+          ].filter(Boolean)}
+        />
       </footer>
     </div>
   );
 }
 
-function Shell({ children }) {
+/**
+ * 2026-11-03. Under the order: the one everyday action (close or cancel the order) and
+ * More for the rest (No Charge, Bill without KOT), so the dishes keep the space. With
+ * only one of the rest, it is a button of its own: a menu of one is a wasted tap.
+ */
+function OrderActions({ main, more, isBusy }) {
+  const [open, setOpen] = useState(false);
+  if (!main && more.length === 0) return null;
+  if (more.length === 1) {
+    const buttons = [more[0], ...(main ? [main] : [])];
+    return (
+      <div className="flex gap-2">
+        {buttons.map((item) => (
+          <button
+            key={item.label}
+            type="button"
+            disabled={isBusy}
+            onClick={item.onClick}
+            className={[
+              'type-label min-h-11 flex-1 rounded-lg border px-3 disabled:opacity-50',
+              item.danger ? 'border-line text-alert hover:bg-alert-tint' : 'border-ink bg-surface hover:bg-sunken',
+            ].join(' ')}
+          >
+            {item.label}
+          </button>
+        ))}
+      </div>
+    );
+  }
   return (
-    <main className="v2 flex min-h-full flex-col gap-4 bg-ground px-4 pb-4 pt-4 text-ink lg:px-6">{children}</main>
+    <div className="relative flex gap-2">
+      {main && (
+        <button
+          type="button"
+          disabled={isBusy}
+          onClick={main.onClick}
+          className={[
+            'type-label min-h-11 flex-1 rounded-lg border px-3 disabled:opacity-50',
+            main.danger ? 'border-line text-alert hover:bg-alert-tint' : 'border-ink bg-surface hover:bg-sunken',
+          ].join(' ')}
+        >
+          {main.label}
+        </button>
+      )}
+      {more.length > 0 && (
+        <button
+          type="button"
+          disabled={isBusy}
+          aria-expanded={open}
+          onClick={() => setOpen((now) => !now)}
+          className={['type-label flex min-h-11 items-center justify-center gap-1 rounded-lg border border-ink bg-surface px-4 hover:bg-sunken disabled:opacity-50', main ? '' : 'flex-1'].join(' ')}
+        >
+          More
+          <ChevronDownIcon size={16} className={open ? 'rotate-180' : ''} />
+        </button>
+      )}
+      {open && (
+        <>
+          <button type="button" aria-label="Close" onClick={() => setOpen(false)} className="fixed inset-0 z-30 cursor-default" />
+          <ul role="menu" className="absolute bottom-full right-0 z-40 mb-2 flex min-w-52 flex-col rounded-[10px] border border-line bg-surface p-1 shadow-float">
+            {more.map((item) => (
+              <li key={item.label}>
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    setOpen(false);
+                    item.onClick();
+                  }}
+                  className="type-label flex min-h-11 w-full items-center rounded-lg px-3 text-left hover:bg-sunken"
+                >
+                  {item.label}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+    </div>
+  );
+}
+
+/**
+ * `fit` (2026-11-03): the counter's menu and order, on a wide screen, fill the window
+ * exactly: the menu scrolls on its own and the order column, with its bill, is always
+ * whole, never pushed below the window by the page's own header.
+ */
+function Shell({ children, fit = false }) {
+  return (
+    <main className={['v2 flex min-h-full flex-col gap-4 bg-ground px-4 pb-4 pt-4 text-ink lg:px-6', fit ? 'lg:h-full lg:min-h-0 lg:overflow-hidden' : ''].join(' ')}>
+      {children}
+    </main>
   );
 }

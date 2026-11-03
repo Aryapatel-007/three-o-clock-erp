@@ -138,7 +138,8 @@ export async function getKotTicket(req, res) {
     (line) => (round === undefined || line.round === round) && (!stationId || lineStationId(kot, line) === String(stationId)),
   );
   if (lines.length === 0) throw new BusinessRuleError('Nothing on this ticket is for that round or station.');
-  const station = stationId ? lines[0].stationName : whole.stationName;
+  // 2026-11-03: the whole ticket is always headed for all sections; a section's slip with its name.
+  const station = stationId ? lines[0].stationName : null;
   const text = renderKotTicket({
     kot: {
       ...whole,

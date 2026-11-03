@@ -1,5 +1,5 @@
 /**
- * Three O'Clock updater for the cafe's Windows PC. P62, docs/WINDOWS-INSTALL.md section 6.
+ * Three O’Clock updater for the cafe's Windows PC. P62, docs/WINDOWS-INSTALL.md section 6.
  *
  *   node box\windows\update.mjs check      is there a newer version? changes nothing
  *   node box\windows\update.mjs run        what the "ThreeOClock Update" task runs every
@@ -149,7 +149,7 @@ function githubHeaders(token, accept) {
   return headers;
 }
 
-/** The newest release's manifest and zip. A private repository needs a read-only token. */
+/** The newest release's manifest and zip. Only a private repository needs a read-only token. */
 export async function findLatestRelease({ repo, token, fetchImpl = fetch }) {
   if (!/^[\w.-]+\/[\w.-]+$/.test(repo || '')) throw new Error('UPDATE_REPO must be owner/name, for example Aryapatel-007/three-o-clock-erp.');
   const response = await fetchImpl(`https://api.github.com/repos/${repo}/releases/latest`, {
@@ -437,8 +437,9 @@ export async function updateCommand({ command, root, now = new Date(), fetchImpl
   if (command === 'run') {
     if ((env.UPDATE_AUTO || 'on').toLowerCase() !== 'on') return { skipped: 'UPDATE_AUTO is off' };
     if (!inWindow(now, parseWindow(env.UPDATE_WINDOW || DEFAULT_WINDOW))) return { skipped: 'outside the update window' };
-    // No token yet: updates are simply not set up, which is not worth a log line every night.
-    if (!env.UPDATE_TOKEN) return { skipped: 'no UPDATE_TOKEN' };
+    // No release repository: updates are simply not set up, which is not worth a log line every night.
+    // A public repository (Aryapatel-007/three-o-clock-releases) needs no UPDATE_TOKEN.
+    if (!env.UPDATE_REPO) return { skipped: 'no UPDATE_REPO' };
   }
 
   if (!(await takeLock(path.join(updates, 'lock')))) {
@@ -493,12 +494,12 @@ export async function updateCommand({ command, root, now = new Date(), fetchImpl
     await fs.rm(staging, { recursive: true, force: true });
     await fs.mkdir(staging, { recursive: true });
     await steps.extract(zip, staging);
-    const newRoot = path.join(staging, 'ThreeOClock');
+    const newRoot = path.join(staging, 'Three O’Clock');
     const unpacked = await readInstalled(newRoot);
     if (unpacked.commit !== payload.commit
       || !(await exists(path.join(newRoot, 'server', 'server.js')))
       || !(await exists(path.join(newRoot, 'client', 'dist', 'index.html')))) {
-      throw new Error('The package is not a complete ThreeOClock folder of the signed version. Not installing it.');
+      throw new Error('The package is not a complete Three O’Clock folder of the signed version. Not installing it.');
     }
 
     const result = await applyVersion({ root, newRoot, release: payload.commit, oldRelease: installed.commit, steps, log });

@@ -3,10 +3,11 @@ import { NavLink } from 'react-router-dom';
 
 import { useAuth } from '../context/AuthContext.jsx';
 import { useTheme } from '../context/ThemeProvider.jsx';
+import { isWebsite, OFFLINE_APP_URL } from '../features/auth/OfflineAppCard.jsx';
 import { rememberSignedOut } from '../features/auth/signedOut.js';
 import { ROLE_LABELS } from '../features/users/roles.js';
 import Button from './ui/Button.jsx';
-import { ChevronDownIcon, DeviceIcon, SignOutIcon } from './ui/icons/index.jsx';
+import { ChevronDownIcon, DeviceIcon, DownloadIcon, SignOutIcon } from './ui/icons/index.jsx';
 
 /**
  * Who is signed in, and Sign out. GLOSSARY section 42.
@@ -213,6 +214,16 @@ export default function AccountMenu() {
               <DeviceIcon />
               This device
             </NavLink>
+          )}
+          {/* On the website, the owner and manager can put Three O’Clock on the restaurant's own PC. */}
+          {(user.role === 'OWNER' || user.role === 'MANAGER') && isWebsite() && (
+            <a href={OFFLINE_APP_URL} onClick={() => setOpen(false)} className="type-body flex min-h-12 items-center gap-2 rounded-lg px-3 hover:bg-sunken">
+              <DownloadIcon />
+              <span className="flex flex-col">
+                Install the offline app
+                <span className="type-caption text-muted">ThreeOClock-Setup.exe, for Windows</span>
+              </span>
+            </a>
           )}
           <SignOutButton className={user.role === 'KITCHEN' ? 'mt-4' : 'mt-2'} />
         </div>

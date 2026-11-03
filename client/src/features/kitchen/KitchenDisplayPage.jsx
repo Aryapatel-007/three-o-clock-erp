@@ -13,6 +13,7 @@ import { useMinuteClock } from '../../components/ui/TimeEdge.jsx';
 import { formatTimeIst } from '../../utils/formatDate.js';
 import { errorMessage } from '../orders/errorCopy.js';
 import { kotCharactersFor, printText } from '../printing/printText.js';
+import { printKotWithSections } from '../printing/printKot.js';
 import { rememberPrinted, useDeviceSettings } from '../printing/useDeviceSettings.js';
 import EmptyState from '../../components/ui/EmptyState.jsx';
 import Spinner from '../../components/ui/Spinner.jsx';
@@ -67,6 +68,8 @@ function finishedAt(lines) {
 export default function KitchenDisplayPage() {
   const queryClient = useQueryClient();
   const { user, features } = useAuth();
+  // 2026-11-03. Off in Settings: tickets are read on this screen and nothing prints.
+  const kotsPrint = features?.kitchen?.printKots !== false;
   const [device, updateDevice] = useDeviceSettings();
   const board = useRef(null);
   const smallTiles = device.kitchenTiles === 'SMALL';
@@ -149,11 +152,20 @@ export default function KitchenDisplayPage() {
     },
   });
 
-  /** Fetches the server-laid-out ticket and prints it. Never throws. */
+  /**
+   * Fetches the server-laid-out ticket and prints it. Never throws. One station's
+   * screen prints its own dishes; otherwise (2026-11-03) the whole KOT and a slip per
+   * section, as the counter does (printKot.js).
+   */
   async function printKot(kotId, { reprint = false, round, stationId } = {}) {
     try {
-      const { text } = await getKotTicket(kotId, { width: kotCharactersFor(device.printer), reprint, round, stationId });
-      await printText(text, device.printer, { kot: true });
+      if (stationId) {
+        const { text } = await getKotTicket(kotId, { width: kotCharactersFor(device.printer), reprint, round, stationId });
+        await printText(text, device.printer, { kot: true });
+      } else {
+        const kot = (tickets.data?.data ?? []).find((entry) => entry.id === kotId) ?? { id: kotId, lines: [] };
+        await printKotWithSections(kot, { round: round ?? 1, printer: device.printer, reprint });
+      }
       setNotPrinted((current) => {
         const next = new Set(current);
         next.delete(kotId);
@@ -178,7 +190,7 @@ export default function KitchenDisplayPage() {
   const printing = useRef(false);
   useEffect(() => {
     // P58. Without stations, every ticket is this device's to print.
-    if (!device.autoPrintKots || (usesStations && !stationFilter) || !tickets.isSuccess || printing.current) return;
+    if (!kotsPrint || !device.autoPrintKots || (usesStations && !stationFilter) || !tickets.isSuccess || printing.current) return;
     /**
      * P36. One slip per round of a ticket with this station's dishes in it,
      * remembered as "ticket:round". A ticket id on its own, remembered before
@@ -214,7 +226,7 @@ export default function KitchenDisplayPage() {
     })();
     // printKot reads the device width; the dependencies below are what decide
     // whether there is anything new to print.
-  }, [tickets.data, device.autoPrintKots, device.autoPrintSeededFor, device.autoPrintArmedAt, stationFilter, usesStations]);
+  }, [tickets.data, device.autoPrintKots, device.autoPrintSeededFor, device.autoPrintArmedAt, stationFilter, usesStations, kotsPrint]);
 
   const clock = useMinuteClock();
   const targets = new Map((stations.data ?? []).map((station) => [station.id, station.targetMinutes ?? DEFAULT_TARGET_MINUTES]));
@@ -400,7 +412,7 @@ export default function KitchenDisplayPage() {
                     lines={kot.lines}
                     notPrinted={notPrinted.has(kot.id)}
                     note={kot.kitchenNote}
-                    onReprint={() => printKot(kot.id, { reprint: true })}
+                    onReprint={kotsPrint ? () => printKot(kot.id, { reprint: true, stationId: stationFilter }) : null}
                     isBusy={markReady.isPending || undo.isPending}
                     onLineReady={(lineId) => markReady.mutate({ kotId: kot.id, lineId, label: `${nameOf(kot, lineId)} marked ready.` })}
                     onLineUndo={(lineId) => undo.mutate({ kotId: kot.id, lineId })}

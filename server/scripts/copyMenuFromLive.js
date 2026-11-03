@@ -3,13 +3,13 @@
  * one. P62, for bringing a cafe's real setup onto a box for a trial.
  *
  * Straight from the live database (needs its address on the box):
- *   SOURCE_MONGO_URI="mongodb+srv://..." npm run copy:menu -- --source "Z Chaat" --target-phone 9000000001 [--apply]
+ *   SOURCE_MONGO_URI="mongodb+srv://..." npm run copy:menu -- --source "Three O’Clock" --target-phone 9000000001 [--apply]
  *
  * Or in two steps, so the box never holds the live database's password:
  *   on a developer's computer:
- *   SOURCE_MONGO_URI="mongodb+srv://..." npm run copy:menu -- --source "Z Chaat" --export zchaat-setup.json [--with-staff]
+ *   SOURCE_MONGO_URI="mongodb+srv://..." npm run copy:menu -- --source "Three O’Clock" --export restaurant-setup.json [--with-staff]
  *   on the box:
- *   npm run copy:menu -- --from-file zchaat-setup.json --target-phone 9000000001 [--apply]
+ *   npm run copy:menu -- --from-file restaurant-setup.json --target-phone 9000000001 [--apply]
  *
  * READS ONLY from the source: it runs `find` and nothing else there. The source
  * address comes from the environment, never the command line, so it does not
@@ -61,7 +61,7 @@ export function parseArgs(argv) {
     else throw new Error(`Unknown argument ${argv[i]}.`);
   }
   if (args.exportFile && args.fromFile) throw new Error('Use --export on the computer that reads the live database, and --from-file on the box: not both.');
-  if (!args.fromFile && !args.source) throw new Error('Give the source restaurant\'s name with --source "Z Chaat".');
+  if (!args.fromFile && !args.source) throw new Error('Give the source restaurant\'s name with --source "Three O’Clock".');
   if (!args.exportFile && !args.targetPhone) throw new Error("Give this database's owner phone with --target-phone.");
   return args;
 }

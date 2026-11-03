@@ -257,7 +257,7 @@ export async function me(req, res) {
       managerTasks: approvals.managerTasks,
       revisePrintedBill: approvals.revisePrintedBill,
     },
-    kitchen: { readyMeansServed: kitchen.readyMeansServed, splitTicketsByStation: kitchen.splitTicketsByStation !== false },
+    kitchen: { readyMeansServed: kitchen.readyMeansServed, splitTicketsByStation: kitchen.splitTicketsByStation !== false, printKots: kitchen.printKots !== false },
     // P47. The modes Other offers one tap each; a cashier cannot read GET /settings.
     payments: { otherModes: payments?.otherModes ?? [] },
     // P25 Part I. The card machines this device may send a payment to.

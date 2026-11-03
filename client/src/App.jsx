@@ -9,26 +9,28 @@ import ProtectedRoute from './components/ProtectedRoute.jsx';
 import RequireFeature from './components/RequireFeature.jsx';
 import RequireRole from './components/RequireRole.jsx';
 import LoginPage from './features/auth/LoginPage.jsx';
-import BillScreenPage from './features/billing/BillScreenPage.jsx';
-import DashboardPage from './features/dashboard/DashboardPage.jsx';
-import OwnerDashboardPage from './features/owner/OwnerDashboardPage.jsx';
 import { useAuth } from './context/AuthContext.jsx';
-import KitchenDisplayPage from './features/kitchen/KitchenDisplayPage.jsx';
-import FloorViewPage from './features/orders/FloorViewPage.jsx';
-import OrderScreenPage from './features/orders/OrderScreenPage.jsx';
-import TakeawayOrderPage from './features/orders/TakeawayOrderPage.jsx';
 import RequireOnline from './features/online/RequireOnline.jsx';
 // P62. Kept in the main chunk: a device that has lost the server must still be able to open it.
 import ConnectPage from './features/network/ConnectPage.jsx';
 import { ROLES } from './features/users/roles.js';
 
 /**
- * P32. Screens away from service load on first use, one chunk per group (`src/routes/`).
- * The service screens above stay in the main chunk: a captain or a cashier never waits for
- * one mid-rush. AppShell's Suspense draws the screen's still shape while a chunk arrives.
+ * P32. Screens load on first use, one chunk per group (`src/routes/`), so the sign-in
+ * screen is a small download. The service screens are one group that AppShell starts
+ * fetching as soon as someone is signed in (2026-11-03), so a captain or a cashier never
+ * waits for one mid-rush. AppShell's Suspense draws the screen's still shape meanwhile.
  */
 // loadScreen reloads once when a screen's file is gone after a deploy, rather than a blank page.
 const lazyScreen = (load, name) => lazy(() => loadScreen(load).then((group) => ({ default: group[name] })));
+const serviceGroup = () => import('./routes/service.js');
+const BillScreenPage = lazyScreen(serviceGroup, 'BillScreenPage');
+const DashboardPage = lazyScreen(serviceGroup, 'DashboardPage');
+const KitchenDisplayPage = lazyScreen(serviceGroup, 'KitchenDisplayPage');
+const FloorViewPage = lazyScreen(serviceGroup, 'FloorViewPage');
+const OrderScreenPage = lazyScreen(serviceGroup, 'OrderScreenPage');
+const TakeawayOrderPage = lazyScreen(serviceGroup, 'TakeawayOrderPage');
+const OwnerDashboardPage = lazyScreen(serviceGroup, 'OwnerDashboardPage');
 const reportsGroup = () => import('./routes/reports.js');
 const settlementGroup = () => import('./routes/settlement.js');
 const settingsGroup = () => import('./routes/settings.js');
@@ -57,6 +59,8 @@ const TableArrangePage = lazyScreen(settingsGroup, 'TableArrangePage');
 const TableManagementPage = lazyScreen(settingsGroup, 'TableManagementPage');
 const DeviceSettingsPage = lazyScreen(settingsGroup, 'DeviceSettingsPage');
 const PrintStationPage = lazyScreen(settingsGroup, 'PrintStationPage');
+const PrintersPage = lazyScreen(settingsGroup, 'PrintersPage');
+const RestaurantDetailsPage = lazyScreen(settingsGroup, 'RestaurantDetailsPage');
 const AppearancePage = lazyScreen(settingsGroup, 'AppearancePage');
 const InvoiceLayoutPage = lazyScreen(settingsGroup, 'InvoiceLayoutPage');
 const CaReportsPage = lazyScreen(settingsGroup, 'CaReportsPage');
@@ -154,7 +158,10 @@ const PublicSite = lazy(() => loadScreen(() => import('./features/public/PublicS
  * One entry per screen. As modules land they add their own routes here and
  * their screens live under /features.
  */
-/** P55. Signing in, or opening the address alone: the owner's dashboard for the owner, the ERP's home for everyone else. */
+/**
+ * P55. Signing in, or opening the address alone: the owner's dashboard for the owner, outside
+ * the ERP until they open it; Home for everyone else.
+ */
 function HomeRedirect() {
   const { user } = useAuth();
   return <Navigate to={user?.role === 'OWNER' ? '/owner' : '/dashboard'} replace />;
@@ -164,7 +171,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/" element={<ProtectedRoute bare><HomeRedirect /></ProtectedRoute>} />
-      {/* P55. The owner's dashboard, its own page outside the ERP's frame. */}
+      {/* P55. The owner's dashboard, its own page outside the ERP's frame: the only thing the owner sees until Open the ERP. */}
       <Route
         path="/owner"
         element={
@@ -599,6 +606,18 @@ export default function App() {
         }
       />
 
+      {/* 2026-11-03. The restaurant's own details, typed by the owner; the server enforces OWNER. */}
+      <Route
+        path="/settings/restaurant"
+        element={
+          <ProtectedRoute>
+            <RequireRole roles={SETTINGS_ROLES}>
+              <RestaurantDetailsPage />
+            </RequireRole>
+          </ProtectedRoute>
+        }
+      />
+
       {/* P65. The CA's month, owner only; the server enforces it. */}
       <Route
         path="/settings/ca-reports"
@@ -671,6 +690,16 @@ export default function App() {
         element={
           <ProtectedRoute>
             <DeviceSettingsPage />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* 2026-11-03. Printers: the printer at this device, its driver, a test bill. Every role but the kitchen login. */}
+      <Route
+        path="/printers"
+        element={
+          <ProtectedRoute>
+            <PrintersPage />
           </ProtectedRoute>
         }
       />

@@ -1,4 +1,4 @@
-# Three O'Clock: set up printing for the till or the print window, once. 2026-10-22.
+# ThreeOClock: set up printing for the till or the print window, once. 2026-10-22.
 #
 # Both windows print with no dialog (--kiosk-printing), each in its own browser
 # profile. Chrome keeps its print settings (paper size, margins, scale) per

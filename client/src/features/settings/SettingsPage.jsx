@@ -393,19 +393,19 @@ export default function SettingsPage() {
               checked={form.kitchen.readyMeansServed}
               onChange={set('kitchen', 'readyMeansServed')}
             />
-            {/* P36. */}
-            <Checkbox
-              label="One kitchen ticket per table"
-              hint="Every round and every station on one ticket, under one KOT number; each station still sees only its own dishes. Off: a ticket for each station every time the captain sends."
-              checked={form.kitchen.oneTicketPerOrder ?? true}
-              onChange={set('kitchen', 'oneTicketPerOrder')}
-            />
             {/* P58. */}
             <Checkbox
-              label="A separate ticket for each station"
-              hint="Each station, like Chaat Counter or Beverages, gets its own ticket and the kitchen screen shows the stations. Off: every Send is one ticket with all its dishes, and the kitchen screen shows whole tickets."
+              label="Kitchen screen by section"
+              hint="The kitchen screen shows a tab for each section, like Chaat Counter or Beverages, with only its own dishes. Every Send is one KOT either way: the counter prints it whole, then a slip for each section."
               checked={form.kitchen.splitTicketsByStation ?? true}
               onChange={set('kitchen', 'splitTicketsByStation')}
+            />
+            {/* 2026-11-03. */}
+            <Checkbox
+              label="Print kitchen tickets (KOTs)"
+              hint="On: KOTs print on paper, from KOT & Print and on any device set to print every new KOT. Off: the kitchen reads its tickets on the kitchen screen and nothing prints."
+              checked={form.kitchen.printKots ?? true}
+              onChange={set('kitchen', 'printKots')}
             />
           </Section>
         )}
@@ -433,7 +433,7 @@ export default function SettingsPage() {
               maxLength={300}
               value={form.assistant.greeting ?? ''}
               onChange={(event) => set('assistant', 'greeting')(event.target.value)}
-              hint="Optional, up to 300 characters. Like: Namaste from Z Chaat!"
+              hint="Optional, up to 300 characters. Like: Namaste from Three O’Clock!"
             />
             <Input
               label="When a person replies"

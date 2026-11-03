@@ -44,10 +44,10 @@ test('the owner signs in to the dashboard, and opens the ERP from it', async ({ 
   await at('21:42', DAY);
   const owner = await signIn(browser, { name: 'Owner', phone: golden.phones.Owner, password: golden.password, device: 'phone' });
   const page = owner.page;
-  // Signing in lands the owner on the dashboard, outside the ERP: no menu bar.
+  // Signing in lands the owner on the dashboard, its own page outside the ERP.
   await expect(page).toHaveURL(/\/owner$/);
   await expect(page.getByRole('heading', { name: 'Today', level: 1 })).toBeVisible();
-  await expect(page.getByRole('link', { name: 'Floor' })).toHaveCount(0);
+  await expect(page.getByRole('navigation', { name: 'Main' })).toHaveCount(0);
   await expect(page.getByText('Day open · figures to 9:42')).toBeVisible();
 
   const rupees = (paise) => `₹${(paise / 100).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
@@ -71,11 +71,11 @@ test('the owner signs in to the dashboard, and opens the ERP from it', async ({ 
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await page.screenshot({ path: 'e2e/screenshots/owner-dashboard.png', fullPage: true });
 
-  // The ERP is one tap away, and its menu leads back.
+  // Open the ERP leads to Home; the menu leads back to the dashboard.
   await page.getByRole('link', { name: 'Open the ERP' }).click();
   await expect(page).toHaveURL(/\/dashboard$/);
-  await page.getByRole('button', { name: 'More' }).click();
-  await page.getByRole('link', { name: 'Dashboard', exact: true }).click();
+  await page.getByRole('button', { name: 'Open the menu' }).click();
+  await page.getByRole('navigation', { name: 'All places' }).getByRole('link', { name: 'Dashboard', exact: true }).click();
   await expect(page).toHaveURL(/\/owner$/);
 
   // A manager signs in to the ERP's home, and the dashboard is not theirs.

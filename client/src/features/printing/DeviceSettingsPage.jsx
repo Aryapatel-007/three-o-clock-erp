@@ -1,29 +1,30 @@
 import { Link, useLocation } from 'react-router-dom';
 
+import { PrintIcon } from '../../components/ui/icons/index.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
-import { BILL_TEXT_SIZES, EDGE_MARGINS, PAPER_LENGTHS, PRINT_WIDTHS, PRINTER_KEYS, PRINTERS } from './printers.js';
-import { BILL_PRINT_PLACES, billsPrintAtCounter, DENSITIES, TEXT_SIZES, THEMES, useDeviceSettings } from './useDeviceSettings.js';
+import Choice from './Choice.jsx';
+import { PRINTERS } from './printers.js';
+import { findModel } from './printerModels.js';
+import { DENSITIES, TEXT_SIZES, THEMES, useDeviceSettings } from './useDeviceSettings.js';
 
 const THEME_LABELS = { AUTO: 'Automatic', DAY: 'Day', NIGHT: 'Night' };
 const DENSITY_LABELS = { COMFORTABLE: 'Comfortable', COMPACT: 'Compact' };
-const BILL_PRINT_LABELS = { AUTO: 'Automatic', HERE: 'On this device', COUNTER: 'At the counter' };
 const LANGUAGE_LABELS = { NONE: 'None', GUJARATI: 'Gujarati', HINDI: 'Hindi' };
 
 /**
  * "This device". Every role. P05, extended in P20A with DESIGN-SYSTEM
  * section 11b: theme, density, text size and the second language.
  *
- * The printer and the look are properties of the computer or tablet, not of
- * whoever signs in, so these are kept on the device, under one storage key.
- * Nothing here goes to the server.
+ * The look, the card machine and the alerts are properties of the computer or
+ * tablet, not of whoever signs in, so they are kept on the device. Nothing here
+ * goes to the server. 2026-11-03: everything about printing moved to Printers.
  */
 export default function DeviceSettingsPage() {
   const { user, features } = useAuth();
   const location = useLocation();
   const [settings, update] = useDeviceSettings();
-  const isKitchen = user?.role === 'KITCHEN' || user?.role === 'OWNER' || user?.role === 'MANAGER';
-  const isTill = ['OWNER', 'MANAGER', 'CASHIER'].includes(user?.role);
   const restaurantLanguage = features.appearance?.secondLanguage ?? 'NONE';
+  const model = settings.printerModel ? findModel(settings.printerModel) : null;
 
   return (
     <main className="v2 min-h-full bg-ground px-4 py-4 text-ink sm:px-6">
@@ -37,6 +38,26 @@ export default function DeviceSettingsPage() {
             </Link>
           )}
         </header>
+
+        {user?.role !== 'KITCHEN' && (
+          <Link
+            to="/printers"
+            className="flex min-h-16 items-center justify-between gap-3 rounded-[10px] border border-line bg-surface px-4 py-3 hover:bg-sunken"
+          >
+            <span className="flex items-center gap-3">
+              <PrintIcon />
+              <span>
+                <span className="type-heading block">Printers</span>
+                <span className="type-caption block text-muted">
+                  {model ? `${model.brand} ${model.name}` : PRINTERS[settings.printer]?.label} · test bill, drivers and where things print
+                </span>
+              </span>
+            </span>
+            <span className="type-label text-muted" aria-hidden="true">
+              →
+            </span>
+          </Link>
+        )}
 
         <Choice
           legend="Theme"
@@ -72,66 +93,6 @@ export default function DeviceSettingsPage() {
           onChange={(secondLanguage) => update({ secondLanguage })}
         />
 
-        <Choice
-          legend="Printer"
-          hint="Bills, kitchen tickets and the Day Close print on this. Choose the width of the roll in the printer at this device."
-          options={PRINTER_KEYS.map((value) => ({ value, label: PRINTERS[value].label, detail: PRINTERS[value].hint }))}
-          value={settings.printer}
-          onChange={(printer) => update({ printer })}
-        />
-
-        {settings.printer === 'THERMAL_80' && (
-          <Choice
-            legend="Print width"
-            hint="How wide the bill and kitchen tickets print on the 80 mm roll."
-            options={Object.entries(PRINT_WIDTHS).map(([value, entry]) => ({ value, label: entry.label, detail: entry.hint }))}
-            value={settings.printWidth}
-            onChange={(printWidth) => update({ printWidth })}
-          />
-        )}
-
-        {PRINTERS[settings.printer]?.thermal && (
-          <Choice
-            legend="Paper length"
-            hint="How long each thermal print is."
-            options={Object.entries(PAPER_LENGTHS).map(([value, entry]) => ({ value, label: entry.label, detail: entry.hint }))}
-            value={settings.paperLength}
-            onChange={(paperLength) => update({ paperLength })}
-          />
-        )}
-
-        {PRINTERS[settings.printer]?.thermal && (
-          <Choice
-            legend="Bill text size"
-            hint="Normal fills the roll like a usual restaurant bill. Long dish names wrap onto a second line."
-            options={Object.entries(BILL_TEXT_SIZES).map(([value, entry]) => ({ value, label: entry.label }))}
-            value={settings.billTextSize}
-            onChange={(billTextSize) => update({ billTextSize })}
-          />
-        )}
-
-        {PRINTERS[settings.printer]?.thermal && (
-          <Choice
-            legend="Edge margin"
-            hint="Space kept clear at each side of the bill."
-            options={Object.entries(EDGE_MARGINS).map(([value, entry]) => ({ value, label: entry.label, detail: entry.hint }))}
-            value={settings.edgeMargin}
-            onChange={(edgeMargin) => update({ edgeMargin })}
-          />
-        )}
-
-        {/* 2026-10-10. A page cannot skip Chrome's print dialog; Chrome started with --kiosk-printing can. */}
-        {isTill && (
-          <section aria-labelledby="no-dialog" className="flex flex-col gap-1">
-            <h2 id="no-dialog" className="type-heading">Printing with no dialog</h2>
-            <p className="type-caption text-muted">
-              Chrome asks before every print, and this page cannot turn that off. To print bills straight to the bill printer, make it this
-              computer&apos;s default printer and open the till with the launcher from the repository&apos;s tools/silent-printing folder, one file for a Mac and
-              one for Windows. The till then opens in its own Chrome window that prints with no dialog, and everyday Chrome is left as it is.
-            </p>
-          </section>
-        )}
-
         {/* P25 Part I. Which card machine sits beside this device. */}
         {(features.terminals ?? []).length > 0 && (
           <Choice
@@ -166,108 +127,10 @@ export default function DeviceSettingsPage() {
           />
           <span>
             <span className="type-body block">Speak alerts</span>
-            <span className="type-caption block text-muted">Reads the new order aloud, for example "New takeaway order, W 42, 3 items".</span>
+            <span className="type-caption block text-muted">Reads the new order aloud, for example &quot;New takeaway order, W 42, 3 items&quot;.</span>
           </span>
         </label>
-
-        {/* 2026-10-25. A phone has no bill printer; its bills can print at the counter, as a captain's. */}
-        {isTill && (
-          <Choice
-            legend="Bills print"
-            hint={`Automatic: at the counter on a phone or tablet, and on every device on the cafe PC, except the till and a computer that prints captains' bills; on this device on a computer's screen. Now: ${
-              billsPrintAtCounter(settings, features) ? 'at the counter' : 'on this device'
-            }.`}
-            options={BILL_PRINT_PLACES.map((value) => ({ value, label: BILL_PRINT_LABELS[value] }))}
-            value={settings.billPrintsAt}
-            onChange={(billPrintsAt) => update({ billPrintsAt })}
-          />
-        )}
-
-        {/* P25 Part D. The counter prints what captains send it. */}
-        {isTill && (
-          <label className="flex min-h-12 items-start gap-3">
-            <input
-              type="checkbox"
-              checked={settings.printCaptainBills}
-              onChange={(event) => update({ printCaptainBills: event.target.checked })}
-              className="mt-1 size-5 accent-[var(--color-accent)]"
-            />
-            <span>
-              <span className="type-body block">Print bills sent by captains</span>
-              <span className="type-caption block text-muted">For the counter computer. Each bill a captain sends prints here once, on this device's printer.</span>
-            </span>
-          </label>
-        )}
-
-        {/* 2026-10-27. The counter prints every KOT too, on any screen (CounterKotPrinter). */}
-        {isTill && (
-          <label className="flex min-h-12 items-start gap-3">
-            <input
-              type="checkbox"
-              checked={Boolean(settings.printKotsAtCounter)}
-              onChange={(event) =>
-                // Switching it on starts fresh: tickets already sent are not printed again.
-                update({ printKotsAtCounter: event.target.checked, counterKotsArmedAt: Date.now() })
-              }
-              className="mt-1 size-5 accent-[var(--color-accent)]"
-            />
-            <span>
-              <span className="type-body block">Print every new KOT here</span>
-              <span className="type-caption block text-muted">For the counter computer when the kitchen has no printer of its own. Every Send to the kitchen, from any phone, prints here once, whatever screen is open.</span>
-            </span>
-          </label>
-        )}
-
-
-        {isKitchen && (
-          <label className="flex min-h-12 items-start gap-3">
-            <input
-              type="checkbox"
-              checked={settings.autoPrintKots}
-              onChange={(event) =>
-                // Turning it on starts fresh: the kitchen screen marks what is
-                // already on screen as printed, so no backlog comes out.
-                update({ autoPrintKots: event.target.checked, autoPrintArmedAt: Date.now() })
-              }
-              className="mt-1 size-5 accent-[var(--color-accent)]"
-            />
-            <span>
-              <span className="type-body block">Print new tickets automatically</span>
-              <span className="type-caption block text-muted">For a kitchen screen showing one station. Each new ticket prints once.</span>
-            </span>
-          </label>
-        )}
       </div>
     </main>
-  );
-}
-
-function Choice({ legend, hint, options, value, onChange }) {
-  return (
-    <fieldset className="flex flex-col gap-2">
-      <legend className="type-heading mb-1">{legend}</legend>
-      {hint && <p className="type-caption -mt-1 text-muted">{hint}</p>}
-      {options.map((option) => (
-        <label
-          key={String(option.value)}
-          className={[
-            'flex min-h-12 cursor-pointer items-center gap-3 rounded-lg border px-3',
-            value === option.value ? 'border-2 border-ink bg-sunken' : 'border-line bg-surface hover:bg-sunken',
-          ].join(' ')}
-        >
-          <input
-            type="radio"
-            name={legend}
-            checked={value === option.value}
-            onChange={() => onChange(option.value)}
-            className="size-5 accent-[var(--color-accent)]"
-          />
-          <span className="flex flex-col py-2">
-            <span className="type-body">{option.label}</span>
-            {option.detail && <span className="type-caption text-muted">{option.detail}</span>}
-          </span>
-        </label>
-      ))}
-    </fieldset>
   );
 }

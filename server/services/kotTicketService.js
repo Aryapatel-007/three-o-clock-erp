@@ -68,7 +68,10 @@ export function renderKotTicket({ kot, order = null, firedByName = null, width =
   const lines = [];
   const push = (text = '') => lines.push(text);
 
-  push(centre((kot.stationName ?? 'Kitchen').toUpperCase(), width));
+  // 2026-11-03. The whole KOT says ALL SECTIONS whenever its dishes have sections, apart from each section's slip.
+  const sections = new Set((kot.lines ?? []).map((line) => line.stationName).filter(Boolean));
+  const heading = kot.stationName ?? (sections.size > 0 ? 'All sections' : 'Kitchen');
+  push(centre(heading.toUpperCase(), width));
   push(rule(width, '='));
 
   // P36. A later round prints as its own slip, under the same KOT number.

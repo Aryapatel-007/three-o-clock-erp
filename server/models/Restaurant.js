@@ -232,6 +232,8 @@ const invoiceSettingsSchema = new mongoose.Schema(
  */
 export const INVOICE_THEMES = Object.freeze(['CLASSIC', 'GST_DETAILED', 'MODERN', 'COMPACT']);
 export const INVOICE_SHOW_DEFAULTS = Object.freeze({
+  // 2026-11-03. The restaurant's logo at the top of the bill.
+  logo: true,
   time: true,
   captain: true,
   cashier: false,
@@ -254,6 +256,7 @@ export const INVOICE_SHOW_DEFAULTS = Object.freeze({
   copyMarking: false,
 });
 export const THERMAL_SHOW_DEFAULTS = Object.freeze({
+  logo: true,
   time: true,
   cashier: true,
   covers: false,
@@ -337,6 +340,8 @@ const kitchenSettingsSchema = new mongoose.Schema(
     oneTicketPerOrder: { type: Boolean, required: true, default: true },
     /** P58. Off: a Send's dishes go on one ticket with no station of its own. Lines keep theirs. */
     splitTicketsByStation: { type: Boolean, required: true, default: true },
+    /** 2026-11-03. Off: a restaurant that reads tickets on screens prints no KOT anywhere. */
+    printKots: { type: Boolean, required: true, default: true },
   },
   { _id: false },
 );

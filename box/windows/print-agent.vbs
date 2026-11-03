@@ -1,4 +1,4 @@
-' Three O'Clock print window. Runs print-agent.ps1 with no window, for the "ThreeOClock Printer" task.
+' ThreeOClock print window. Runs print-agent.ps1 with no window, for the "ThreeOClock Printer" task.
 Dim shell, folder
 Set shell = CreateObject("WScript.Shell")
 folder = CreateObject("Scripting.FileSystemObject").GetParentFolderName(WScript.ScriptFullName)

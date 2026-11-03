@@ -31,6 +31,7 @@ import CounterNotPrinting from './CounterNotPrinting.jsx';
 import { discountReasonLabel } from './discountReasons.js';
 import { errorMessage } from './errorCopy.js';
 import InlinePayment from './InlinePayment.jsx';
+import PartPayment from './PartPayment.jsx';
 import { methodsForBill, paymentMethodName } from './paymentMethodsForBill.js';
 import { printBill } from '../printing/printBill.js';
 import { useTheme } from '../../context/ThemeProvider.jsx';
@@ -58,6 +59,17 @@ const CAN_DISCOUNT_OR_VOID = [ROLES.OWNER, ROLES.MANAGER];
  */
 export default function BillScreenPage() {
   const { billId } = useParams();
+  return <BillWorkspace billId={billId} />;
+}
+
+/**
+ * The bill and everything done to it. 2026-11-03: also inside the order screen
+ * (`embedded`), so a table's bill is discounted, put On Hold, voided, changed and
+ * paid without leaving the table: the bill on the left, every action and the payment
+ * on the right. There, Add to this bill opens the menu (`onAddMore`) and a bill paid
+ * or put On Hold goes back to the floor.
+ */
+export function BillWorkspace({ billId, embedded = false, onAddMore = null }) {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const { user, features } = useAuth();
@@ -67,6 +79,7 @@ export default function BillScreenPage() {
   const [correcting, setCorrecting] = useState(null); // the payment whose method is being changed
   const [printing, setPrinting] = useState(false);
   const [justPaid, setJustPaid] = useState(false);
+  const [splitting, setSplitting] = useState(false);
   // P29. The bill line being taken off.
   const [removing, setRemoving] = useState(null);
   // P29 Part D. "Take payment without printing", for a guest who wants no paper.
@@ -103,6 +116,14 @@ export default function BillScreenPage() {
   });
   const allowedMethods = bill && methodsQuery.data ? methodsForBill(methodsQuery.data, bill) : [];
 
+  /** Inside the order screen, a bill that is settled (paid, or On Hold) frees the table: back to the floor. */
+  const leaveIfSettled = (updated) => {
+    if (!embedded || !updated || updated.status === 'UNPAID') return false;
+    queryClient.invalidateQueries({ queryKey: ['tables'] });
+    navigate(updated.orderType === 'DINE_IN' ? '/floor' : '/bills', { replace: true });
+    return true;
+  };
+
   const invalidate = (updated) => {
     queryClient.setQueryData(['bill', billId], updated);
     queryClient.invalidateQueries({ queryKey: ['bills'] });
@@ -125,6 +146,7 @@ export default function BillScreenPage() {
     onSuccess: (updated) => {
       invalidate(updated);
       setPanel(null);
+      if (leaveIfSettled(updated)) return;
       // DESIGN-SYSTEM section 10: the one moment of celebration.
       if (updated.status === 'PAID') setJustPaid(true);
       setToast({
@@ -140,6 +162,7 @@ export default function BillScreenPage() {
     mutationFn: () => applyAdvance(billId),
     onSuccess: (updated) => {
       invalidate(updated);
+      if (leaveIfSettled(updated)) return;
       if (updated.status === 'PAID') setJustPaid(true);
       const refunded = updated.advanceRefundedInPaise > 0 ? ` ${moneyText(updated.advanceRefundedInPaise)} of the advance was refunded to the guest.` : '';
       setToast({
@@ -167,6 +190,7 @@ export default function BillScreenPage() {
       invalidate(updated);
       queryClient.invalidateQueries({ queryKey: ['accounts'] });
       setPanel(null);
+      if (leaveIfSettled(updated)) return;
       setToast({ tone: 'success', message: `On Hold on ${updated.account.accountName}. The table is free.` });
     },
     onError: (error) => setToast({ tone: 'error', message: errorMessage(error) }),
@@ -243,6 +267,7 @@ export default function BillScreenPage() {
     // print reads the device's printer; whether to print at all is decided by the values above.
   }, [printNow, bill, tillRole]);
 
+  if (billQuery.isPending && embedded) return <Spinner label="Loading the bill" />;
   if (billQuery.isPending) {
     return (
       <main className="v2 flex min-h-full items-center justify-center bg-ground">
@@ -348,89 +373,96 @@ export default function BillScreenPage() {
   // Paid or On Hold, the next useful thing is the printed bill; unpaid, it is the payment.
   const printIsPrimary = !bill.isVoided && !isSettleable;
 
-  return (
-    <main className="v2 min-h-full bg-ground px-4 py-4 text-ink lg:px-6">
-      <div className="mx-auto flex max-w-[1400px] flex-col gap-4">
-        <header className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <Link
-              to="/bills"
-              aria-label="All bills"
-              className="flex size-12 flex-none items-center justify-center rounded-lg border border-line bg-surface hover:bg-sunken"
-            >
-              <BackIcon />
-            </Link>
-            <div>
-              <h1 className="type-title">{placeLabel(bill)}</h1>
-              <p className="type-caption text-muted">
-                Bill <span className="type-num-meta text-ink">{bill.billNumber}</span> · business date{' '}
-                <span className="type-num-meta">{bill.businessDate}</span>
-              </p>
-            </div>
-          </div>
+  const actionBar = (
+    <div className="flex flex-wrap items-center gap-2">
+      {canDiscount && (
+        <ActionButton onClick={() => setPanel('discount')}>
+          <Bilingual k="applyDiscount" />
+        </ActionButton>
+      )}
+      {canCharge && <ActionButton onClick={() => setPanel('charge')}>Charge to account</ActionButton>}
+      {offersCounter && !bill.isVoided && !asksForPrint && (
+        <ActionButton
+          primary={isCaptain || (atCounter && printIsPrimary)}
+          onClick={() => printRequest.mutate()}
+          disabled={printRequest.isPending || sentToCounter}
+        >
+          <PrintIcon />
+          {sentToCounter ? 'Sent to the counter' : 'Print at counter'}
+        </ActionButton>
+      )}
+      {!asksForPrint && (
+        <ActionButton primary={printIsPrimary && !atCounter} onClick={() => print()} disabled={printing}>
+          <PrintIcon />
+          {atCounter ? 'Print here' : <Bilingual k="printReceipt" />}
+        </ActionButton>
+      )}
+      <Link
+        to={`/bills/${bill.id}/receipt`}
+        className="type-label flex min-h-12 items-center rounded-lg px-3 text-accent underline-offset-4 hover:underline"
+      >
+        Receipt preview
+      </Link>
+      {offersCounter && sentToCounter && !asksForPrint && <CounterNotPrinting requestedAt={bill.printRequestedAt} />}
+      {captainLockedOut && !bill.isVoided && (
+        <p className="type-caption flex min-h-12 items-center px-3 text-muted">This bill has been printed. Only the counter or a manager can change it now.</p>
+      )}
+      {canCancelItems && (
+        <button
+          type="button"
+          onClick={() => (revisable ? (onAddMore ? onAddMore() : navigate(`/orders/${bill.orderId}?add=1`)) : setPanel('add-items'))}
+          className="flex min-h-12 items-center rounded-lg px-3 text-ink hover:bg-sunken"
+        >
+          {revisable ? 'Add to this bill' : 'Add items'}
+        </button>
+      )}
+      {canCancelItems && !revisable && (
+        <button
+          type="button"
+          onClick={() => setPanel('cancel-items')}
+          className="flex min-h-12 items-center rounded-lg px-3 text-alert hover:bg-alert-tint"
+        >
+          Cancel an item
+        </button>
+      )}
+      {canVoid && (
+        <button
+          type="button"
+          onClick={() => setPanel('void')}
+          className="flex min-h-12 items-center rounded-lg px-3 text-alert hover:bg-alert-tint"
+        >
+          <Bilingual k="voidBill" />
+        </button>
+      )}
+    </div>
+  );
 
-          <div className="flex flex-wrap items-center gap-2">
-            {canDiscount && (
-              <ActionButton onClick={() => setPanel('discount')}>
-                <Bilingual k="applyDiscount" />
-              </ActionButton>
-            )}
-            {canCharge && <ActionButton onClick={() => setPanel('charge')}>Charge to account</ActionButton>}
-            {offersCounter && !bill.isVoided && !asksForPrint && (
-              <ActionButton
-                primary={isCaptain || (atCounter && printIsPrimary)}
-                onClick={() => printRequest.mutate()}
-                disabled={printRequest.isPending || sentToCounter}
+  const Frame = embedded ? 'div' : 'main';
+  return (
+    <Frame className={embedded ? 'text-ink' : 'v2 min-h-full bg-ground px-4 py-4 text-ink lg:px-6'}>
+      <div className="mx-auto flex max-w-[1400px] flex-col gap-4">
+        {!embedded && (
+          <header className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <Link
+                to="/bills"
+                aria-label="All bills"
+                className="flex size-12 flex-none items-center justify-center rounded-lg border border-line bg-surface hover:bg-sunken"
               >
-                <PrintIcon />
-                {sentToCounter ? 'Sent to the counter' : 'Print at counter'}
-              </ActionButton>
-            )}
-            {!asksForPrint && (
-              <ActionButton primary={printIsPrimary && !atCounter} onClick={() => print()} disabled={printing}>
-                <PrintIcon />
-                {atCounter ? 'Print here' : <Bilingual k="printReceipt" />}
-              </ActionButton>
-            )}
-            <Link
-              to={`/bills/${bill.id}/receipt`}
-              className="type-label flex min-h-12 items-center rounded-lg px-3 text-accent underline-offset-4 hover:underline"
-            >
-              Receipt preview
-            </Link>
-            {offersCounter && sentToCounter && !asksForPrint && <CounterNotPrinting requestedAt={bill.printRequestedAt} />}
-            {captainLockedOut && !bill.isVoided && (
-              <p className="type-caption flex min-h-12 items-center px-3 text-muted">This bill has been printed. Only the counter or a manager can change it now.</p>
-            )}
-            {canCancelItems && (
-              <button
-                type="button"
-                onClick={() => (revisable ? navigate(`/orders/${bill.orderId}?add=1`) : setPanel('add-items'))}
-                className="flex min-h-12 items-center rounded-lg px-3 text-ink hover:bg-sunken"
-              >
-                {revisable ? 'Add to this bill' : 'Add items'}
-              </button>
-            )}
-            {canCancelItems && !revisable && (
-              <button
-                type="button"
-                onClick={() => setPanel('cancel-items')}
-                className="flex min-h-12 items-center rounded-lg px-3 text-alert hover:bg-alert-tint"
-              >
-                Cancel an item
-              </button>
-            )}
-            {canVoid && (
-              <button
-                type="button"
-                onClick={() => setPanel('void')}
-                className="flex min-h-12 items-center rounded-lg px-3 text-alert hover:bg-alert-tint"
-              >
-                <Bilingual k="voidBill" />
-              </button>
-            )}
-          </div>
-        </header>
+                <BackIcon />
+              </Link>
+              <div>
+                <h1 className="type-title">{placeLabel(bill)}</h1>
+                <p className="type-caption text-muted">
+                  Bill <span className="type-num-meta text-ink">{bill.billNumber}</span> · business date{' '}
+                  <span className="type-num-meta">{bill.businessDate}</span>
+                </p>
+              </div>
+            </div>
+  
+            {actionBar}
+          </header>
+        )}
 
         <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-12">
           {/* The bill, as it prints. */}
@@ -575,8 +607,9 @@ export default function BillScreenPage() {
             )}
           </article>
 
-          {/* Taking the payment, beside the bill. */}
+          {/* Taking the payment, beside the bill; inside the order screen, every action above it. */}
           <div className="flex flex-col gap-4 lg:col-span-7">
+            {embedded && <div className="rounded-[10px] border border-line bg-surface p-3">{actionBar}</div>}
             {isSettleable && waitingForKitchen ? (
               <div className="rounded-[10px] border border-line border-l-[3px] border-l-open bg-surface p-4 sm:p-6">
                 <p className="type-heading">Waiting for the kitchen</p>
@@ -650,8 +683,23 @@ export default function BillScreenPage() {
                   Apply {moneyText(Math.min(bill.advance.available, outstandingInPaise))} paid online
                 </Button>
               </div>
+            ) : isSettleable && canTakePayment && splitting ? (
+              <PartPayment
+                billId={bill.id}
+                methods={allowedMethods}
+                outstandingInPaise={outstandingInPaise}
+                onCancel={() => setSplitting(false)}
+                onRecorded={(updated, { partial = false } = {}) => {
+                  invalidate(updated);
+                  if (leaveIfSettled(updated)) return;
+                  if (!partial) setSplitting(false);
+                  if (updated?.status === 'PAID') setJustPaid(true);
+                  setToast({ tone: 'success', message: updated?.status === 'PAID' ? 'Payments recorded. Bill paid in full.' : 'Payments recorded.' });
+                }}
+              />
             ) : isSettleable && canTakePayment ? (
               <InlinePayment
+                onPartPayment={() => setSplitting(true)}
                 billId={bill.id}
                 onTerminalFinished={(transaction) => {
                   queryClient.invalidateQueries({ queryKey: ['bill', billId] });
@@ -782,7 +830,7 @@ export default function BillScreenPage() {
       )}
 
       <Toast tone={toast?.tone} message={toast?.message} onDismiss={() => setToast(null)} />
-    </main>
+    </Frame>
   );
 }
 

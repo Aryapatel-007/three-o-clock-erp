@@ -106,6 +106,7 @@ Add a line every time a real decision is made. Never delete old lines.
 
 | Date | Decision | Reason |
 |------|----------|--------|
+| 2026-11-03 | Brought in the product work of 2 and 3 November: the one-click ThreeOClock-Setup.exe installer (in-place updates, chosen folder, protected server code, licence), the top bar and grouped sidebar, the owner's dashboard first, ordering with + and notes, billing on the order screen with discount, void, On Hold and part payment beside the bill, Printers and Restaurant details screens, one KOT per Send printed whole and per section, Push and pull with the PC's change winning, no scrollbars | The same product for Three O'Clock; its own Atlas, Render, Vercel, menu and signing key stay. The installer's public releases repository, Aryapatel-007/three-o-clock-releases, is to be created at the first release |
 | | Building version 1 in MERN, not Frappe | Both devs know MERN, want to validate the idea fast. Revisit when payroll or GST gets complicated. |
 | | Web app is online only | A web app cannot work offline. Offline belongs to the later Android app. |
 | | Payroll excluded from version 1 | Statutory deductions must be exactly right. Needs a CA and its own focused build. |

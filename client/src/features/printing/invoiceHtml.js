@@ -90,6 +90,7 @@ function dateAndTime(stamp = '') {
  * or a preview with no layout, shows what the roll always showed.
  */
 const THERMAL_DEFAULTS = Object.freeze({
+  logo: true,
   time: true,
   cashier: true,
   covers: false,
@@ -147,7 +148,7 @@ export function thermalBillHtml(data, { printer, logoDataUrl = null, qrSvg = nul
   ].filter(Boolean);
 
   return `<div class="tb" style="font-size: ${billFontPx(printer, textSize)}px">
-  ${logoDataUrl ? `<img class="logo" src="${escapeHtml(logoDataUrl)}" alt="" style="width: ${printer === 'THERMAL_58' ? 30 : 45}mm" />` : ''}
+  ${logoDataUrl && show.logo !== false ? `<img class="logo" src="${escapeHtml(logoDataUrl)}" alt="" style="width: ${printer === 'THERMAL_58' ? 30 : 45}mm" />` : ''}
   ${data.isDuplicate ? '<div class="c">*** DUPLICATE ***</div>' : ''}
   <div class="c">
     ${r.headerAbove ? `<div>${escapeHtml(r.headerAbove)}</div>` : ''}

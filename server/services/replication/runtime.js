@@ -17,6 +17,11 @@
  *               and no reconciliation (two writers differ for seconds by design)
  *   CLOUD       the changelog writer; it answers the box's pulls and pushes
  *
+ * 2026-11-03, one-way (the default): the PC is the only writer and the online copy
+ * (DEPLOYMENT_ROLE=MIRROR) only shows its records. The PC pushes every
+ * SYNC_EVERY_SECONDS inside SYNC_HOURS and, outside them, at most every 15 minutes
+ * with something to send; Push now and Pull now on the Push and pull page go at once.
+ *
  * None of it is in a request's path. A failed round is logged and the next
  * one tries again; nothing here can stop the till.
  */
@@ -27,6 +32,7 @@ import { config } from '../../config/env.js';
 import { logger } from '../../config/logger.js';
 import { businessDateFor, nowUtc } from '../../utils/time.js';
 import { pullIntakeOnce } from '../intake/boxIntake.js';
+import { markPulled } from '../intake/pullState.js';
 import { pullOnce } from '../sync/exchange.js';
 import { parseSyncHours, shouldExchange } from '../sync/pacing.js';
 import { isTwoWay } from '../sync/mode.js';
@@ -108,6 +114,38 @@ async function exchangeRound() {
   return { failed };
 }
 
+/** Two-way Pull now: the website's waiting changes, for every restaurant, and nothing pushed. */
+async function pullChangesRound() {
+  let failed = false;
+  for (const restaurantId of await localRestaurantIds()) {
+    for (let round = 0; round < 50; round += 1) {
+      const outcome = await pullOnce(restaurantId, { pump: pumpChangelog });
+      if (outcome === 'FAILED') failed = true;
+      if (outcome !== 'PULLED') break;
+    }
+  }
+  return { failed };
+}
+
+/** One push: whatever the change stream has, then every waiting change, to the website. */
+async function pushRound() {
+  await writer?.pump();
+  const shipped = await boxShipper.tick();
+  return { failed: Boolean(shipped?.some((outcome) => outcome === 'FAILED')) };
+}
+
+/** One pull: the online copy's waiting online orders and bookings. */
+async function pullRound() {
+  try {
+    const pulled = await pullIntakeOnce();
+    markPulled(nowUtc());
+    return { failed: false, pulled };
+  } catch (error) {
+    markPulled(nowUtc(), error);
+    return { failed: true, pulled: 0 };
+  }
+}
+
 function runRound(round) {
   if (!roundInFlight) roundInFlight = round().finally(() => { roundInFlight = null; });
   return roundInFlight;
@@ -119,13 +157,23 @@ function runRound(round) {
  * On the cloud: its own latest changes go into the changelog, ready for the
  * box's next pull. Gives back what this side could do.
  */
-export async function syncNow() {
+export async function syncNow({ direction = null } = {}) {
   if (currentRole() === ROLES.BOX && boxShipper) {
+    // 2026-11-03. One-way: Push now, Pull now, or both. The push goes first: the PC's records come first.
     if (!isTwoWay()) {
-      await writer?.pump();
-      const shipped = await boxShipper.tick();
-      return { did: 'PUSHED', failed: Boolean(shipped?.some((outcome) => outcome === 'FAILED')) };
+      let failed = false;
+      let pulled = 0;
+      if (direction !== 'PULL') failed = (await runRound(pushRound)).failed || failed;
+      if (direction !== 'PUSH') {
+        const result = await pullRound();
+        failed = result.failed || failed;
+        pulled = result.pulled;
+      }
+      return { did: direction === 'PULL' ? 'PULLED' : direction === 'PUSH' ? 'PUSHED' : 'PUSHED_AND_PULLED', failed, pulled };
     }
+    // 2026-11-03. Push now and Pull now: one way at once; neither, a whole round.
+    if (direction === 'PUSH') return { did: 'PUSHED', failed: (await runRound(pushRound)).failed };
+    if (direction === 'PULL') return { did: 'PULLED', failed: (await runRound(pullChangesRound)).failed };
     const { failed } = await runRound(exchangeRound);
     return { did: 'PULLED_AND_PUSHED', failed };
   }
@@ -147,6 +195,26 @@ function startTwoWayExchange() {
     if (!shouldExchange({ now: nowUtc(), lastAt, waiting: await hasUnshippedChanges(), everyMs, hours })) return;
     lastAt = nowUtc().getTime();
     await runRound(exchangeRound);
+  });
+}
+
+/**
+ * 2026-11-03. The PC's push to the online copy, paced like the two-way round: the first
+ * push at once, then every SYNC_EVERY_SECONDS inside SYNC_HOURS and at most every 15
+ * minutes outside them, and only ever with something to send. The shipper's own
+ * backoff still applies when the online copy is away.
+ */
+function startOneWayPush() {
+  const everyMs = config.SYNC_EVERY_SECONDS * 1_000;
+  const hours = parseSyncHours(config.SYNC_HOURS);
+  let lastAt = 0;
+  every(TWO_WAY_TICK_MS, 'The push to the online copy', async () => {
+    await writer?.pump();
+    const waiting = await hasUnshippedChanges();
+    if (!waiting) return;
+    if (!shouldExchange({ now: nowUtc(), lastAt, waiting, everyMs, hours })) return;
+    lastAt = nowUtc().getTime();
+    await runRound(pushRound);
   });
 }
 
@@ -177,7 +245,7 @@ export async function startReplication() {
   }
 
   boxShipper = new Shipper();
-  every(SHIP_EVERY_MS, 'The shipper', () => boxShipper.tick());
+  startOneWayPush();
 
   let pullFailures = 0;
   let pullAfter = 0;
@@ -185,8 +253,10 @@ export async function startReplication() {
     if (Date.now() < pullAfter) return;
     try {
       await pullIntakeOnce();
+      markPulled(nowUtc());
       pullFailures = 0;
     } catch (error) {
+      markPulled(nowUtc(), error);
       pullFailures += 1;
       pullAfter = Date.now() + PULL_BACKOFF_MS[Math.min(pullFailures - 1, PULL_BACKOFF_MS.length - 1)];
       throw error;

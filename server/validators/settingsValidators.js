@@ -277,6 +277,8 @@ const kitchen = z
     oneTicketPerOrder: z.boolean({ error: 'Must be true or false.' }).optional(),
     // P58.
     splitTicketsByStation: z.boolean({ error: 'Must be true or false.' }).optional(),
+    // 2026-11-03.
+    printKots: z.boolean({ error: 'Must be true or false.' }).optional(),
   })
   .strict();
 
