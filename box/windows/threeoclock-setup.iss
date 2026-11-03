@@ -117,7 +117,7 @@ begin
     'Click Next to keep the answers already filled in.');
   DetailsPage.Add('Restaurant name:', False);
   DetailsPage.Add('Owner''s mobile number (10 digits, used to sign in):', False);
-  DetailsPage.Values[0] := 'My Restaurant';
+  DetailsPage.Values[0] := 'Three O''Clock Cafe';
   DetailsPage.Values[1] := '9000000001';
   WasUpdate := RestaurantAlreadyCreated;
   if WasUpdate then begin

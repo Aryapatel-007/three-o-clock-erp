@@ -313,13 +313,13 @@ if (Test-Path $marker) {
     $cafeName = $RestaurantName.Trim()
     $ownerPhone = $OwnerPhone.Trim()
   } else {
-    $cafeName = (Read-Host 'Restaurant name (press Enter for "My Restaurant")').Trim()
+    $cafeName = (Read-Host 'Restaurant name (press Enter for "Three O''Clock Cafe")').Trim()
     do {
       $ownerPhone = (Read-Host 'Owner mobile number, used to sign in (press Enter for 9000000001)').Trim()
       if (-not $ownerPhone) { $ownerPhone = '9000000001' }
     } until ($ownerPhone -match '^[6-9]\d{9}$')
   }
-  if (-not $cafeName) { $cafeName = 'My Restaurant' }
+  if (-not $cafeName) { $cafeName = 'Three O''Clock Cafe' }
   if (-not $ownerPhone) { $ownerPhone = '9000000001' }
   if ($ownerPhone -notmatch '^[6-9]\d{9}$') { Fail "The owner mobile number must be 10 digits starting with 6, 7, 8 or 9. It was: $ownerPhone" }
   $ownerPassword = New-Password
