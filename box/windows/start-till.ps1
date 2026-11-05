@@ -17,9 +17,33 @@ function Get-TillBrowser {
   ) | Where-Object { Test-Path $_ } | Select-Object -First 1
 }
 
+function Get-TillProcess {
+  Get-CimInstance Win32_Process -Filter "Name = 'chrome.exe' OR Name = 'msedge.exe'" |
+    Where-Object { $_.CommandLine -like "*$TillProfile*" }
+}
+
 function Test-TillOpen {
-  [bool](Get-CimInstance Win32_Process -Filter "Name = 'chrome.exe' OR Name = 'msedge.exe'" |
-    Where-Object { $_.CommandLine -like "*$TillProfile*" })
+  [bool](Get-TillProcess)
+}
+
+# 2026-11-05. "Close ThreeOClock" on the desktop closes the till for good: this file stops the
+# "ThreeOClock Printer" task reopening it, across restarts, until the "ThreeOClock" icon opens
+# it again. The window's own X leaves no file, so a till closed by mistake still comes back.
+# Kept per Windows user, as the till's profile is, and outside the app folder, which an
+# update replaces and a standard user may not be able to write to.
+$TillClosedFlag = Join-Path $env:LOCALAPPDATA 'ThreeOClock\till-closed.flag'
+
+function Test-TillClosedForGood {
+  Test-Path -LiteralPath $TillClosedFlag
+}
+
+function Set-TillClosedForGood {
+  New-Item -ItemType Directory -Force -Path (Split-Path -Parent $TillClosedFlag) -ErrorAction Stop | Out-Null
+  Set-Content -LiteralPath $TillClosedFlag -Value (Get-Date).ToString('o') -ErrorAction Stop
+}
+
+function Clear-TillClosedForGood {
+  Remove-Item -LiteralPath $TillClosedFlag -Force -ErrorAction SilentlyContinue
 }
 
 # Opens the till at $Url. With the till already open, Chrome brings it a new tab

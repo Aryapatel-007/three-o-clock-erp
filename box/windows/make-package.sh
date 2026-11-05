@@ -71,6 +71,10 @@ questions in the blue window. Keep the PC on the internet until it says "All don
 Then use the "ThreeOClock" icon on the desktop. Every login is in "ThreeOClock logins" on
 the desktop.
 
+The till reopens by itself within a minute if its window is closed, so captains' bills keep
+printing. To close it for good, use "Close ThreeOClock" on the desktop. It stays closed,
+even after a restart, until you open the "ThreeOClock" icon again.
+
 Tablets and phones: join the same WiFi as this PC, then open "ThreeOClock - Connect a
 device" on the desktop and scan the QR codes.
 

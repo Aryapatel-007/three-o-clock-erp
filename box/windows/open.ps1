@@ -27,6 +27,8 @@ if (-not (Test-Up)) {
 if (Test-Up) {
   # 2026-10-22. "ThreeOClock" opens the till, printing with no dialog: nobody chooses a browser or a launcher.
   . (Join-Path $PSScriptRoot 'start-till.ps1')
+  # Opening the till undoes "Close ThreeOClock": a till closed by mistake comes back again.
+  if (-not $Page) { Clear-TillClosedForGood }
   if ($Page -or -not (Open-Till "$url/?till=1")) { Start-Process "$url/$Page" }
 } else {
   Add-Type -AssemblyName PresentationFramework

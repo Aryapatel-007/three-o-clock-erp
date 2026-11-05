@@ -84,6 +84,7 @@ Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; Parameters: "-NoProfile
 [UninstallDelete]
 Type: files; Name: "{commondesktop}\ThreeOClock.lnk"
 Type: files; Name: "{commondesktop}\ThreeOClock - Connect a device.lnk"
+Type: files; Name: "{commondesktop}\Close ThreeOClock.lnk"
 
 [Code]
 var

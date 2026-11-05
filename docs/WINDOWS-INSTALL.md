@@ -201,6 +201,12 @@ when someone signs in to Windows, and again within a minute if it is closed.
 The till prints its own bills and every bill a captain sends with **Print at
 counter**, so nobody has to be at the counter.
 
+**Closing the till for good (2026-11-05).** **Close ThreeOClock** on the desktop
+(`box\windows\close.ps1`) asks first, then closes the till and leaves
+`%LOCALAPPDATA%\ThreeOClock\till-closed.flag`. While that file is there the
+"ThreeOClock Printer" task leaves the till closed, even after a restart. The
+**Three O'Clock** icon removes it and opens the till. The server keeps running.
+
 **The bill printer.** On the PC every device starts with what prints best on
 Z Chaat's Rugtek, measured on the website's counter: Thermal 80 mm, the
 printer's roll, 72 mm wide, 4 mm each side, Normal text, and "Print bills sent

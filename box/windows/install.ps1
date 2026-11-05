@@ -413,7 +413,7 @@ Say '7. Adding the desktop icons' 95
 $desktop = [Environment]::GetFolderPath('CommonDesktopDirectory')
 $shell = New-Object -ComObject WScript.Shell
 $opener = Join-Path $PSScriptRoot 'open.vbs'
-# One icon. Connect a device is on ThreeOClock's home screen, so it needs none of its own.
+# One icon to open. Connect a device is on ThreeOClock's home screen, so it needs none of its own.
 foreach ($icon in @(@{ Name = 'ThreeOClock'; Page = '' })) {
   $shortcut = $shell.CreateShortcut((Join-Path $desktop "$($icon.Name).lnk"))
   $shortcut.TargetPath = "$env:SystemRoot\System32\wscript.exe"
@@ -423,6 +423,15 @@ foreach ($icon in @(@{ Name = 'ThreeOClock'; Page = '' })) {
   $shortcut.Description = 'Opens ThreeOClock, starting the server if it is not running.'
   $shortcut.Save()
 }
+# 2026-11-05. The till comes back within a minute of its window closing, so closing it for
+# good needs its own icon (close.ps1). The server keeps running.
+$shortcut = $shell.CreateShortcut((Join-Path $desktop 'Close ThreeOClock.lnk'))
+$shortcut.TargetPath = "$env:SystemRoot\System32\wscript.exe"
+$shortcut.Arguments = "`"$(Join-Path $PSScriptRoot 'close.vbs')`""
+$shortcut.WorkingDirectory = $Root
+$shortcut.IconLocation = Join-Path $PSScriptRoot 'threeoclock.ico'
+$shortcut.Description = 'Closes ThreeOClock on this computer until the ThreeOClock icon opens it again.'
+$shortcut.Save()
 # 2026-10-22. "ThreeOClock" opens the till itself (start-till.ps1), so the icons that
 # opened a till or set up printing are gone: one icon, nothing to choose. The tools
 # stay in box\windows (print-settings.cmd) for whoever looks after the PC.

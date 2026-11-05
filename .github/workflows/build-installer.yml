@@ -1,0 +1,41 @@
+# Builds ThreeOClock-Setup.exe on a GitHub Windows machine, for when no Windows PC is at hand.
+# It only builds: nothing is signed or published, so no installed PC takes this by itself.
+# The installer is kept on the run's page for 14 days.
+name: Build installer
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - till-close-for-good
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Test Close ThreeOClock on Windows
+        shell: powershell
+        run: .github/scripts/test-till-close.ps1
+      - name: Install Inno Setup
+        shell: powershell
+        run: choco install innosetup -y --no-progress
+      - name: Install packages
+        run: npm ci
+      - name: Build the installer
+        shell: bash
+        run: bash box/windows/make-package.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ThreeOClock-Setup
+          path: release/ThreeOClock-Setup.exe
+          retention-days: 14
+          if-no-files-found: error

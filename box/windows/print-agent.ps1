@@ -5,7 +5,8 @@
 # Windows, and again every minute. If the till is not open and the server answers,
 # it opens the till (start-till.ps1) with --kiosk-printing. The till prints every
 # captain's bill on this PC's default printer (the Rugtek) with no dialog. It may sit
-# behind other windows; a till closed by mistake comes back within a minute.
+# behind other windows; a till closed by mistake comes back within a minute, and one
+# closed with "Close ThreeOClock" (close.ps1) stays closed.
 # A hidden printer window was tried the same day and printed nothing: Chrome holds
 # back printing from a hidden page. Staff sign in once in the till; it remembers them.
 # Written in plain ASCII for Windows PowerShell 5.1.
@@ -23,11 +24,17 @@ $portPart = if ($port -eq 80) { '' } else { ":$port" }
 $page = "http://localhost$portPart/?till=1"
 $probe = "http://127.0.0.1$portPart/api/v1/network/ping"
 
+# Closed for good with "Close ThreeOClock": stays closed until the "ThreeOClock" icon opens it.
+if (Test-TillClosedForGood) { exit 0 }
+
 # Already open: nothing to do.
 if (Test-TillOpen) { exit 0 }
 
 # The server not answering yet (the PC just started): the next minute tries again.
 try { $up = (Invoke-WebRequest -UseBasicParsing -TimeoutSec 3 $probe).StatusCode -eq 200 } catch { $up = $false }
 if (-not $up) { exit 0 }
+
+# "Close ThreeOClock" may have been pressed during the seconds the check above can take.
+if (Test-TillClosedForGood) { exit 0 }
 
 if (-not (Open-Till $page)) { exit 1 }

@@ -867,6 +867,7 @@ Added 2026-10-22.
 | **Three O'Clock** | The one desktop icon on the cafe PC: it opens the till at the PC's own address, printing bills with no dialog. Windows opens the same till at sign-in |
 | **Not printed yet** | On a captain's bill, 30 seconds after Print at counter: no counter has printed it, so the till must be open and signed in, with Print bills sent by captains on |
 | **Three O'Clock printer** | The print-only window of 2026-10-22 morning, at `/print-station`; from that afternoon the till prints captains' bills itself |
+| **Close ThreeOClock** | The desktop icon that closes the till for good: it stays closed, even after a restart, until the ThreeOClock icon opens it. The server keeps running. The window's own X only closes it until the next minute |
 
 ---
 
