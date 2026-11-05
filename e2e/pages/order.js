@@ -177,7 +177,7 @@ export async function orderAction(area, label) {
     await direct.click();
     return;
   }
-  await area.getByRole('button', { name: 'More' }).click();
+  await area.getByRole('button', { name: 'More', exact: true }).click();
   await area.getByRole('menuitem', { name: label, exact: true }).click();
 }
 

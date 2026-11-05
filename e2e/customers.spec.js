@@ -35,7 +35,7 @@ test("the guest's details on the first Send, and a note for all dishes on the ti
   await note.getByRole('button', { name: 'Save', exact: true }).click();
   await expect(captain.page.getByText('Less spicy, Jain').first()).toBeVisible();
 
-  await captain.page.getByRole('button', { name: /^Send \d+ to (the )?kitchen/ }).filter({ visible: true }).first().click();
+  await orderArea.getByRole('button', { name: /^Send \d+ to the kitchen/ }).click();
   const sheet = captain.page.getByRole('dialog', { name: 'Guest details' });
   // P59. The golden restaurant requires covers: no Skip, and Save waits for the count.
   await expect(sheet.getByRole('button', { name: 'Skip, send without details' })).toHaveCount(0);

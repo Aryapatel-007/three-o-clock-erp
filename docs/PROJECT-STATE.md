@@ -660,7 +660,11 @@ Built on Arya's phone, which cannot run Inno Setup, so `.github/workflows/build-
 
 Built and published from branch `till-close-for-good`, then fast-forwarded to `main` at Arya's word, which redeploys the live website, once every job of `build-installer.yml` passed on that commit: lint, the full server suite, the client build, the browser tests, the Windows till test and the installer build. A phone should use that workflow rather than run the full suite itself.
 
-On the phone, `boxUpdater.test.js` passes 12 of 16; the same 4 fail on a clean copy of `5db26b4`, so this change did not cause them, and they are specific to the phone if the workflow passes them.
+The checks found what was already wrong on `main`, none of it from this change:
+1. **The nightly updater could never install.** `update.mjs` looked for a folder `Three O’Clock`; the release zip holds `ThreeOClock`. Fixed here, but each PC runs its own copy, so a PC gets the fix only by running a new `.exe` by hand once. Try the first overnight update on one PC before relying on it.
+2. Tests left behind by the redesign of 2026-11-03 (the updater's token rule, the setup file's staff, ALL SECTIONS on a KOT, and the browser tests' +, Bill box, More and side menu), updated to the screens as they are.
+
+What the redesign changed on screen, seen through those tests: the Bill No box is gone (decision log); a sent dish the kitchen made reads Served, not Ready, on the order; KOT & Print is gone, so a Send prints only on a till with **Print every new KOT here** on, and a Send for one section prints two slips. GLOSSARY sections 33, 39 and 40 still use some words from before it (KOT & Print, Save & Print, Save, Note for all dishes on the button).
 
 Anything the other developer needs to know:
 Rishi: this keeps your rule that a till closed by mistake comes back. Only the new icon closes it for good.

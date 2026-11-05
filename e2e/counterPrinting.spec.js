@@ -74,7 +74,9 @@ test("the counter's own Send prints its KOT once, not again from the background"
   const asked = await counter.page.getByRole('dialog', { name: 'Guest details' }).waitFor({ timeout: 3000 }).then(() => true, () => false);
   if (asked) await skipGuestDetails(counter.page);
 
-  await expect.poll(() => kotPrints(counter).length, { timeout: 20_000 }).toBe(1);
+  // 2026-11-03. A Send for one section prints two: the whole, then that section's slip (printKot.js).
+  await expect.poll(() => kotPrints(counter).length, { timeout: 20_000 }).toBe(2);
+  expect(kotPrints(counter)[0].text).toContain('ALL SECTIONS');
   await counter.page.waitForTimeout(11_000);
-  expect(kotPrints(counter)).toHaveLength(1);
+  expect(kotPrints(counter)).toHaveLength(2);
 });

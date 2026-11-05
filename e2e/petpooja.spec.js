@@ -101,7 +101,8 @@ test('PetPooja\'s way: floor, history, counter, change, kitchen', async ({ brows
   // P56. The table's first Send asks for the guest's details.
   const asked = await page.getByRole('dialog', { name: 'Guest details' }).waitFor({ timeout: 3000 }).then(() => true, () => false);
   if (asked) await skipGuestDetails(page);
-  await expect.poll(() => counter.prints.length).toBeGreaterThan(0);
+  // 2026-11-03. No KOT & Print: a Send prints only on a till with Print every new KOT here on (counterPrinting.spec.js).
+  await expect(page.getByText('Sent to the kitchen.')).toBeVisible();
   const order3 = (await api('GET', `/tables/${tables['Table 3']}/history`, cashier)).orders[0];
   expect(JSON.stringify(order3)).toContain('Extra cheese');
   await page.screenshot({ path: 'e2e/screenshots/p48-counter.png' });
