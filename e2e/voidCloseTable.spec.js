@@ -59,7 +59,8 @@ test('a bill voided to correct it waits for a new bill, and its order can be can
   const sheet = await startVoid(page, 'Discount needs changing');
   await expect(sheet.getByRole('radio', { name: /Bill this table again/ })).toBeChecked();
   await sheet.getByRole('button', { name: /Void bill/ }).last().click();
-  await expect(page.getByText('Bill voided.')).toBeVisible();
+  // The bill leaves the order screen at once, and its "Bill voided." message with it.
+  await expect(sheet).toHaveCount(0);
 
   // The order waits for a new bill: Print bill is there, and so is Cancel the whole order.
   await gotoFloor(page);
