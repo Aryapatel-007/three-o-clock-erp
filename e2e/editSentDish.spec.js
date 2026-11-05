@@ -8,7 +8,7 @@ import { expect, test } from '@playwright/test';
 
 import { at, resetGolden } from './helpers/clock.js';
 import { signIn } from './helpers/people.js';
-import { addFromPanel, sendToKitchen } from './pages/order.js';
+import { sendToKitchen } from './pages/order.js';
 import { tickets } from './pages/kitchen.js';
 
 const DAY = '2026-09-26';
@@ -92,7 +92,6 @@ test('a captain changes sent dishes, and the kitchen login sees only its tickets
   await sheet.getByRole('button', { name: 'Swap for another dish' }).click();
   await expect(page.getByText('Pick the replacement for Half & Half Pizza, then send it.')).toBeVisible();
   await page.getByRole('button', { name: 'Add Chilli Garlic Noodle Bowl', exact: true }).click();
-  await addFromPanel(page);
   await page.screenshot({ path: 'e2e/screenshots/captain-review-bar-send.png' });
   await sendToKitchen(page);
 

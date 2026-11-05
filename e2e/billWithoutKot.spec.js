@@ -31,9 +31,8 @@ test('the counter bills a table without a KOT, and the kitchen sees nothing', as
   const bill = counter.page.getByRole('region', { name: 'Bill' });
   await expect(bill.getByRole('heading', { name: 'Bill without KOT' })).toBeVisible();
   await expect(bill.getByText('Bill total')).toBeVisible();
-  await bill.getByRole('button', { name: 'Save & Print' }).click();
+  await bill.getByRole('button', { name: 'Print bill', exact: true }).click();
 
-  await expect(counter.page).toHaveURL(/\/bills\/[a-f0-9]{24}$/);
   await expect.poll(() => counter.prints.length, { timeout: 10_000 }).toBe(1);
   expect(counter.prints[0].text).toContain('Table 3');
   expect(counter.prints[0].text).toMatch(/Caffe Latte/);

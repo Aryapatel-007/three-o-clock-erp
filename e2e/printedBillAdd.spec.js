@@ -64,11 +64,10 @@ test('a cashier adds to a printed bill with a manager PIN, asked once', async ({
   await expect(sheet).toHaveCount(0);
 
   // The next dish in the same visit goes straight on.
+  // 2026-11-03: + adds at once, with the approval kept from the first dish, so no sheet opens.
   await page.getByRole('button', { name: 'Add Water Bottle', exact: true }).click();
-  sheet = page.getByRole('dialog');
-  await expect(sheet.getByLabel('Their PIN')).toHaveCount(0);
-  await sheet.getByRole('button', { name: /^Add to order/ }).click();
-  await expect(sheet).toHaveCount(0);
+  await expect.poll(async () => (await api('GET', `/bills/${bill.id}`, cashier)).revisions.length).toBe(2);
+  await expect(page.getByRole('dialog')).toHaveCount(0);
 
   const revised = await api('GET', `/bills/${bill.id}`, cashier);
   expect(revised.billNumber).toBe(bill.billNumber);

@@ -22,8 +22,8 @@ async function billTable(page, table) {
   const guest = page.getByRole('dialog', { name: 'Guest details' });
   await guest.getByRole('button', { name: '2', exact: true }).click();
   await guest.getByRole('button', { name: 'Save and bill' }).click();
-  await page.getByRole('region', { name: 'Bill' }).getByRole('button', { name: 'Save', exact: true }).click();
-  await expect(page).toHaveURL(/\/bills\/[a-f0-9]{24}$/);
+  await page.getByRole('region', { name: 'Bill' }).getByRole('button', { name: /^(No print|Make the bill without printing)$/ }).click();
+  await expect(page.getByRole('button', { name: /Void bill/ }).first()).toBeVisible();
 }
 
 /** Opens Void bill and picks a reason; returns the sheet. */
@@ -61,11 +61,11 @@ test('a bill voided to correct it waits for a new bill, and its order can be can
   await sheet.getByRole('button', { name: /Void bill/ }).last().click();
   await expect(page.getByText('Bill voided.')).toBeVisible();
 
-  // The order waits for a new bill: Save is there, and so is Cancel the whole order.
+  // The order waits for a new bill: Print bill is there, and so is Cancel the whole order.
   await gotoFloor(page);
   await tile(page, 'Table 4').click();
   const order = await details(page);
-  await expect(page.getByRole('region', { name: 'Bill' }).getByRole('button', { name: 'Save', exact: true })).toBeEnabled();
+  await expect(page.getByRole('region', { name: 'Bill' }).getByRole('button', { name: 'Print bill', exact: true })).toBeEnabled();
   await order.getByRole('button', { name: 'Cancel the whole order' }).click();
   const cancel = page.getByRole('dialog', { name: /^Cancel order #/ });
   await cancel.getByRole('button', { name: 'Other', exact: true }).click();

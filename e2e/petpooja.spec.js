@@ -93,7 +93,8 @@ test('PetPooja\'s way: floor, history, Recall Bill, counter, change, kitchen', a
   await page.getByRole('button', { name: /^Table 3, open, / }).click();
   const panel = page.getByRole('complementary', { name: 'This order' });
   await expect(panel).toBeVisible();
-  await page.getByRole('button', { name: 'Add Mexican Bowl', exact: true }).click();
+  // 2026-11-03. + adds at once; tapping the dish opens the panel, where a typed extra goes.
+  await page.getByRole('button', { name: /^Mexican Bowl: choose/ }).click();
   const sheet = page.getByRole('dialog', { name: 'Mexican Bowl' });
   await sheet.getByRole('button', { name: '+ Extra' }).click();
   await sheet.getByLabel('Extra 1', { exact: true }).fill('Extra cheese');

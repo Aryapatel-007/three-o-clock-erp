@@ -17,25 +17,26 @@ test('a screen whose code cannot load reloads once, then shows Reload instead of
   await page.goto('/floor');
   await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible();
 
-  // The settlement group's file, answered with the app's page, as after a deploy.
+  // The reports group's file, answered with the app's page, as after a deploy. Not one a
+  // service screen has already loaded, or nothing would fail.
   let asked = 0;
-  await page.route(/\/assets\/settlement-[^/]+\.js$/, async (route) => {
+  await page.route(/\/assets\/reports-[^/]+\.js$/, async (route) => {
     asked += 1;
     await route.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><html><body></body></html>' });
   });
   let reloads = 0;
   page.on('load', () => (reloads += 1));
 
-  await page.getByRole('link', { name: 'Bills' }).first().click();
+  await page.getByRole('link', { name: 'Reports' }).first().click();
   // One reload by itself, then the message, never a blank page.
   await expect(page.getByText('This screen could not load.')).toBeVisible();
   expect(reloads).toBe(1);
   expect(asked).toBeGreaterThanOrEqual(2);
 
   // Once the file is back, Reload opens the screen.
-  await page.unroute(/\/assets\/settlement-[^/]+\.js$/);
+  await page.unroute(/\/assets\/reports-[^/]+\.js$/);
   await page.getByRole('button', { name: 'Reload' }).click();
-  await expect(page).toHaveURL(/\/bills$/);
+  await expect(page).toHaveURL(/\/reports$/);
   await expect(page.getByText('This screen could not load.')).toHaveCount(0);
-  await expect(page.getByText('Bill total').first()).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible();
 });

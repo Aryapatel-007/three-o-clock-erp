@@ -394,7 +394,8 @@ describe('the KOT ticket text', () => {
     assert.equal(plain.status, 200);
     assert.equal(plain.body.data.width, 48);
     assert.doesNotMatch(plain.body.data.text, /REPRINT/);
-    assert.match(plain.body.data.text, /LIVE KITCHEN/);
+    // 2026-11-03. The whole KOT says ALL SECTIONS when its dishes have sections.
+    assert.match(plain.body.data.text, /ALL SECTIONS/);
 
     const again = await request('GET', `/api/v1/kots/${fired.kot.id}/ticket?reprint=true`, { token: floor.tokens.KITCHEN });
     assert.match(again.body.data.text, /REPRINT/);

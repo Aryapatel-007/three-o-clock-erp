@@ -13,7 +13,7 @@ import { expect, test } from '@playwright/test';
 import { at, resetGolden } from './helpers/clock.js';
 import { signIn } from './helpers/people.js';
 import { markReady } from './pages/kitchen.js';
-import { addFromPanel, addItems, billOrder, sendToKitchen, serveAll, skipGuestDetails } from './pages/order.js';
+import { addItems, billOrder, sendToKitchen, serveAll, skipGuestDetails } from './pages/order.js';
 import { openTable } from './pages/floor.js';
 
 const DAY = '2026-09-26';
@@ -70,7 +70,6 @@ test("the counter's own Send prints its KOT once, not again from the background"
   const panel = counter.page.getByRole('complementary', { name: 'This order' });
   await expect(panel).toBeVisible();
   await counter.page.getByRole('button', { name: 'Add Caffe Latte', exact: true }).click();
-  await addFromPanel(counter.page);
   await panel.getByRole('button', { name: /^Send \d+ to the kitchen$/ }).click();
   const asked = await counter.page.getByRole('dialog', { name: 'Guest details' }).waitFor({ timeout: 3000 }).then(() => true, () => false);
   if (asked) await skipGuestDetails(counter.page);

@@ -20,8 +20,7 @@ export async function addItems(page, items) {
       unsent.clear();
     }
     await page.getByRole('button', { name: `Add ${item}`, exact: true }).click();
-    // + opens the options panel, with its note to the chef; adding takes one more tap.
-    await addFromPanel(page);
+    // 2026-11-03. + puts a plain dish on the order at once; tapping the dish opens the options panel.
     const stepper = card(page, item).getByRole('button', { name: 'One more' });
     await expect(stepper).toBeVisible();
     for (let more = 1; more < quantity; more += 1) {
@@ -158,12 +157,24 @@ export async function giveNoCharge(page, reason) {
   await expect(page.getByText('No Charge given. The table is free.')).toBeVisible();
 }
 
-/** Bills an order waiting for the cashier, and lands on its bill. */
+/**
+ * Bills an order waiting for the cashier, prints nothing, and opens its bill. 2026-11-03: the
+ * screen stays on the order once the bill is made, and the bill also has its own address, which
+ * these tests open so they can come back to it. They print where they mean to.
+ */
 export async function billOrder(page) {
   await page.reload();
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
-  // P57. The Bill box's Save makes the bill and prints nothing; these tests print where they mean to.
-  await page.getByRole('region', { name: 'Bill' }).getByRole('button', { name: 'Save', exact: true }).click();
+  const made = page.waitForResponse((response) => {
+    const request = response.request();
+    return request.method() === 'POST' && new URL(response.url()).pathname === '/api/v1/bills' && !request.postData()?.includes('"preview":true');
+  });
+  // "No print" in the counter's compact Bill box; the words in full everywhere else.
+  await page.getByRole('region', { name: 'Bill' }).getByRole('button', { name: /^(No print|Make the bill without printing)$/ }).click();
+  const response = await made;
+  expect(response.ok()).toBe(true);
+  const { data } = await response.json();
+  await page.goto(`/bills/${data.id}`);
   await expect(page).toHaveURL(/\/bills\/[a-f0-9]{24}$/);
   return page.url();
 }

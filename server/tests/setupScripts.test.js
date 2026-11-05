@@ -401,7 +401,8 @@ describe("Three O'Clock's own files", () => {
     const { config, toConfirm } = validateSetupConfig(threeOClockConfig());
     assert.equal(config.restaurant.name, "Three O'Clock Cafe");
     assert.equal(config.stations.length, 3);
-    for (const at of ['restaurant.gstin', 'restaurant.fssaiLicenseNumber', 'staff']) assert.ok(toConfirm.includes(at), at);
+    for (const at of ['restaurant.gstin', 'restaurant.fssaiLicenseNumber', 'accounts']) assert.ok(toConfirm.includes(at), at);
+    assert.equal(config.staff.length, 5);
 
     const menu = readMenu(threeOClockMenu(), threeOClockAddons());
     const items = menu.categories.flatMap((category) => category.items);

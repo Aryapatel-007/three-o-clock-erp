@@ -74,7 +74,8 @@ test('a wrong tick in the kitchen, undone', async ({ browser }) => {
   await captain.page.goto(`/orders/${order.id}`);
   await captain.page.getByRole('button', { name: /Item total, before GST/ }).click();
   const sheet = captain.page.getByRole('dialog');
-  await expect(sheet.locator('li').filter({ hasText: 'Half & Half Pizza' }).getByText('Ready', { exact: true })).toBeVisible();
+  // 2026-11-03. With ready means served, a dish the kitchen made reads Served on the order.
+  await expect(sheet.locator('li').filter({ hasText: 'Half & Half Pizza' }).getByText('Served', { exact: true })).toBeVisible();
   await expect(sheet.locator('li').filter({ hasText: 'Creamy Pesto Pasta' }).getByText('With the kitchen', { exact: true })).toBeVisible();
   await captain.page.screenshot({ path: 'e2e/screenshots/kitchen-undo.png', fullPage: true });
 });

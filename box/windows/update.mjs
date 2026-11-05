@@ -494,7 +494,8 @@ export async function updateCommand({ command, root, now = new Date(), fetchImpl
     await fs.rm(staging, { recursive: true, force: true });
     await fs.mkdir(staging, { recursive: true });
     await steps.extract(zip, staging);
-    const newRoot = path.join(staging, 'Three O’Clock');
+    // The folder make-package.sh zips. It has no apostrophe, like every machine name.
+    const newRoot = path.join(staging, 'ThreeOClock');
     const unpacked = await readInstalled(newRoot);
     if (unpacked.commit !== payload.commit
       || !(await exists(path.join(newRoot, 'server', 'server.js')))

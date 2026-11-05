@@ -67,12 +67,13 @@ test('a manager discounts a served table before the bill is made, then Save & Pr
   const after = await total.textContent();
   expect((await api('GET', `/orders/${order.id}`, captain)).billId ?? null).toBeNull();
 
-  // Save & Print: one bill, with the discount, printed once, and the payment asked next.
-  await box.getByRole('button', { name: 'Save & Print' }).click();
-  await expect(page).toHaveURL(/\/bills\/[a-f0-9]{24}$/);
+  // Print bill: one bill, with the discount, printed once, and the payment asked next, on this same screen.
+  await box.getByRole('button', { name: 'Print bill', exact: true }).click();
   await expect(page.getByRole('region', { name: 'Take payment' })).toBeVisible();
+  await expect(page).toHaveURL(new RegExp(`/orders/${order.id}`));
   await expect.poll(() => desk.prints.length).toBe(1);
-  const bill = await api('GET', `/bills/${page.url().split('/').at(-1)}`, manager);
+  const { billId } = await api('GET', `/orders/${order.id}`, manager);
+  const bill = await api('GET', `/bills/${billId}`, manager);
   expect(bill.discount.rateBps).toBe(1000);
   expect(bill.discount.reasonCode).toBe('REGULAR_GUEST');
   expect(bill.printCount).toBe(1);
@@ -103,9 +104,9 @@ test('a captain on a phone sees the Bill box, gives no discount, and sends the b
   await box.scrollIntoViewIfNeeded();
   await page.screenshot({ path: 'e2e/screenshots/p57-bill-box-phone.png', fullPage: true });
 
-  await box.getByRole('button', { name: 'Save & Print at counter' }).click();
-  await expect(page).toHaveURL(/\/bills\/[a-f0-9]{24}$/);
-  const bill = await api('GET', `/bills/${page.url().split('/').at(-1)}`, manager);
-  expect(bill.printRequestedAt).not.toBeNull();
+  await box.getByRole('button', { name: 'Print bill at counter', exact: true }).click();
+  await expect.poll(async () => (await api('GET', `/orders/${order.id}`, manager)).billId ?? null).not.toBeNull();
+  const { billId } = await api('GET', `/orders/${order.id}`, manager);
+  await expect.poll(async () => (await api('GET', `/bills/${billId}`, manager)).printRequestedAt).not.toBeNull();
   expect(captain.prints.length).toBe(0);
 });

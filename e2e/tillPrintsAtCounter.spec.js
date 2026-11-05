@@ -38,8 +38,7 @@ test('a manager on a phone sends Save & Print to the counter, which prints it on
 
   await manager.page.reload();
   const box = manager.page.getByRole('region', { name: 'Bill' });
-  await box.getByRole('button', { name: 'Save & Print at counter' }).click();
-  await expect(manager.page).toHaveURL(/\/bills\/[a-f0-9]{24}$/);
+  await box.getByRole('button', { name: 'Print bill at counter', exact: true }).click();
   await expect(manager.page.getByText('Sent to the counter. Payment opens once it has printed.')).toBeVisible();
 
   // The counter prints it once; the phone prints nothing, and its payment opens once it has.

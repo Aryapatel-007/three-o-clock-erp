@@ -236,10 +236,11 @@ describe('updating the cafe PC', () => {
     assert.deepEqual(fetched, []);
   });
 
-  it('stays quiet at night when no token has been set yet', async () => {
-    await fs.writeFile(path.join(root, '.env'), 'PORT=80\nUPDATE_REPO=owner/repo\nUPDATE_TOKEN=\n');
+  // A public release repository needs no token, so the repository is what must be set.
+  it('stays quiet at night when no release repository has been set yet', async () => {
+    await fs.writeFile(path.join(root, '.env'), 'PORT=80\nUPDATE_REPO=\nUPDATE_TOKEN=\n');
     const result = await updateCommand({ command: 'run', root, now: atHour(4, 30), fetchImpl: await publish(), steps: steps(), print: () => {} });
-    assert.deepEqual(result, { skipped: 'no UPDATE_TOKEN' });
+    assert.deepEqual(result, { skipped: 'no UPDATE_REPO' });
     assert.deepEqual(fetched, []);
     await assert.rejects(fs.access(path.join(root, 'data', 'logs', 'update.log')));
   });
