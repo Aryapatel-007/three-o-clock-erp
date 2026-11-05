@@ -28,12 +28,22 @@ foreach ($file in Get-ChildItem $Win -Filter *.ps1) {
 Write-Host 'ok: every script parses'
 if (-not (Get-TillBrowser)) { throw 'No Chrome or Edge on this machine.' }
 
-# Stands in for the server: the scripts only ask whether port 80 answers.
+# Stands in for the server: the scripts only ask whether the port in .env answers. Not port
+# 80, which is taken on GitHub's machines. .env is git-ignored and removed below.
+$Port = 8099
+$EnvFile = Join-Path (Get-Location) '.env'
+Set-Content -LiteralPath $EnvFile -Value "PORT=$Port"
 $serverFile = Join-Path $env:TEMP 'fake-server.js'
-Set-Content -LiteralPath $serverFile -Value "require('http').createServer((q,s)=>s.end('ok')).listen(80,'127.0.0.1')"
-$server = Start-Process -FilePath 'node' -ArgumentList "`"$serverFile`"" -PassThru -WindowStyle Hidden
+$serverLog = Join-Path $env:TEMP 'fake-server.err.log'
+Set-Content -LiteralPath $serverFile -Value "require('http').createServer((q,s)=>s.end('ok')).listen($Port,'127.0.0.1')"
+$server = Start-Process -FilePath 'node' -ArgumentList "`"$serverFile`"" -PassThru -NoNewWindow -RedirectStandardError $serverLog
 try {
-  Wait-For { try { (Invoke-WebRequest -UseBasicParsing -TimeoutSec 2 'http://127.0.0.1/api/v1/network/ping').StatusCode -eq 200 } catch { $false } } 'the stand-in server answers'
+  try {
+    Wait-For { try { (Invoke-WebRequest -UseBasicParsing -TimeoutSec 2 "http://127.0.0.1:$Port/api/v1/network/ping").StatusCode -eq 200 } catch { $false } } 'the stand-in server answers'
+  } catch {
+    Write-Host "Stand-in server's errors: $(Get-Content -LiteralPath $serverLog -Raw -ErrorAction SilentlyContinue)"
+    throw
+  }
   Clear-TillClosedForGood
 
   Run-Script 'print-agent.ps1'
@@ -67,5 +77,6 @@ try {
   Stop-Till
   Clear-TillClosedForGood
   Stop-Process -Id $server.Id -Force -ErrorAction SilentlyContinue
+  Remove-Item -LiteralPath $EnvFile -Force -ErrorAction SilentlyContinue
 }
 Write-Host 'All till close checks passed.'
