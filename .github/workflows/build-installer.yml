@@ -1,7 +1,8 @@
-# Builds ThreeOClock-Setup.exe on a GitHub Windows machine, for when no Windows PC is at hand.
-# It only builds: nothing is signed or published, so no installed PC takes this by itself.
-# The installer is kept on the run's page for 14 days.
-name: Build installer
+# Every check, then ThreeOClock-Setup.exe, on GitHub's machines, for when no Windows PC or
+# laptop is at hand. It only builds: nothing is signed or published, so no installed PC takes
+# this by itself. The installer is kept on the run's page for 14 days. No real keys are used:
+# each Ubuntu job makes a throwaway .env.
+name: Checks and installer
 
 on:
   workflow_dispatch:
@@ -13,7 +14,48 @@ permissions:
   contents: read
 
 jobs:
-  build:
+  code:
+    name: Lint, server tests, client build
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Make throwaway settings
+        run: node .github/scripts/throwaway-env.mjs
+      - name: Install packages
+        run: npm ci
+      - name: Lint
+        run: npm run lint
+      - name: Server tests
+        run: npm test
+      - name: Client build
+        run: npm run build
+
+  browser:
+    name: Browser tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Make throwaway settings
+        run: node .github/scripts/throwaway-env.mjs
+      - name: Install packages
+        run: npm ci
+      - name: Install the test browser
+        run: npx playwright install --with-deps chromium
+      - name: Browser tests
+        run: npm run e2e
+
+  windows:
+    name: Windows till test and installer
     runs-on: windows-latest
     timeout-minutes: 30
     steps:

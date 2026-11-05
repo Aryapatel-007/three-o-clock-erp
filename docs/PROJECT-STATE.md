@@ -657,9 +657,9 @@ Arya: the app on the laptop reopened by itself and could not be closed. Cause: t
 
 Built on Arya's phone, which cannot run Inno Setup, so `.github/workflows/build-installer.yml` tests the scripts with real Chrome on a GitHub Windows machine (`.github/scripts/test-till-close.ps1`) and builds the unsigned installer there. The `.exe` is published by hand as a not-latest release in `Aryapatel-007/dakaar-releases`, with the date in its name and no manifest, so no Dakaar PC takes it. Nothing went to `three-o-clock-releases`, so no PC updates to it by itself: run the `.exe` by hand. `install.ps1` changed, so it needs that anyway.
 
-On branch `till-close-for-good`, not `main`, because a push to `main` redeploys the live website. **Merge it before the next release from `main`**, or that release's update removes the icon's scripts.
+Built and published from branch `till-close-for-good`, then fast-forwarded to `main` at Arya's word, which redeploys the live website, once every job of `build-installer.yml` passed on that commit: lint, the full server suite, the client build, the browser tests, the Windows till test and the installer build. A phone should use that workflow rather than run the full suite itself.
 
-Tests: `boxUpdater.test.js` 12 of 16 on the phone. The same 4 fail on a clean copy of `5db26b4`, so this change did not cause them; not looked into further. The full suite was not run.
+On the phone, `boxUpdater.test.js` passes 12 of 16; the same 4 fail on a clean copy of `5db26b4`, so this change did not cause them, and they are specific to the phone if the workflow passes them.
 
 Anything the other developer needs to know:
 Rishi: this keeps your rule that a till closed by mistake comes back. Only the new icon closes it for good.
