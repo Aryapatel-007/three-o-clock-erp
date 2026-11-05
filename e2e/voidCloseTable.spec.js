@@ -9,7 +9,7 @@ import { expect, test } from '@playwright/test';
 import { at, resetGolden } from './helpers/clock.js';
 import { signIn } from './helpers/people.js';
 import { gotoFloor, openTable, tile } from './pages/floor.js';
-import { addItems, details } from './pages/order.js';
+import { addItems, details, orderAction } from './pages/order.js';
 
 const DAY = '2026-09-26';
 
@@ -18,7 +18,7 @@ async function billTable(page, table) {
   await openTable(page, table);
   await addItems(page, ['Caffe Latte']);
   const order = await details(page);
-  await order.getByRole('button', { name: 'Bill without KOT' }).click();
+  await orderAction(order, 'Bill without KOT');
   const guest = page.getByRole('dialog', { name: 'Guest details' });
   await guest.getByRole('button', { name: '2', exact: true }).click();
   await guest.getByRole('button', { name: 'Save and bill' }).click();

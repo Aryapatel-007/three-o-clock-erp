@@ -9,7 +9,7 @@ import { expect, test } from '@playwright/test';
 import { at, resetGolden } from './helpers/clock.js';
 import { signIn } from './helpers/people.js';
 import { gotoFloor, tile } from './pages/floor.js';
-import { addItems } from './pages/order.js';
+import { addItems, details } from './pages/order.js';
 
 const DAY = '2026-09-26';
 
@@ -26,7 +26,9 @@ test("the guest's details on the first Send, and a note for all dishes on the ti
   await expect(captain.page).toHaveURL(/\/orders\/[a-f0-9]{24}$/);
 
   await addItems(captain.page, ['Caffe Latte']);
-  await captain.page.getByRole('button', { name: 'Note for all dishes' }).click();
+  // 2026-11-03. The note is with the order's dishes, behind Review on a phone.
+  const orderArea = await details(captain.page);
+  await orderArea.getByRole('button', { name: /^Note for the whole KOT/ }).click();
   const note = captain.page.getByRole('dialog', { name: 'Note for all dishes' });
   await note.getByRole('button', { name: 'Less spicy' }).click();
   await note.getByRole('button', { name: 'Jain' }).click();

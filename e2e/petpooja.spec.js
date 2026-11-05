@@ -1,6 +1,6 @@
 /**
  * P48 through the screens, PetPooja's way: the floor's colours, 🖨 and 👁; a
- * table's history; Recall Bill by number; the counter screen with a typed
+ * table's history; the counter screen with a typed
  * extra and Send to the kitchen; Guest gave and Give back; and a busy kitchen board.
  */
 import { expect, test } from '@playwright/test';
@@ -26,7 +26,7 @@ const tokenOf = async (golden, name) => (await api('POST', '/auth/login', null, 
 
 test.describe.configure({ mode: 'serial' });
 
-test('PetPooja\'s way: floor, history, Recall Bill, counter, change, kitchen', async ({ browser }) => {
+test('PetPooja\'s way: floor, history, counter, change, kitchen', async ({ browser }) => {
   const golden = await resetGolden();
   await at('13:10', DAY);
   const [manager, captain, cashier] = await Promise.all(['Manager', 'Khuman Singh', 'Counter'].map((name) => tokenOf(golden, name)));
@@ -68,11 +68,8 @@ test('PetPooja\'s way: floor, history, Recall Bill, counter, change, kitchen', a
   await page.screenshot({ path: 'e2e/screenshots/p48-history.png' });
   await page.keyboard.press('Escape');
 
-  // Recall Bill: the number opens the bill.
-  const sequence = Number(bill.billNumber.split('/').at(-1));
-  await page.getByRole('textbox', { name: 'Bill No' }).fill(String(sequence));
-  await page.getByRole('textbox', { name: 'Bill No' }).press('Enter');
-  await expect(page).toHaveURL(new RegExp(`/bills/${bill.id}`));
+  // The printed bill, for its payment. The Bill No box left the top bar on 2026-11-03, and stays out.
+  await page.goto(`/bills/${bill.id}`);
 
   // Guest gave ₹500 for the latte: Give back, large.
   const area = page.getByRole('region', { name: 'Take payment' });

@@ -10,7 +10,7 @@ import { expect, test } from '@playwright/test';
 import { at, resetGolden } from './helpers/clock.js';
 import { signIn } from './helpers/people.js';
 import { markReady } from './pages/kitchen.js';
-import { addItems, sendToKitchen, serveAll } from './pages/order.js';
+import { addItems, openBillBox, sendToKitchen, serveAll } from './pages/order.js';
 import { openTable } from './pages/floor.js';
 
 const DAY = '2026-09-26';
@@ -37,7 +37,7 @@ test('a manager on a phone sends Save & Print to the counter, which prints it on
   await serveAll(manager.page);
 
   await manager.page.reload();
-  const box = manager.page.getByRole('region', { name: 'Bill' });
+  const box = await openBillBox(manager.page);
   await box.getByRole('button', { name: 'Print bill at counter', exact: true }).click();
   await expect(manager.page.getByText('Sent to the counter. Payment opens once it has printed.')).toBeVisible();
 

@@ -51,11 +51,6 @@ export function listBills({ from, to, status, includeVoided, page, limit } = {})
   return requestWithMeta(`/bills${toQuery({ from, to, status, includeVoided, page, limit })}`);
 }
 
-/** P48. Recall Bill: the bills with this number after the series, any date, newest first. */
-export function findBillsByNumber(number) {
-  return requestWithMeta(`/bills${toQuery({ number, limit: 10 })}`);
-}
-
 /**
  * `kind` is 'FLAT' or 'PERCENT'. P08: a fixed reason code, an optional note
  * (required for OTHER), and who paid for it. OWNER and MANAGER, plus a CASHIER

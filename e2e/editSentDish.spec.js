@@ -107,7 +107,8 @@ test('a captain changes sent dishes, and the kitchen login sees only its tickets
   await expect(kitchen.page).toHaveURL(/\/kitchen$/);
   await kitchen.page.getByRole('tab', { name: 'All stations' }).click();
   const ticket = tickets(kitchen.page, 'Table 12');
-  await expect(ticket).toContainText('Chilli Garlic Noodle Bowl');
+  // The replacement went on its own Send, so it is its own ticket.
+  await expect(ticket.filter({ hasText: 'Chilli Garlic Noodle Bowl' })).toHaveCount(1);
   await expect(ticket.locator('li').filter({ hasText: 'Creamy Pesto Pasta' }).filter({ hasText: 'Changed' }).first()).toBeVisible();
   await expect(ticket.locator('li').filter({ hasText: 'Caffe Latte' }).filter({ hasText: 'Cancelled, do not make' })).toBeVisible();
   await page.screenshot({ path: 'e2e/screenshots/captain-review-bar.png' });

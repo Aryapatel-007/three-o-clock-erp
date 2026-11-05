@@ -4,6 +4,7 @@
  * makes the bill with the discount, prints it once, and asks for the payment.
  */
 import { expect, test } from '@playwright/test';
+import { openBillBox } from './pages/order.js';
 
 import { at, resetGolden } from './helpers/clock.js';
 import { signIn } from './helpers/people.js';
@@ -97,7 +98,7 @@ test('a captain on a phone sees the Bill box, gives no discount, and sends the b
   const captain = await signIn(browser, { name: 'Khuman Singh', phone: golden.phones['Khuman Singh'], password: golden.password, device: 'phone' });
   const page = captain.page;
   await page.goto(`/orders/${order.id}`);
-  const box = page.getByRole('region', { name: 'Bill' });
+  const box = await openBillBox(page);
   await expect(box.getByText('Bill total')).toBeVisible();
   await expect(box.getByRole('button', { name: 'Add discount' })).toHaveCount(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);

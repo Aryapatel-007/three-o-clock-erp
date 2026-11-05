@@ -27,6 +27,8 @@ test('a screen whose code cannot load reloads once, then shows Reload instead of
   let reloads = 0;
   page.on('load', () => (reloads += 1));
 
+  // 2026-11-03. Reports is in the side menu.
+  await page.getByRole('button', { name: 'Open the menu' }).click();
   await page.getByRole('link', { name: 'Reports' }).first().click();
   // One reload by itself, then the message, never a blank page.
   await expect(page.getByText('This screen could not load.')).toBeVisible();

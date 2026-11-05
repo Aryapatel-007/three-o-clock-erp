@@ -158,6 +158,30 @@ export async function giveNoCharge(page, reason) {
 }
 
 /**
+ * The Bill box of an order waiting for the bill. 2026-11-03: beside the menu on the counter's
+ * wide screen; behind the Bill button everywhere else. Returns the box.
+ */
+export async function openBillBox(page) {
+  const box = page.getByRole('region', { name: 'Bill' });
+  const open = page.getByRole('button', { name: 'Bill', exact: true });
+  await expect(box.or(open).first()).toBeVisible();
+  if (!(await box.isVisible())) await open.click();
+  await expect(box).toBeVisible();
+  return box;
+}
+
+/** 2026-11-03. One of an order's rarer actions: its own button when it is the only one, else under More. */
+export async function orderAction(area, label) {
+  const direct = area.getByRole('button', { name: label, exact: true });
+  if (await direct.count()) {
+    await direct.click();
+    return;
+  }
+  await area.getByRole('button', { name: 'More' }).click();
+  await area.getByRole('menuitem', { name: label, exact: true }).click();
+}
+
+/**
  * Bills an order waiting for the cashier, prints nothing, and opens its bill. 2026-11-03: the
  * screen stays on the order once the bill is made, and the bill also has its own address, which
  * these tests open so they can come back to it. They print where they mean to.
@@ -165,12 +189,13 @@ export async function giveNoCharge(page, reason) {
 export async function billOrder(page) {
   await page.reload();
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+  const box = await openBillBox(page);
   const made = page.waitForResponse((response) => {
     const request = response.request();
     return request.method() === 'POST' && new URL(response.url()).pathname === '/api/v1/bills' && !request.postData()?.includes('"preview":true');
   });
   // "No print" in the counter's compact Bill box; the words in full everywhere else.
-  await page.getByRole('region', { name: 'Bill' }).getByRole('button', { name: /^(No print|Make the bill without printing)$/ }).click();
+  await box.getByRole('button', { name: /^(No print|Make the bill without printing)$/ }).click();
   const response = await made;
   expect(response.ok()).toBe(true);
   const { data } = await response.json();

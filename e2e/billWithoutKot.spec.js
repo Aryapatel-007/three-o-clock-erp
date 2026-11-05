@@ -8,7 +8,7 @@ import { expect, test } from '@playwright/test';
 import { at, resetGolden } from './helpers/clock.js';
 import { signIn } from './helpers/people.js';
 import { openTable } from './pages/floor.js';
-import { addItems, details } from './pages/order.js';
+import { addItems, details, orderAction } from './pages/order.js';
 
 const DAY = '2026-09-26';
 
@@ -21,7 +21,7 @@ test('the counter bills a table without a KOT, and the kitchen sees nothing', as
   await addItems(counter.page, ['Caffe Latte', 'Water Bottle']);
 
   const order = await details(counter.page);
-  await order.getByRole('button', { name: 'Bill without KOT' }).click();
+  await orderAction(order, 'Bill without KOT');
 
   // The golden restaurant requires covers, so the Guest details sheet comes first, worded for the bill.
   const guest = counter.page.getByRole('dialog', { name: 'Guest details' });

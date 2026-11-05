@@ -658,7 +658,6 @@ Added by P48.
 | **Running KOT table** | A table whose food is with the kitchen |
 | **Running table** | A table whose food is served |
 | **Printed table** | A table whose bill is printed |
-| **Bill No** | The box in the top bar that opens a bill by its number |
 | **History** | The 👁 on a table: what it has had today, read-only |
 | **Guest gave** | On a cash payment: the notes the guest handed over |
 | **Give back** | The change to return, and the notes to return it in |
