@@ -59,6 +59,8 @@ test('a wrong tick in the kitchen, undone', async ({ browser }) => {
 
   // 2026-10-21. Small tiles for a rush: narrower tickets, the switch without its word, kept on this device.
   const ticket = tickets(station.page, 'Table 12');
+  // The message can show just before the ticket is read again, while both dishes still say Cooking.
+  await expect(ticket.getByRole('switch', { name: 'Half & Half Pizza ready' })).toHaveAttribute('aria-checked', 'true');
   await expect(ticket.getByText('Cooking', { exact: true })).toBeVisible();
   await station.page.getByRole('button', { name: 'Small tiles' }).click();
   await expect(station.page.getByRole('button', { name: 'Small tiles' })).toHaveAttribute('aria-pressed', 'true');
