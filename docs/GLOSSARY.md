@@ -662,8 +662,8 @@ Added by P48.
 | **Guest gave** | On a cash payment: the notes the guest handed over |
 | **Give back** | The change to return, and the notes to return it in |
 | **Extra** | A typed add-on with its own price, on one dish |
-| **KOT & Print** | Send to the kitchen and print the KOT |
-| **Save & Print** | Make the bill and print it |
+| **Print every new KOT here** | Since 2026-11-03 there is no KOT & Print button: a Send prints on a till with this on (section 51) |
+| **Print bill** | Make the bill and print it (section 40) |
 
 ---
 
@@ -758,7 +758,7 @@ Added by P56.
 
 | Term | Meaning |
 |---|---|
-| **Note for all dishes** | One instruction for every dish on the order, like "Less spicy". Printed at the top of every KOT as "FOR ALL ITEMS". |
+| **Note for all dishes** | One instruction for every dish on the order, like "Less spicy". Printed at the top of every KOT as "FOR ALL ITEMS". The button that opens it reads **Note for the whole KOT** |
 | **FOR ALL ITEMS** | The printed KOT's word for the note for all dishes |
 | **Guest details** | The guest's name, mobile and their yes to offers, asked on a table's first Send to the kitchen |
 | **Save and send** | Keep the guest's details and send the dishes to the kitchen |
@@ -774,9 +774,9 @@ Added by P57.
 | Term | Meaning |
 |---|---|
 | **Bill** | On a served order, the box under the dishes: the discount, the totals and Save, before the bill is made |
-| **Add discount** | Choose a discount before the bill is made. Nothing is saved until Save. |
-| **Save** | Make the bill, print nothing |
-| **Save & Print** | Make the bill and print it (P48's word, now on every served order) |
+| **Add discount** | Choose a discount before the bill is made. Nothing is saved until the bill is made. |
+| **Print bill** | Make the bill and print it. On a device that prints at the counter, **Print bill at counter** |
+| **Make the bill without printing** | Make the bill, print nothing. **No print** in the counter's narrow Bill box |
 
 ---
 
